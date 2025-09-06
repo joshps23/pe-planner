@@ -1,0 +1,13 @@
+{
+  "name": "badminton-planner",
+  "version": "1.0.0",
+  "description": "A graphical webapp for PE teachers to plan badminton lesson activities",
+  "main": "badminton-planner.html",
+  "scripts": {
+    "start": "npx http-server -p 3000 -o",
+    "dev": "npx http-server -p 3000 -o"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
