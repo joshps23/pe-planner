@@ -1,0 +1,18 @@
+{
+  "name": "badminton-planner",
+  "version": "1.0.0",
+  "description": "A graphical webapp for PE teachers to plan badminton lesson activities",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "static": "npx http-server -p 3000 -o"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
