@@ -936,31 +936,183 @@
             font-style: italic;
         }
 
-        /* Landscape mode styles - Minimal approach to preserve court */
-        @media screen and (orientation: landscape) {
+        /* Mobile-first responsive design */
+        
+        /* Small screens (mobile phones) */
+        @media screen and (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .header p {
+                font-size: 0.95rem;
+            }
+            
+            .main-content {
+                flex-direction: column;
+                min-height: auto;
+            }
+            
+            .controls {
+                width: 100%;
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 15px;
+                overflow-y: visible;
+            }
+            
+            .control-section {
+                margin-bottom: 10px;
+            }
+            
+            .control-header {
+                padding: 15px 20px 12px;
+                font-size: 14px;
+            }
+            
+            .control-content {
+                padding: 15px 20px;
+            }
+            
+            .control-btn {
+                padding: 10px 12px;
+                font-size: 13px;
+                margin-bottom: 6px;
+            }
+            
+            .court-container {
+                margin: 15px;
+                min-height: 400px;
+            }
+            
+            .playing-area {
+                width: 100%;
+                height: 400px;
+                min-height: 300px;
+            }
+            
+            /* Smaller modal for mobile */
+            .onboarding-modal {
+                padding: 25px;
+                margin: 20px;
+                max-width: 90%;
+            }
+            
+            .onboarding-features {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .ai-modal {
+                width: 95%;
+                max-height: 85vh;
+                margin: 10px;
+            }
+            
+            .ai-modal-content {
+                padding: 20px;
+                max-height: calc(85vh - 140px);
+            }
+            
+            /* Adjust input fields for mobile */
+            input, textarea, select {
+                font-size: 16px !important; /* Prevents zoom on iOS */
+            }
+            
+            .tooltip {
+                max-width: 150px;
+                font-size: 11px;
+            }
+        }
+        
+        /* Medium screens (tablets) */
+        @media screen and (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                margin: 15px;
+            }
+            
+            .controls {
+                width: 300px;
+                min-width: 300px;
+            }
+            
+            .playing-area {
+                height: 500px;
+            }
+            
+            .onboarding-features {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        /* Large screens (landscape tablets, small desktops) */
+        @media screen and (min-width: 1025px) {
             .main-content {
                 flex-direction: row;
             }
             
             .controls {
-                width: 280px;
-                min-width: 280px;
-                background: #f8fafc;
-                border-right: 2px solid #e2e8f0;
-                padding: 15px;
-                order: 1;
+                width: 320px;
+                min-width: 320px;
+                max-height: 80vh;
+                overflow-y: auto;
+                border-right: 1px solid #e2e8f0;
+                border-bottom: none;
             }
             
             .court-container {
-                order: 2;
                 flex: 1;
+                margin: 30px;
             }
             
-            /* Keep court in portrait orientation (taller than wide) */
-            .badminton-court {
-                width: 300px;   /* Narrower width */
-                height: 450px;  /* Taller height - portrait orientation */
-                margin: 20px auto;
+            .playing-area {
+                height: 600px;
+            }
+        }
+        
+        /* Extra large screens */
+        @media screen and (min-width: 1400px) {
+            .container {
+                max-width: 1600px;
+            }
+            
+            .controls {
+                width: 350px;
+                min-width: 350px;
+            }
+            
+            .playing-area {
+                height: 700px;
+            }
+        }
+        
+        /* Landscape orientation adjustments */
+        @media screen and (orientation: landscape) and (max-height: 600px) {
+            .header {
+                padding: 15px 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .playing-area {
+                height: 300px;
+            }
+            
+            .controls {
+                max-height: 60vh;
             }
         }
     </style>
