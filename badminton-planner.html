@@ -752,8 +752,10 @@
             border-radius: 20px;
             padding: 40px;
             max-width: 600px;
+            max-height: 90vh;
             text-align: center;
             position: relative;
+            overflow-y: auto;
         }
         
         .onboarding-modal h2 {
@@ -1004,14 +1006,41 @@
             
             /* Smaller modal for mobile */
             .onboarding-modal {
-                padding: 25px;
-                margin: 20px;
-                max-width: 90%;
+                padding: 20px;
+                margin: 15px;
+                max-width: 95%;
+                max-height: 85vh;
+                border-radius: 15px;
+            }
+            
+            .onboarding-modal h2 {
+                font-size: 1.5rem;
+                margin-bottom: 15px;
+            }
+            
+            .onboarding-modal p {
+                font-size: 1rem;
+                margin-bottom: 20px;
             }
             
             .onboarding-features {
                 grid-template-columns: 1fr;
-                gap: 15px;
+                gap: 12px;
+                margin: 20px 0;
+            }
+            
+            .feature-card {
+                padding: 15px;
+            }
+            
+            .feature-card h4 {
+                font-size: 0.95rem;
+                margin-bottom: 8px;
+            }
+            
+            .feature-card p {
+                font-size: 0.85rem;
+                margin-bottom: 0;
             }
             
             .ai-modal {
@@ -1033,6 +1062,82 @@
             .tooltip {
                 max-width: 150px;
                 font-size: 11px;
+            }
+        }
+        
+        /* Extra small screens (small mobile phones) */
+        @media screen and (max-width: 480px) {
+            .onboarding-modal {
+                padding: 15px;
+                margin: 10px;
+                max-width: 98%;
+                border-radius: 10px;
+            }
+            
+            .onboarding-modal h2 {
+                font-size: 1.3rem;
+                margin-bottom: 12px;
+            }
+            
+            .onboarding-modal p {
+                font-size: 0.95rem;
+                margin-bottom: 15px;
+            }
+            
+            .onboarding-features {
+                gap: 10px;
+                margin: 15px 0;
+            }
+            
+            .feature-card {
+                padding: 12px;
+            }
+            
+            .feature-card h4 {
+                font-size: 0.9rem;
+                margin-bottom: 6px;
+            }
+            
+            .feature-card p {
+                font-size: 0.8rem;
+            }
+        }
+        
+        /* Landscape orientation on small screens */
+        @media screen and (max-height: 600px) and (orientation: landscape) {
+            .onboarding-modal {
+                max-height: 95vh;
+                padding: 15px 20px;
+            }
+            
+            .onboarding-modal h2 {
+                font-size: 1.2rem;
+                margin-bottom: 10px;
+            }
+            
+            .onboarding-modal p {
+                font-size: 0.9rem;
+                margin-bottom: 15px;
+            }
+            
+            .onboarding-features {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin: 15px 0;
+            }
+            
+            .feature-card {
+                padding: 10px;
+            }
+            
+            .feature-card h4 {
+                font-size: 0.85rem;
+                margin-bottom: 5px;
+            }
+            
+            .feature-card p {
+                font-size: 0.75rem;
+                line-height: 1.3;
             }
         }
         
