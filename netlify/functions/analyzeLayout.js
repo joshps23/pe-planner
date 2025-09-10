@@ -37,7 +37,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY || 'AIzaSyC3_ok08YmO2xK1fMGvOiy7LGkdwN90ZEM';
+    const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
     
     if (!geminiApiKey) {
       return {
