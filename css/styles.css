@@ -343,8 +343,8 @@
 
         /* Player visual representation with emojis */
         .student {
-            width: 40px;
-            height: 40px;
+            width: 100px;
+            height: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -353,7 +353,7 @@
         }
 
         .attacker {
-            background-image: url('attacker.png');
+            background-image: url('../attacker.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
@@ -368,7 +368,7 @@
         }
 
         .defender {
-            background-image: url('defender.png');
+            background-image: url('../defender.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
@@ -384,7 +384,7 @@
 
         /* Alternative options for variety */
         .student.alt-style.attacker {
-            background-image: url('attacker.png');
+            background-image: url('../attacker.png');
             background-color: transparent;
             border-radius: 50%;
             background-blend-mode: multiply;
@@ -395,7 +395,7 @@
         }
 
         .student.alt-style.defender {
-            background-image: url('defender.png');
+            background-image: url('../defender.png');
             background-color: transparent;
             border-radius: 50%;
             background-blend-mode: multiply;

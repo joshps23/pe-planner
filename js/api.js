@@ -16,11 +16,47 @@ async function loadApiConfig() {
 function captureCourtLayout() {
     const court = document.getElementById('court');
     const courtRect = court.getBoundingClientRect();
+    const layoutType = document.getElementById('layoutType').value;
+    
+    // Get real-world dimensions based on court type
+    let realWorldDimensions = {};
+    switch(layoutType) {
+        case 'badminton':
+            realWorldDimensions = { width: 13.4, height: 6.1, units: 'meters', type: 'Badminton Court' };
+            break;
+        case 'basketball':
+            realWorldDimensions = { width: 28, height: 15, units: 'meters', type: 'Basketball Court' };
+            break;
+        case 'volleyball':
+            realWorldDimensions = { width: 18, height: 9, units: 'meters', type: 'Volleyball Court' };
+            break;
+        case 'tennis':
+            realWorldDimensions = { width: 23.77, height: 10.97, units: 'meters', type: 'Tennis Court' };
+            break;
+        case 'soccer':
+            realWorldDimensions = { width: 100, height: 50, units: 'meters', type: 'Soccer Field (approx)' };
+            break;
+        case 'blank':
+            const customWidth = document.getElementById('customWidth').value || 10;
+            const customHeight = document.getElementById('customHeight').value || 10;
+            realWorldDimensions = { 
+                width: parseFloat(customWidth), 
+                height: parseFloat(customHeight), 
+                units: 'meters', 
+                type: 'Custom Space' 
+            };
+            break;
+        default:
+            realWorldDimensions = { width: 20, height: 10, units: 'meters', type: 'Generic Space' };
+    }
+    
     const layout = {
         phase: currentPhase,
+        courtType: layoutType,
         courtDimensions: {
-            width: court.clientWidth,
-            height: court.clientHeight
+            pixelWidth: court.clientWidth,
+            pixelHeight: court.clientHeight,
+            realWorld: realWorldDimensions
         },
         activityDetails: {
             name: document.getElementById('activityName').value.trim(),
@@ -97,6 +133,9 @@ function captureCourtLayout() {
         });
     }
     
+    // Calculate distances and spatial relationships between elements
+    layout.spatialRelationships = calculateSpatialRelationships(layout.elements, layout.courtDimensions);
+    
     return layout;
 }
 
@@ -128,6 +167,58 @@ function extractRotationAngle(transform) {
     return match ? parseFloat(match[1]) : 0;
 }
 
+function calculateSpatialRelationships(elements, courtDimensions) {
+    const relationships = [];
+    
+    // Convert pixel dimensions to meters for distance calculation
+    const pixelToMeterRatioX = courtDimensions.realWorld.width / courtDimensions.pixelWidth;
+    const pixelToMeterRatioY = courtDimensions.realWorld.height / courtDimensions.pixelHeight;
+    
+    // Calculate distance between each pair of elements
+    for (let i = 0; i < elements.length; i++) {
+        for (let j = i + 1; j < elements.length; j++) {
+            const elem1 = elements[i];
+            const elem2 = elements[j];
+            
+            // Calculate pixel distance
+            const pixelDistanceX = Math.abs(elem2.position.x - elem1.position.x);
+            const pixelDistanceY = Math.abs(elem2.position.y - elem1.position.y);
+            const pixelDistance = Math.sqrt(pixelDistanceX * pixelDistanceX + pixelDistanceY * pixelDistanceY);
+            
+            // Convert to real-world meters
+            const meterDistanceX = pixelDistanceX * pixelToMeterRatioX;
+            const meterDistanceY = pixelDistanceY * pixelToMeterRatioY;
+            const meterDistance = Math.sqrt(meterDistanceX * meterDistanceX + meterDistanceY * meterDistanceY);
+            
+            // Determine relative position
+            let relativePosition = '';
+            if (Math.abs(pixelDistanceX) > Math.abs(pixelDistanceY)) {
+                relativePosition = elem2.position.x > elem1.position.x ? 'right of' : 'left of';
+            } else {
+                relativePosition = elem2.position.y > elem1.position.y ? 'below' : 'above';
+            }
+            
+            // Create descriptive names for elements
+            const elem1Name = elem1.name || `${elem1.role || elem1.type}`;
+            const elem2Name = elem2.name || `${elem2.role || elem2.type}`;
+            
+            relationships.push({
+                element1: elem1Name,
+                element2: elem2Name,
+                distanceMeters: parseFloat(meterDistance.toFixed(1)),
+                distancePixels: parseFloat(pixelDistance.toFixed(0)),
+                relativePosition: relativePosition,
+                description: `${elem1Name} is ${meterDistance.toFixed(1)} meters ${relativePosition} ${elem2Name}`
+            });
+        }
+    }
+    
+    // Sort by distance for easier analysis
+    relationships.sort((a, b) => a.distanceMeters - b.distanceMeters);
+    
+    return relationships;
+}
+
 function generateLayoutDescription(layout) {
     let description = `This is a PE lesson layout for the ${layout.phase} phase:\n\n`;
     
@@ -153,7 +244,7 @@ function generateLayoutDescription(layout) {
     }
     
     description += `PLAYING AREA SETUP:\n`;
-    description += `- Playing area dimensions: ${layout.courtDimensions.width}x${layout.courtDimensions.height} pixels\n`;
+    description += `- Playing area: ${layout.courtDimensions.realWorld.width}m × ${layout.courtDimensions.realWorld.height}m ${layout.courtDimensions.realWorld.type}\n`;
     description += `- Current phase: ${layout.phase}\n\n`;
     
     if (layout.elements.length > 0) {
@@ -169,6 +260,28 @@ function generateLayoutDescription(layout) {
             description += ` at position (${element.xPercent}%, ${element.yPercent}% from top-left)\n`;
         });
         description += `\n`;
+    }
+    
+    // Add spatial relationships and distances
+    if (layout.spatialRelationships && layout.spatialRelationships.length > 0) {
+        description += `SPATIAL RELATIONSHIPS & DISTANCES:\n`;
+        description += `On this ${layout.courtDimensions.realWorld.width}m × ${layout.courtDimensions.realWorld.height}m ${layout.courtDimensions.realWorld.type}:\n`;
+        
+        // Limit to top 5 most important relationships to avoid overwhelming the AI
+        const importantRelationships = layout.spatialRelationships.slice(0, 5);
+        importantRelationships.forEach((rel, index) => {
+            description += `${index + 1}. ${rel.description}\n`;
+        });
+        description += `\n`;
+        
+        // Add summary of closest and furthest elements
+        if (layout.spatialRelationships.length > 0) {
+            const closest = layout.spatialRelationships[0];
+            const furthest = layout.spatialRelationships[layout.spatialRelationships.length - 1];
+            description += `DISTANCE SUMMARY:\n`;
+            description += `- Closest elements: ${closest.description}\n`;
+            description += `- Furthest elements: ${furthest.description}\n\n`;
+        }
     }
     
     if (layout.annotations.length > 0) {
@@ -231,11 +344,30 @@ async function analyzeLayout() {
         });
         
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+            let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorMessage;
+            } catch (jsonError) {
+                // If response is not JSON (like timeout errors), use the text content
+                try {
+                    const textError = await response.text();
+                    errorMessage = textError || errorMessage;
+                } catch (textError) {
+                    // Fallback to status text if both JSON and text parsing fail
+                }
+            }
+            throw new Error(errorMessage);
         }
         
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            // Handle cases where successful response is not JSON
+            const textResponse = await response.text();
+            throw new Error(`Invalid response format: ${textResponse.substring(0, 100)}...`);
+        }
         
         if (data.suggestions) {
             showAISuggestions(data.suggestions);

@@ -52,15 +52,19 @@ exports.handler = async (event, context) => {
 
     let prompt = `You are an expert Physical Education teacher with experience across multiple sports and activities. Please analyze this lesson layout and provide constructive feedback and suggestions.
 
+IMPORTANT: The layout data contains pixel coordinates from a digital interface. When analyzing distances and positioning, interpret these in terms of real-world court/field measurements in METERS, not pixels. Assume a standard-sized court/field for the activity type.
+
 ${layoutData}
 
 Based on the activity details, court/field layout, and current phase, please provide:
-1. Assessment of the current setup (strengths and potential issues)
+1. Assessment of the current setup (strengths and potential issues) - describe positioning and distances in METERS
 2. How well the layout supports the stated activity objectives and rules
-3. Specific suggestions to improve the activity effectiveness
-4. Safety considerations and risk management
+3. Specific suggestions to improve the activity effectiveness with real-world measurements
+4. Safety considerations and risk management with appropriate spacing distances in METERS  
 5. Alternative variations or progressions for this activity
-6. Tips for student engagement and maximizing learning outcomes`;
+6. Tips for student engagement and maximizing learning outcomes
+
+Focus on practical, real-world measurements and distances that a PE teacher can implement, not screen coordinates.`;
 
     // Add specific guidance based on activity details
     if (layoutData.includes('Activity Name:') || layoutData.includes('Rules & Instructions:')) {
@@ -71,11 +75,16 @@ Based on the activity details, court/field layout, and current phase, please pro
     
     prompt += `\n\nKeep your response practical, actionable, and suitable for a PE teacher. Focus on pedagogy, safety, and student engagement. Adapt your advice to the specific sport/activity indicated by the equipment and activity description.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiApiKey}`, {
+    // Add timeout to prevent function from timing out
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second (2 minute) timeout
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
       body: JSON.stringify({
         contents: [{
           parts: [{
@@ -91,6 +100,9 @@ Based on the activity details, court/field layout, and current phase, please pro
         }
       })
     });
+
+    // Clear timeout if request succeeds
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -119,7 +131,9 @@ Based on the activity details, court/field layout, and current phase, please pro
     console.error('Error calling Gemini API:', error);
     let errorMessage = 'Failed to analyze layout. ';
     
-    if (error.message.includes('API_KEY_INVALID')) {
+    if (error.name === 'AbortError') {
+      errorMessage += 'Request timed out. The AI service is taking too long to respond. Please try again.';
+    } else if (error.message.includes('API_KEY_INVALID')) {
       errorMessage += 'Please check your API key.';
     } else if (error.message.includes('quota')) {
       errorMessage += 'API quota exceeded.';
