@@ -50,9 +50,14 @@ function toggleSection(header) {
     section.classList.toggle('collapsed');
 }
 
-function showAISuggestions(suggestions) {
+let currentSuggestedLayout = null;
+
+function showAISuggestions(suggestions, layoutJson = null) {
     const modalOverlay = document.getElementById('aiSuggestionsModal');
     const modalContent = document.getElementById('aiSuggestionsModalContent');
+    
+    // Store the suggested layout JSON for later use
+    currentSuggestedLayout = layoutJson;
     
     // Format the suggestions for better readability - more careful processing
     let formattedSuggestions = suggestions
@@ -63,6 +68,13 @@ function showAISuggestions(suggestions) {
         .replace(/^\s*<br>/, '');  // Remove leading breaks
     
     modalContent.innerHTML = formattedSuggestions;
+    
+    // Show/hide the Apply Layout button based on whether we have JSON data
+    const applyLayoutBtn = document.getElementById('applyLayoutBtn');
+    if (applyLayoutBtn) {
+        applyLayoutBtn.style.display = layoutJson ? 'inline-block' : 'none';
+    }
+    
     modalOverlay.classList.add('show');
 }
 

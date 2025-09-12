@@ -18,36 +18,27 @@ function captureCourtLayout() {
     const courtRect = court.getBoundingClientRect();
     const layoutType = document.getElementById('layoutType').value;
     
-    // Get real-world dimensions based on court type
-    let realWorldDimensions = {};
-    switch(layoutType) {
-        case 'badminton':
-            realWorldDimensions = { width: 13.4, height: 6.1, units: 'meters', type: 'Badminton Court' };
-            break;
-        case 'basketball':
-            realWorldDimensions = { width: 28, height: 15, units: 'meters', type: 'Basketball Court' };
-            break;
-        case 'volleyball':
-            realWorldDimensions = { width: 18, height: 9, units: 'meters', type: 'Volleyball Court' };
-            break;
-        case 'tennis':
-            realWorldDimensions = { width: 23.77, height: 10.97, units: 'meters', type: 'Tennis Court' };
-            break;
-        case 'soccer':
-            realWorldDimensions = { width: 100, height: 50, units: 'meters', type: 'Soccer Field (approx)' };
-            break;
-        case 'blank':
-            const customWidth = document.getElementById('customWidth').value || 10;
-            const customHeight = document.getElementById('customHeight').value || 10;
-            realWorldDimensions = { 
-                width: parseFloat(customWidth), 
-                height: parseFloat(customHeight), 
-                units: 'meters', 
-                type: 'Custom Space' 
-            };
-            break;
-        default:
-            realWorldDimensions = { width: 20, height: 10, units: 'meters', type: 'Generic Space' };
+    // Get real-world dimensions from court specifications
+    const spec = courtSpecs[layoutType] || courtSpecs.blank;
+    let realWorldDimensions;
+    
+    if (layoutType === 'blank') {
+        // For blank space, use custom dimensions if available
+        const customWidth = document.getElementById('customWidth').value || spec.realDimensions.width;
+        const customHeight = document.getElementById('customHeight').value || spec.realDimensions.height;
+        realWorldDimensions = { 
+            width: parseFloat(customWidth), 
+            height: parseFloat(customHeight), 
+            units: 'meters', 
+            type: spec.name
+        };
+    } else {
+        realWorldDimensions = { 
+            width: spec.realDimensions.width, 
+            height: spec.realDimensions.height, 
+            units: 'meters', 
+            type: spec.name
+        };
     }
     
     const layout = {
@@ -370,7 +361,7 @@ async function analyzeLayout() {
         }
         
         if (data.suggestions) {
-            showAISuggestions(data.suggestions);
+            showAISuggestions(data.suggestions, data.layoutJson);
             showAIStatus('Analysis complete!', false);
         } else {
             throw new Error('No suggestions received from AI');

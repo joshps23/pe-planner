@@ -224,13 +224,93 @@
 
         .playing-area {
             width: 100%;
-            height: 600px;
+            max-width: 900px;
+            min-height: 400px;
             position: relative;
+            margin: 0 auto;
             background: radial-gradient(ellipse at center, #22c55e 0%, #16a34a 100%);
             background-image: 
                 linear-gradient(90deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 100%),
                 linear-gradient(0deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 100%);
             background-size: 30px 30px;
+        }
+        
+        /* Dynamic aspect ratios for accurate court proportions */
+        .badminton-court {
+            aspect-ratio: 2.2 / 1;
+        }
+        
+        .basketball-court {
+            aspect-ratio: 1.87 / 1;
+        }
+        
+        .volleyball-court {
+            aspect-ratio: 2 / 1;
+        }
+        
+        .tennis-court {
+            aspect-ratio: 2.17 / 1;
+        }
+        
+        .soccer-field {
+            aspect-ratio: 2 / 1;
+        }
+        
+        .blank-space {
+            aspect-ratio: 2 / 1; /* default ratio */
+        }
+        
+        /* Fallback for browsers without aspect-ratio support */
+        @supports not (aspect-ratio: 1) {
+            .badminton-court::before {
+                content: '';
+                padding-bottom: 45.45%; /* 1/2.2 * 100 */
+                display: block;
+                width: 100%;
+            }
+            
+            .basketball-court::before {
+                content: '';
+                padding-bottom: 53.48%; /* 1/1.87 * 100 */
+                display: block;
+                width: 100%;
+            }
+            
+            .volleyball-court::before {
+                content: '';
+                padding-bottom: 50%; /* 1/2 * 100 */
+                display: block;
+                width: 100%;
+            }
+            
+            .tennis-court::before {
+                content: '';
+                padding-bottom: 46.08%; /* 1/2.17 * 100 */
+                display: block;
+                width: 100%;
+            }
+            
+            .soccer-field::before {
+                content: '';
+                padding-bottom: 50%; /* 1/2 * 100 */
+                display: block;
+                width: 100%;
+            }
+            
+            .blank-space::before {
+                content: '';
+                padding-bottom: 50%; /* 1/2 * 100 */
+                display: block;
+                width: 100%;
+            }
+            
+            .playing-area > * {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
         }
 
         .badminton-court {
@@ -339,6 +419,7 @@
             justify-content: center;
             font-weight: bold;
             font-size: 12px;
+            z-index: 10;
         }
 
         /* Player visual representation with emojis */
@@ -407,20 +488,29 @@
 
         /* Cone visual representation */
         .cone {
+            width: 30px;
+            height: 30px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cone::before {
+            content: '';
+            position: absolute;
             width: 0;
             height: 0;
             border-left: 15px solid transparent;
             border-right: 15px solid transparent;
             border-bottom: 30px solid #ff6600;
-            position: relative;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            top: 0;
+            left: 0;
         }
 
         .cone::after {
             content: '';
             position: absolute;
             top: 30px;
-            left: -12px;
+            left: 3px;
             width: 24px;
             height: 8px;
             background-color: #ff4400;
@@ -623,19 +713,23 @@
             position: absolute;
             top: -8px;
             right: -8px;
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             background-color: #e74c3c;
             color: white;
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 12px;
             display: none;
+            z-index: 20;
+            align-items: center;
+            justify-content: center;
         }
 
-        .draggable-item:hover .remove-btn {
-            display: block;
+        .draggable-item:hover .remove-btn,
+        .annotation:hover .remove-btn {
+            display: flex;
         }
         
         .phase-btn {
@@ -930,6 +1024,32 @@
             color: #6b7280;
             font-style: italic;
         }
+        
+        .apply-layout-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+            font-size: 14px;
+        }
+        
+        .apply-layout-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+        }
+        
+        .apply-layout-btn:active {
+            transform: translateY(0);
+        }
+        
+        .apply-layout-btn span {
+            margin-right: 6px;
+        }
 
         /* Mobile-first responsive design */
         
@@ -993,8 +1113,8 @@
             
             .playing-area {
                 width: 100%;
-                height: 400px;
-                min-height: 300px;
+                max-width: 100%;
+                min-height: 200px;
             }
             
             /* Smaller modal for mobile */

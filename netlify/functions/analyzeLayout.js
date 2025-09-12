@@ -73,7 +73,50 @@ Focus on practical, real-world measurements and distances that a PE teacher can 
       prompt += `\n\nSince no specific activity details are provided, analyze the setup based on the visible equipment and student positioning. Make suggestions that would work for the types of activities that could be conducted with the current equipment layout.`;
     }
     
-    prompt += `\n\nKeep your response practical, actionable, and suitable for a PE teacher. Focus on pedagogy, safety, and student engagement. Adapt your advice to the specific sport/activity indicated by the equipment and activity description.`;
+    prompt += `\n\nKeep your response practical, actionable, and suitable for a PE teacher. Focus on pedagogy, safety, and student engagement. Adapt your advice to the specific sport/activity indicated by the equipment and activity description.
+
+IMPORTANT RESPONSE FORMAT:
+Please provide your response in this exact format:
+
+===SUGGESTIONS===
+[Your detailed text analysis and suggestions here]
+
+===LAYOUT_JSON===
+{
+  "elements": [
+    {
+      "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender",
+      "name": "Student Name (only for attacker/defender)",
+      "position": {
+        "xPercent": 25,
+        "yPercent": 30
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "text": "Coaching point or instruction",
+      "position": {
+        "xPercent": 50,
+        "yPercent": 20
+      }
+    }
+  ]
+}
+===END===
+
+The JSON should contain an improved layout with better positioning of existing elements and/or additional equipment that would enhance the activity. 
+
+CRITICAL COORDINATE REQUIREMENTS:
+- xPercent and yPercent MUST be numbers between 0 and 100 (inclusive)
+- 0% = left/top edge of court, 100% = right/bottom edge of court
+- To avoid elements being cut off at edges, use safe ranges:
+  - For equipment (cones, balls, etc.): use 5-95 range
+  - For students: use 10-90 range to ensure full visibility
+- Examples of VALID coordinates: 25, 50, 75.5, 12, 88
+- Examples of INVALID coordinates: -10, 105, 110, -5
+
+Only suggest realistic improvements based on the activity type and objectives.`;
 
     // Add timeout to prevent function from timing out
     const controller = new AbortController();
@@ -112,7 +155,30 @@ Focus on practical, real-world measurements and distances that a PE teacher can 
     const data = await response.json();
     
     if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-      const suggestions = data.candidates[0].content.parts[0].text;
+      const fullResponse = data.candidates[0].content.parts[0].text;
+      
+      // Parse the response to extract suggestions and JSON
+      let suggestions = fullResponse;
+      let layoutJson = null;
+      
+      if (fullResponse.includes('===SUGGESTIONS===') && fullResponse.includes('===LAYOUT_JSON===')) {
+        try {
+          const suggestionsMatch = fullResponse.match(/===SUGGESTIONS===\s*([\s\S]*?)===LAYOUT_JSON===/);
+          const jsonMatch = fullResponse.match(/===LAYOUT_JSON===\s*([\s\S]*?)===END===/);
+          
+          if (suggestionsMatch) {
+            suggestions = suggestionsMatch[1].trim();
+          }
+          
+          if (jsonMatch) {
+            const jsonStr = jsonMatch[1].trim();
+            layoutJson = JSON.parse(jsonStr);
+          }
+        } catch (parseError) {
+          console.log('Error parsing structured response:', parseError);
+          // If parsing fails, just use the full response as suggestions
+        }
+      }
       
       return {
         statusCode: 200,
@@ -121,7 +187,7 @@ Focus on practical, real-world measurements and distances that a PE teacher can 
           'Access-Control-Allow-Headers': 'Content-Type',
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ suggestions })
+        body: JSON.stringify({ suggestions, layoutJson })
       };
     } else {
       throw new Error('No suggestions received from AI');
