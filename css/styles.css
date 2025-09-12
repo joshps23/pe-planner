@@ -348,19 +348,19 @@
 
         /* Player visual representation with emojis */
         .student {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 38px;
             line-height: 1;
             position: relative;
         }
 
         .attacker {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             background-image: url('../attacker.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -378,8 +378,8 @@
         }
 
         .defender {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             background-image: url('../defender.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -1166,8 +1166,8 @@
         }
         
         .layout-preview-element.attacker {
-            width: 8px;
-            height: 8px;
+            width: 11px;
+            height: 11px;
             background-image: url('../attacker.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -1177,8 +1177,8 @@
         }
         
         .layout-preview-element.defender {
-            width: 8px;
-            height: 8px;
+            width: 11px;
+            height: 11px;
             background-image: url('../defender.png');
             background-size: contain;
             background-repeat: no-repeat;

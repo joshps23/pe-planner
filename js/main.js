@@ -69,7 +69,7 @@ function addEquipment(type) {
     // Use safe default position (40% from edges)
     const safeXPercent = 40; 
     const safeYPercent = 40;
-    const safetyMargin = 15;
+    const safetyMargin = 20;
     
     const elementWidth = 30; // Default element size
     const elementHeight = 30;
@@ -139,10 +139,10 @@ function addStudent(type) {
     // Use safe default position for students (45% from edges for variation)
     const safeXPercent = 45; 
     const safeYPercent = 45;
-    const safetyMargin = 15;
+    const safetyMargin = 20;
     
-    const elementWidth = 60; // Student size
-    const elementHeight = 60;
+    const elementWidth = 80; // Student size
+    const elementHeight = 80;
     
     const courtWidth = court.clientWidth;
     const courtHeight = court.clientHeight;
@@ -450,15 +450,48 @@ function loadPlan() {
         const item = document.createElement('div');
         item.className = itemData.className;
         item.id = itemData.id;
-        item.style.left = itemData.left;
-        item.style.top = itemData.top;
         item.dataset.phase = itemData.phase || 'warmup';
+        
+        // Validate and adjust coordinates for larger player sizes
+        const courtWidth = court.clientWidth;
+        const courtHeight = court.clientHeight;
+        
+        // Determine element size based on type
+        let elementWidth, elementHeight;
+        if (item.classList.contains('student') || item.classList.contains('attacker') || item.classList.contains('defender')) {
+            elementWidth = elementHeight = 80; // Current player size
+        } else if (item.classList.contains('cone')) {
+            elementWidth = elementHeight = 30;
+        } else if (item.classList.contains('ball')) {
+            elementWidth = elementHeight = 25;
+        } else if (item.classList.contains('hoop')) {
+            elementWidth = elementHeight = 35;
+        } else {
+            elementWidth = elementHeight = 30; // Default
+        }
+        
+        // Parse saved coordinates
+        let x = parseInt(itemData.left) || 0;
+        let y = parseInt(itemData.top) || 0;
+        
+        // Apply boundary validation with safety margin
+        const safetyMargin = 20;
+        const maxX = courtWidth - elementWidth - safetyMargin;
+        const maxY = courtHeight - elementHeight - safetyMargin;
+        
+        // Clamp coordinates to safe boundaries
+        x = Math.max(safetyMargin, Math.min(maxX, x));
+        y = Math.max(safetyMargin, Math.min(maxY, y));
+        
+        // Apply validated coordinates
+        item.style.left = x + 'px';
+        item.style.top = y + 'px';
         
         if (itemData.text && item.classList.contains('student')) {
             const nameLabel = document.createElement('div');
             nameLabel.textContent = itemData.text;
             nameLabel.style.position = 'absolute';
-            nameLabel.style.bottom = '-15px';
+            nameLabel.style.bottom = '-20px';
             nameLabel.style.left = '50%';
             nameLabel.style.transform = 'translateX(-50%)';
             nameLabel.style.fontSize = '8px';
@@ -484,9 +517,32 @@ function loadPlan() {
     plan.annotations.forEach(annData => {
         const ann = document.createElement('div');
         ann.className = 'annotation';
-        ann.style.left = annData.left;
-        ann.style.top = annData.top;
         ann.dataset.phase = annData.phase || 'warmup';
+        
+        // Validate and adjust annotation coordinates
+        const courtWidth = court.clientWidth;
+        const courtHeight = court.clientHeight;
+        
+        // Annotation dimensions
+        const annotationWidth = 120;
+        const annotationHeight = 60;
+        
+        // Parse saved coordinates
+        let x = parseInt(annData.left) || 0;
+        let y = parseInt(annData.top) || 0;
+        
+        // Apply boundary validation with safety margin
+        const safetyMargin = 13;
+        const maxX = courtWidth - annotationWidth - safetyMargin;
+        const maxY = courtHeight - annotationHeight - safetyMargin;
+        
+        // Clamp coordinates to safe boundaries
+        x = Math.max(safetyMargin, Math.min(maxX, x));
+        y = Math.max(safetyMargin, Math.min(maxY, y));
+        
+        // Apply validated coordinates
+        ann.style.left = x + 'px';
+        ann.style.top = y + 'px';
         
         const textarea = document.createElement('textarea');
         textarea.value = annData.text;
@@ -798,7 +854,7 @@ function displayActivityDetails(layout) {
     const detailsSection = document.getElementById('activityDetailsSection');
     const titleElement = document.getElementById('activityTitle');
     const instructionsElement = document.getElementById('activityInstructions');
-    const rulesElement = document.getElementById('activityRules');
+    const rulesElement = document.getElementById('activityDisplayRules');
     const teachingPointsElement = document.getElementById('activityTeachingPoints');
     
     if (!detailsSection) return;
@@ -916,7 +972,7 @@ function createElementFromJson(element, court) {
     switch (element.type) {
         case 'attacker':
         case 'defender':
-            elementWidth = elementHeight = 60;
+            elementWidth = elementHeight = 80;
             break;
         case 'cone':
             elementWidth = elementHeight = 30;
@@ -930,7 +986,7 @@ function createElementFromJson(element, court) {
             elementHeight = 20;
             break;
         case 'bench':
-            elementWidth = 60;
+            elementWidth = 80;
             elementHeight = 20;
             break;
         case 'hoop':
@@ -943,7 +999,7 @@ function createElementFromJson(element, court) {
     
     // Calculate pixel positions with proper boundary consideration
     // Use a safety margin of 10px to prevent elements from touching the edges
-    const safetyMargin = 10;
+    const safetyMargin = 13;
     
     // Calculate available space for positioning (court minus element size minus margins)
     const availableWidth = courtWidth - elementWidth - (2 * safetyMargin);
@@ -970,7 +1026,7 @@ function createElementFromJson(element, court) {
             const nameLabel = document.createElement('div');
             nameLabel.textContent = element.name;
             nameLabel.style.position = 'absolute';
-            nameLabel.style.bottom = '-15px';
+            nameLabel.style.bottom = '-20px';
             nameLabel.style.left = '50%';
             nameLabel.style.transform = 'translateX(-50%)';
             nameLabel.style.fontSize = '8px';
@@ -1028,32 +1084,42 @@ function createAnnotationFromJson(annotation, court) {
     const courtWidth = court.clientWidth;
     const courtHeight = court.clientHeight;
     
-    // Validate and clamp coordinates to 0-100 range
+    // Validate and clamp coordinates to safe range (20-80%) - same as elements
     let xPercent = annotation.position.xPercent || 50;
     let yPercent = annotation.position.yPercent || 50;
     
-    // Clamp to valid range
-    xPercent = Math.max(0, Math.min(100, xPercent));
-    yPercent = Math.max(0, Math.min(100, yPercent));
+    // Pre-validate coordinates with strict safe bounds to match element positioning
+    const originalX = xPercent;
+    const originalY = yPercent;
+    
+    // Clamp to safe range (20-80%) to ensure annotations stay within court boundaries
+    xPercent = Math.max(20, Math.min(80, xPercent));
+    yPercent = Math.max(20, Math.min(80, yPercent));
     
     // Log warning if coordinates were adjusted
-    if (xPercent !== annotation.position.xPercent || yPercent !== annotation.position.yPercent) {
-        console.warn(`Adjusted annotation coordinates: (${annotation.position.xPercent}, ${annotation.position.yPercent}) -> (${xPercent}, ${yPercent})`);
+    if (xPercent !== originalX || yPercent !== originalY) {
+        console.warn(`Pre-validated annotation coordinates: (${originalX}, ${originalY}) -> (${xPercent}, ${yPercent}) - clamped to safe range`);
     }
     
-    // Annotations are typically small, but add some margin
+    // Annotations dimensions
     const annotationWidth = 120; // Approximate width of annotation
     const annotationHeight = 60;  // Approximate height of annotation
     
-    const maxX = courtWidth - annotationWidth;
-    const maxY = courtHeight - annotationHeight;
+    // Use same safety margin system as elements
+    const safetyMargin = 13;
     
-    let x = (xPercent / 100) * courtWidth;
-    let y = (yPercent / 100) * courtHeight;
+    // Calculate available space for positioning (court minus annotation size minus margins)
+    const availableWidth = courtWidth - annotationWidth - (2 * safetyMargin);
+    const availableHeight = courtHeight - annotationHeight - (2 * safetyMargin);
     
-    // Ensure annotations don't go past court boundaries
-    x = Math.max(0, Math.min(maxX, x));
-    y = Math.max(0, Math.min(maxY, y));
+    // Convert percentage to pixel position within available space
+    // 0% = safetyMargin, 100% = courtWidth - annotationWidth - safetyMargin
+    let x = safetyMargin + (xPercent / 100) * availableWidth;
+    let y = safetyMargin + (yPercent / 100) * availableHeight;
+    
+    // Double-check boundaries (should not be needed with correct calculation)
+    x = Math.max(safetyMargin, Math.min(courtWidth - annotationWidth - safetyMargin, x));
+    y = Math.max(safetyMargin, Math.min(courtHeight - annotationHeight - safetyMargin, y));
     
     const annotationDiv = document.createElement('div');
     annotationDiv.className = 'annotation';
