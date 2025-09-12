@@ -4,8 +4,3 @@
 [functions]
   # Directory where Netlify Functions are stored
   directory = "netlify/functions"
-
-[[redirects]]
-  from = "/.netlify/functions/*"
-  to = "/.netlify/functions/:splat"
-  status = 200

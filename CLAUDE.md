@@ -17,8 +17,11 @@ A web application for planning and analyzing Physical Education activities with 
 - **Custom Activity Spaces**: Create layouts with user-defined dimensions for any activity space
 - **Interactive Elements**: Add and position equipment (cones, balls, nets, etc.) and participants
 - **AI Analysis**: Get intelligent feedback on activity layouts using Google Gemini API
+- **Multiple Layout Suggestions**: AI provides 3 layout variations (Beginner-Friendly, Skill-Focused, High-Engagement)
+- **Activity Details Display**: Instructions, rules, and teaching points shown below court after applying layouts
 - **Visual Annotations**: Add notes and movement paths to layouts
 - **Multi-Phase Planning**: Plan warmup, main activity, and cool-down phases
+- **Analysis Persistence**: View last AI analysis without re-running
 
 ## Development
 
@@ -43,8 +46,23 @@ The app uses Netlify Functions for secure API integration with Google Gemini API
 - `test.html` - Basic element addition testing
 - `debug.html` - Function debugging interface
 
-## Recent Updates
-- Converted from sport-specific layouts to fully customizable dimensions
-- Fixed element visibility and positioning issues
-- Improved responsive design with proper aspect ratios
-- Added secure serverless API integration
+## Recent Updates (2025-09-12)
+
+### Major Enhancements
+- **Multiple Layout Suggestions**: AI now generates 3 different layout variations with complete activity details
+- **Activity Details Display**: Instructions, rules, and teaching points display below court after applying layouts
+- **Analysis Persistence**: Added "View Last Analysis" button to retrieve previous AI suggestions
+- **Improved Layout Accuracy**: Fixed coordinate system to ensure elements stay within court boundaries
+
+### Bug Fixes
+- Fixed element addition issue caused by CSS inheritance (`.playing-area > *` selector)
+- Fixed attacker/defender image loading (corrected CSS path references)
+- Removed circular backgrounds from player images for cleaner UI
+- Fixed cone shadow positioning to stay within element bounds
+- Improved percentage-to-pixel conversion for accurate element positioning
+
+### Technical Improvements
+- Added layout validation function to auto-correct invalid coordinates
+- Strengthened AI prompt constraints (20-80% coordinate range)
+- Implemented safe default positions for newly added elements
+- Added pre-validation for all element positioning
