@@ -398,6 +398,10 @@ function savePlan() {
             winningConditions: document.getElementById('winningConditions').value.trim(),
             skillFocus: document.getElementById('skillFocus').value.trim()
         },
+        courtDimensions: {
+            width: document.getElementById('customWidth').value,
+            height: document.getElementById('customHeight').value
+        },
         timestamp: new Date().toISOString()
     };
     
@@ -433,6 +437,13 @@ function loadPlan() {
         document.getElementById('activityRules').value = '';
         document.getElementById('winningConditions').value = '';
         document.getElementById('skillFocus').value = '';
+    }
+    
+    // Load court dimensions if they exist
+    if (plan.courtDimensions) {
+        document.getElementById('customWidth').value = plan.courtDimensions.width || '13.4';
+        document.getElementById('customHeight').value = plan.courtDimensions.height || '6.1';
+        applyCustomDimensions();
     }
     
     plan.items.forEach(itemData => {

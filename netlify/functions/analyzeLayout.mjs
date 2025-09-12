@@ -1,53 +1,58 @@
-exports.handler = async (event, context) => {
+export default async (request, context) => {
+  const event = {
+    httpMethod: request.method,
+    body: await request.text(),
+    headers: Object.fromEntries(request.headers)
+  };
+
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+      }
+    });
   }
 
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
+    return new Response('', {
+      status: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      },
-      body: ''
-    };
+      }
+    });
   }
 
   try {
     const { layoutData } = JSON.parse(event.body);
     
     if (!layoutData) {
-      return {
-        statusCode: 400,
+      return new Response(JSON.stringify({ error: 'Layout data is required' }), {
+        status: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        },
-        body: JSON.stringify({ error: 'Layout data is required' })
-      };
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'Content-Type': 'application/json'
+        }
+      });
     }
 
     const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
     
     if (!geminiApiKey) {
-      return {
-        statusCode: 500,
+      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+        status: 500,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        },
-        body: JSON.stringify({ error: 'API key not configured' })
-      };
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'Content-Type': 'application/json'
+        }
+      });
     }
 
     let prompt = `You are an expert Physical Education teacher with experience across multiple sports and activities. Please analyze this lesson layout and provide constructive feedback and suggestions.
@@ -202,9 +207,9 @@ POSITIONING EXAMPLES FOR REFERENCE:
 
 Make realistic improvements based on the activity type and objectives for each variation.`;
 
-    // Add timeout to prevent function from timing out
+    // Add timeout for the API request - background functions have 15 minutes total
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second (2 minute) timeout
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout for API call
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
@@ -264,15 +269,14 @@ Make realistic improvements based on the activity type and objectives for each v
         }
       }
       
-      return {
-        statusCode: 200,
+      return new Response(JSON.stringify({ suggestions, layoutJson }), {
+        status: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type',
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ suggestions, layoutJson })
-      };
+        }
+      });
     } else {
       throw new Error('No suggestions received from AI');
     }
@@ -293,14 +297,17 @@ Make realistic improvements based on the activity type and objectives for each v
       errorMessage += `Error: ${error.message}`;
     }
     
-    return {
-      statusCode: 500,
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ error: errorMessage })
-    };
+      }
+    });
   }
+};
+
+export const config = {
+  type: "experimental-background",
 };
