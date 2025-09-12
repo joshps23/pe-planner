@@ -81,42 +81,126 @@ Please provide your response in this exact format:
 ===SUGGESTIONS===
 [Your detailed text analysis and suggestions here]
 
-===LAYOUT_JSON===
+===LAYOUT_OPTIONS===
 {
-  "elements": [
+  "layouts": [
     {
-      "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender",
-      "name": "Student Name (only for attacker/defender)",
-      "position": {
-        "xPercent": 25,
-        "yPercent": 30
-      }
-    }
-  ],
-  "annotations": [
+      "name": "Beginner-Friendly Layout",
+      "description": "Simplified setup focusing on safety and basic skill development",
+      "instructions": "Clear, step-by-step instructions for how students should use this layout",
+      "rules": "Simple rules that are easy for beginners to understand and follow",
+      "teachingPoints": "Key coaching points and safety considerations for this setup",
+      "elements": [
+        {
+          "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender",
+          "name": "Student Name (only for attacker/defender)",
+          "position": {
+            "xPercent": 25,
+            "yPercent": 30
+          }
+        }
+      ],
+      "annotations": [
+        {
+          "text": "Coaching point or instruction",
+          "position": {
+            "xPercent": 50,
+            "yPercent": 20
+          }
+        }
+      ]
+    },
     {
-      "text": "Coaching point or instruction",
-      "position": {
-        "xPercent": 50,
-        "yPercent": 20
-      }
+      "name": "Skill-Focused Layout", 
+      "description": "Advanced setup targeting specific skill development",
+      "instructions": "Detailed instructions for skill-building activities and progressions",
+      "rules": "Structured rules that challenge students and promote skill mastery",
+      "teachingPoints": "Technical coaching points and skill development cues",
+      "elements": [
+        {
+          "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender",
+          "name": "Student Name (only for attacker/defender)",
+          "position": {
+            "xPercent": 40,
+            "yPercent": 25
+          }
+        }
+      ],
+      "annotations": [
+        {
+          "text": "Coaching point or instruction",
+          "position": {
+            "xPercent": 60,
+            "yPercent": 15
+          }
+        }
+      ]
+    },
+    {
+      "name": "High-Engagement Layout",
+      "description": "Dynamic setup maximizing student participation and fun",
+      "instructions": "Energetic activity instructions that keep all students actively involved",
+      "rules": "Fun, competitive rules that motivate students and maintain engagement",
+      "teachingPoints": "Engagement strategies and participation management tips",
+      "elements": [
+        {
+          "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender",
+          "name": "Student Name (only for attacker/defender)",
+          "position": {
+            "xPercent": 35,
+            "yPercent": 45
+          }
+        }
+      ],
+      "annotations": [
+        {
+          "text": "Coaching point or instruction",
+          "position": {
+            "xPercent": 70,
+            "yPercent": 25
+          }
+        }
+      ]
     }
   ]
 }
 ===END===
 
-The JSON should contain an improved layout with better positioning of existing elements and/or additional equipment that would enhance the activity. 
+Please provide 3 different layout variations with complete activity details:
+1. "Beginner-Friendly Layout" - Focus on safety, clear spacing, and basic skill development
+2. "Skill-Focused Layout" - Target specific skill development with appropriate challenge level  
+3. "High-Engagement Layout" - Maximize student participation, variety, and fun factor
+
+For each layout, you MUST provide:
+- **instructions**: Step-by-step activity instructions (2-3 sentences explaining how students use the setup)
+- **rules**: Clear rules for the activity (2-3 specific rules that students must follow)
+- **teachingPoints**: Key coaching points and safety considerations (2-3 important teaching cues)
+- **elements**: Improved positioning of existing elements and/or additional equipment
+- **annotations**: Coaching notes placed strategically on the court
+
+Each layout should be a complete, ready-to-use activity that a PE teacher can implement immediately.
 
 CRITICAL COORDINATE REQUIREMENTS:
-- xPercent and yPercent MUST be numbers between 0 and 100 (inclusive)
+- xPercent and yPercent MUST be numbers between 20 and 80 (inclusive) for optimal positioning
 - 0% = left/top edge of court, 100% = right/bottom edge of court
-- To avoid elements being cut off at edges, use safe ranges:
-  - For equipment (cones, balls, etc.): use 5-95 range
-  - For students: use 10-90 range to ensure full visibility
-- Examples of VALID coordinates: 25, 50, 75.5, 12, 88
-- Examples of INVALID coordinates: -10, 105, 110, -5
+- STRICT positioning guidelines to ensure elements stay fully visible:
+  - ALL elements: use 20-80 range for maximum safety and visibility
+  - Center positioning works best: 40-60 range for balanced layouts
+  - Edge positioning: minimum 25% from edges (25-75 range)
+  - NEVER use coordinates below 20% or above 80%
+- Examples of IDEAL coordinates: 25, 35, 45, 55, 65, 75
+- Examples of GOOD coordinates: 30, 40, 50, 60, 70
+- Examples of FORBIDDEN coordinates: 5, 10, 15, 85, 90, 95, 100, 0, -10, 105
 
-Only suggest realistic improvements based on the activity type and objectives.`;
+POSITIONING EXAMPLES FOR REFERENCE:
+- Center court element: xPercent: 50, yPercent: 50
+- Left side element: xPercent: 30, yPercent: 50  
+- Right side element: xPercent: 70, yPercent: 50
+- Front center: xPercent: 50, yPercent: 30
+- Back center: xPercent: 50, yPercent: 70
+- Safe corner positioning: xPercent: 25, yPercent: 25 (front-left)
+
+Make realistic improvements based on the activity type and objectives for each variation.`;
 
     // Add timeout to prevent function from timing out
     const controller = new AbortController();
@@ -161,18 +245,18 @@ Only suggest realistic improvements based on the activity type and objectives.`;
       let suggestions = fullResponse;
       let layoutJson = null;
       
-      if (fullResponse.includes('===SUGGESTIONS===') && fullResponse.includes('===LAYOUT_JSON===')) {
+      if (fullResponse.includes('===SUGGESTIONS===') && fullResponse.includes('===LAYOUT_OPTIONS===')) {
         try {
-          const suggestionsMatch = fullResponse.match(/===SUGGESTIONS===\s*([\s\S]*?)===LAYOUT_JSON===/);
-          const jsonMatch = fullResponse.match(/===LAYOUT_JSON===\s*([\s\S]*?)===END===/);
+          const suggestionsMatch = fullResponse.match(/===SUGGESTIONS===\s*([\s\S]*?)===LAYOUT_OPTIONS===/);
+          const layoutsMatch = fullResponse.match(/===LAYOUT_OPTIONS===\s*([\s\S]*?)===END===/);
           
           if (suggestionsMatch) {
             suggestions = suggestionsMatch[1].trim();
           }
           
-          if (jsonMatch) {
-            const jsonStr = jsonMatch[1].trim();
-            layoutJson = JSON.parse(jsonStr);
+          if (layoutsMatch) {
+            const layoutsStr = layoutsMatch[1].trim();
+            layoutJson = JSON.parse(layoutsStr);
           }
         } catch (parseError) {
           console.log('Error parsing structured response:', parseError);

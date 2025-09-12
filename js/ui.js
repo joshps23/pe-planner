@@ -50,32 +50,146 @@ function toggleSection(header) {
     section.classList.toggle('collapsed');
 }
 
-let currentSuggestedLayout = null;
+// Global variables are declared in main.js
 
 function showAISuggestions(suggestions, layoutJson = null) {
     const modalOverlay = document.getElementById('aiSuggestionsModal');
-    const modalContent = document.getElementById('aiSuggestionsModalContent');
+    const suggestionsTextDiv = document.getElementById('aiSuggestionsText');
+    const layoutOptionsContainer = document.getElementById('layoutOptionsContainer');
+    const layoutCardsDiv = document.getElementById('layoutCards');
     
-    // Store the suggested layout JSON for later use
-    currentSuggestedLayout = layoutJson;
+    // Store the suggested layouts JSON for later use
+    currentSuggestedLayouts = layoutJson;
+    selectedLayoutIndex = null;
     
-    // Format the suggestions for better readability - more careful processing
+    // Format the suggestions for better readability
     let formattedSuggestions = suggestions
-        .replace(/\n\n/g, '<br><br>')  // Double line breaks first
-        .replace(/\n/g, '<br>')        // Single line breaks
-        .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')  // Bold numbered points at start of line
-        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // Bold text between ** (non-greedy)
-        .replace(/^\s*<br>/, '');  // Remove leading breaks
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>')
+        .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/^\s*<br>/, '');
     
-    modalContent.innerHTML = formattedSuggestions;
+    suggestionsTextDiv.innerHTML = formattedSuggestions;
     
-    // Show/hide the Apply Layout button based on whether we have JSON data
-    const applyLayoutBtn = document.getElementById('applyLayoutBtn');
-    if (applyLayoutBtn) {
-        applyLayoutBtn.style.display = layoutJson ? 'inline-block' : 'none';
+    // Handle multiple layouts or single layout
+    if (layoutJson && layoutJson.layouts && Array.isArray(layoutJson.layouts)) {
+        // Multiple layouts - show options
+        layoutCardsDiv.innerHTML = '';
+        layoutJson.layouts.forEach((layout, index) => {
+            const cardElement = createLayoutCard(layout, index);
+            layoutCardsDiv.appendChild(cardElement);
+        });
+        layoutOptionsContainer.style.display = 'block';
+    } else if (layoutJson) {
+        // Single layout (backward compatibility)
+        currentSuggestedLayouts = { layouts: [layoutJson] };
+        selectedLayoutIndex = 0;
+        layoutOptionsContainer.style.display = 'none';
+    } else {
+        // No layouts
+        layoutOptionsContainer.style.display = 'none';
+    }
+    
+    // Update Apply Layout button visibility
+    updateApplyLayoutButton();
+    
+    // Show "Run New Analysis" button if this is a stored analysis being viewed
+    const newAnalysisBtn = document.getElementById('newAnalysisBtn');
+    if (newAnalysisBtn && lastAnalysisResults) {
+        newAnalysisBtn.style.display = 'inline-block';
     }
     
     modalOverlay.classList.add('show');
+}
+
+function createLayoutCard(layout, index) {
+    const card = document.createElement('div');
+    card.className = 'layout-card';
+    card.onclick = () => selectLayout(index);
+    
+    card.innerHTML = `
+        <div class="layout-card-header">
+            <h4 class="layout-card-title">${layout.name}</h4>
+            <div class="layout-card-selected-icon">✓</div>
+        </div>
+        <div class="layout-card-description">${layout.description}</div>
+        <div class="layout-card-preview">
+            <div class="layout-preview-court" id="preview-court-${index}"></div>
+        </div>
+        <div class="layout-card-details">
+            ${layout.instructions ? `<div class="layout-detail-section">
+                <strong>📋 Instructions:</strong>
+                <p>${layout.instructions}</p>
+            </div>` : ''}
+            ${layout.rules ? `<div class="layout-detail-section">
+                <strong>⚖️ Rules:</strong>
+                <p>${layout.rules}</p>
+            </div>` : ''}
+            ${layout.teachingPoints ? `<div class="layout-detail-section">
+                <strong>🎯 Teaching Points:</strong>
+                <p>${layout.teachingPoints}</p>
+            </div>` : ''}
+        </div>
+        <div class="layout-card-features">
+            ${layout.elements.length} elements • ${layout.annotations?.length || 0} notes
+        </div>
+    `;
+    
+    // Generate preview
+    setTimeout(() => generateLayoutPreview(layout, index), 10);
+    
+    return card;
+}
+
+function generateLayoutPreview(layout, index) {
+    const previewCourt = document.getElementById(`preview-court-${index}`);
+    if (!previewCourt) return;
+    
+    // Clear existing preview
+    previewCourt.innerHTML = '';
+    
+    // Add elements to preview
+    layout.elements.forEach(element => {
+        const previewElement = document.createElement('div');
+        previewElement.className = `layout-preview-element ${element.type}`;
+        previewElement.style.left = `${element.position.xPercent}%`;
+        previewElement.style.top = `${element.position.yPercent}%`;
+        previewCourt.appendChild(previewElement);
+    });
+}
+
+function selectLayout(index) {
+    selectedLayoutIndex = index;
+    
+    // Update card selection visual state
+    document.querySelectorAll('.layout-card').forEach((card, i) => {
+        card.classList.toggle('selected', i === index);
+    });
+    
+    // Update Apply Layout button
+    updateApplyLayoutButton();
+}
+
+function updateApplyLayoutButton() {
+    const applyLayoutBtn = document.getElementById('applyLayoutBtn');
+    if (applyLayoutBtn) {
+        const hasLayouts = currentSuggestedLayouts && 
+                          currentSuggestedLayouts.layouts && 
+                          currentSuggestedLayouts.layouts.length > 0;
+        
+        const hasSelection = selectedLayoutIndex !== null || 
+                           (currentSuggestedLayouts && currentSuggestedLayouts.layouts && currentSuggestedLayouts.layouts.length === 1);
+        
+        applyLayoutBtn.style.display = hasLayouts && hasSelection ? 'inline-block' : 'none';
+        
+        // Update button text based on selection
+        if (hasSelection && currentSuggestedLayouts && currentSuggestedLayouts.layouts) {
+            const layoutIndex = selectedLayoutIndex !== null ? selectedLayoutIndex : 0;
+            const layoutName = currentSuggestedLayouts.layouts[layoutIndex]?.name || 'Layout';
+            applyLayoutBtn.innerHTML = `<span>✨</span> Apply ${layoutName}`;
+        }
+    }
 }
 
 function clearAISuggestions() {

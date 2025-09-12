@@ -1,6 +1,54 @@
 // API Configuration and AI Assistant Functions
 let geminiApiKey = '';
 
+// Layout validation function to ensure coordinates are within safe bounds
+function validateLayout(layout) {
+    if (!layout || !layout.layouts || !Array.isArray(layout.layouts)) {
+        console.warn('Invalid layout structure');
+        return false;
+    }
+    
+    let hasErrors = false;
+    
+    layout.layouts.forEach((layoutVariant, layoutIndex) => {
+        if (!layoutVariant.elements || !Array.isArray(layoutVariant.elements)) {
+            console.warn(`Layout ${layoutIndex}: Missing or invalid elements array`);
+            return;
+        }
+        
+        layoutVariant.elements.forEach((element, elementIndex) => {
+            if (!element.position) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex}: Missing position`);
+                hasErrors = true;
+                return;
+            }
+            
+            const { xPercent, yPercent } = element.position;
+            
+            // Validate coordinates are within safe bounds (20-80%)
+            if (xPercent < 20 || xPercent > 80) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid xPercent ${xPercent}, should be 20-80`);
+                // Auto-fix by clamping to safe range
+                element.position.xPercent = Math.max(20, Math.min(80, xPercent));
+                hasErrors = true;
+            }
+            
+            if (yPercent < 20 || yPercent > 80) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid yPercent ${yPercent}, should be 20-80`);
+                // Auto-fix by clamping to safe range
+                element.position.yPercent = Math.max(20, Math.min(80, yPercent));
+                hasErrors = true;
+            }
+        });
+    });
+    
+    if (hasErrors) {
+        console.log('Layout validation completed with fixes applied');
+    }
+    
+    return true;
+}
+
 async function loadApiConfig() {
     // API configuration is now handled by Netlify function
     const statusDiv = document.getElementById('apiKeyStatus');
@@ -297,7 +345,13 @@ function showAIStatus(message, isError = false) {
 }
 
 async function analyzeLayout() {
-    // Capture current layout
+    // If we have last analysis results and button shows "View Last Analysis", show them
+    if (lastAnalysisResults && document.getElementById('analyzeBtn').textContent.includes('View Last Analysis')) {
+        viewLastAnalysis();
+        return;
+    }
+    
+    // Capture current layout for new analysis
     const layout = captureCourtLayout();
     
     if (layout.elements.length === 0 && layout.annotations.length === 0 && layout.paths.length === 0) {
@@ -352,8 +406,22 @@ async function analyzeLayout() {
         }
         
         if (data.suggestions) {
+            // Validate and fix layout coordinates before storing/displaying
+            if (data.layoutJson) {
+                validateLayout(data.layoutJson);
+            }
+            
+            // Store the analysis results for later retrieval
+            lastAnalysisResults = {
+                suggestions: data.suggestions,
+                layoutJson: data.layoutJson,
+                timestamp: new Date()
+            };
+            lastAnalysisTimestamp = Date.now();
+            
             showAISuggestions(data.suggestions, data.layoutJson);
             showAIStatus('Analysis complete!', false);
+            updateAnalyzeButton(); // Update button text
         } else {
             throw new Error('No suggestions received from AI');
         }
@@ -377,5 +445,37 @@ async function analyzeLayout() {
         // Reset button
         analyzeBtn.innerHTML = originalText;
         analyzeBtn.disabled = false;
+        updateAnalyzeButton(); // Update button text even after error
     }
+}
+
+function updateAnalyzeButton() {
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    if (analyzeBtn && lastAnalysisResults) {
+        analyzeBtn.innerHTML = '<span>👁️</span> View Last Analysis';
+        analyzeBtn.title = `View analysis from ${lastAnalysisResults.timestamp.toLocaleTimeString()}`;
+    }
+}
+
+function viewLastAnalysis() {
+    if (lastAnalysisResults) {
+        showAISuggestions(lastAnalysisResults.suggestions, lastAnalysisResults.layoutJson);
+    } else {
+        alert('No previous analysis found. Please run a new analysis first.');
+    }
+}
+
+function runNewAnalysis() {
+    // Clear last results to force new analysis
+    lastAnalysisResults = null;
+    lastAnalysisTimestamp = null;
+    
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    if (analyzeBtn) {
+        analyzeBtn.innerHTML = '<span>🧠</span> Analyze Layout';
+        analyzeBtn.title = 'Send court layout to AI for analysis and suggestions';
+    }
+    
+    // Run the actual analysis
+    analyzeLayout();
 }

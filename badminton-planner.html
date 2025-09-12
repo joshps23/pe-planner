@@ -178,6 +178,26 @@
                     </div>
                     <div class="net" id="courtNet"></div>
                 </div>
+                <!-- Activity Details Section (shown after applying layout) -->
+                <div id="activityDetailsSection" class="activity-details-section" style="display: none;">
+                    <div class="activity-details-card">
+                        <h3 id="activityTitle" class="activity-title"></h3>
+                        <div class="activity-detail-grid">
+                            <div class="activity-detail-item">
+                                <strong>📋 Instructions:</strong>
+                                <p id="activityInstructions"></p>
+                            </div>
+                            <div class="activity-detail-item">
+                                <strong>⚖️ Rules:</strong>
+                                <p id="activityRules"></p>
+                            </div>
+                            <div class="activity-detail-item">
+                                <strong>🎯 Teaching Points:</strong>
+                                <p id="activityTeachingPoints"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -220,19 +240,30 @@
     <div id="aiSuggestionsModal" class="ai-modal-overlay">
         <div class="ai-modal">
             <div class="ai-modal-header">
-                <h2><span>🤖</span> AI Analysis & Suggestions</h2>
+                <h2><span>🤖</span> AI Analysis & Layout Suggestions</h2>
                 <button class="ai-modal-close" onclick="closeAISuggestionsModal()">×</button>
             </div>
             <div class="ai-modal-content">
-                <div id="aiSuggestionsModalContent"></div>
+                <div id="aiSuggestionsText"></div>
+                <div id="layoutOptionsContainer" class="layout-options-container" style="display: none;">
+                    <h3>Choose a Layout Option:</h3>
+                    <div id="layoutCards" class="layout-cards"></div>
+                </div>
             </div>
             <div class="ai-modal-footer">
-                <button id="applyLayoutBtn" class="control-btn apply-layout-btn" onclick="applyLayoutFromJson()" style="display: none;">
-                    <span>✨</span> Apply Suggested Layout
-                </button>
-                <button class="control-btn" onclick="closeAISuggestionsModal()">Close</button>
-                <div class="ai-modal-tip">
-                    💡 Tip: Try different layouts and get new suggestions to improve your lesson plans!
+                <div class="ai-modal-actions">
+                    <button id="applyLayoutBtn" class="control-btn apply-layout-btn" onclick="applySelectedLayout()" style="display: none;">
+                        <span>✨</span> Apply Selected Layout
+                    </button>
+                    <button id="newAnalysisBtn" class="control-btn secondary-btn" onclick="runNewAnalysis(); closeAISuggestionsModal();" style="display: none;">
+                        <span>🔄</span> Run New Analysis
+                    </button>
+                </div>
+                <div class="ai-modal-close-section">
+                    <button class="control-btn" onclick="closeAISuggestionsModal()">Close</button>
+                    <div class="ai-modal-tip">
+                        💡 Tip: Select a layout that best fits your lesson objectives and student needs!
+                    </div>
                 </div>
             </div>
         </div>

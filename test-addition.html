@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Element Addition</title>
+    <style>
+        #court {
+            width: 600px;
+            height: 400px;
+            background: #eee;
+            border: 2px solid #333;
+            position: relative;
+            margin: 20px;
+        }
+        .draggable-item {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: red;
+            border-radius: 50%;
+        }
+        .cone {
+            background: orange;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+        .ball {
+            background: yellow;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Test Element Addition</h2>
+    <div id="court"></div>
+    <button onclick="testAddition()">Add Test Element</button>
+    <button onclick="addTestEquipment('cone')">Add Cone</button>
+    <button onclick="addTestEquipment('ball')">Add Ball</button>
+    <div id="log"></div>
+
+    <script>
+        let itemCounter = 0;
+        const currentPhase = 'main';
+
+        function logMessage(msg) {
+            const log = document.getElementById('log');
+            log.innerHTML += '<p>' + msg + '</p>';
+            console.log(msg);
+        }
+
+        function testAddition() {
+            const court = document.getElementById('court');
+            const item = document.createElement('div');
+            item.className = 'draggable-item';
+            item.style.left = '50px';
+            item.style.top = '50px';
+            item.style.width = '30px';
+            item.style.height = '30px';
+            item.style.background = 'blue';
+            court.appendChild(item);
+            logMessage('Simple element added');
+        }
+
+        function addTestEquipment(type) {
+            const court = document.getElementById('court');
+            if (!court) {
+                logMessage('ERROR: Court element not found!');
+                return;
+            }
+            
+            logMessage('Adding equipment: ' + type);
+            
+            const item = document.createElement('div');
+            item.className = `draggable-item ${type}`;
+            item.id = 'item-' + (++itemCounter);
+            item.dataset.phase = currentPhase;
+            
+            // Use safe default position (40% from edges)
+            const safeXPercent = 40; 
+            const safeYPercent = 40;
+            const safetyMargin = 15;
+            
+            const elementWidth = 30; // Default element size
+            const elementHeight = 30;
+            
+            const courtWidth = court.clientWidth;
+            const courtHeight = court.clientHeight;
+            const availableWidth = courtWidth - elementWidth - (2 * safetyMargin);
+            const availableHeight = courtHeight - elementHeight - (2 * safetyMargin);
+            
+            const safeX = safetyMargin + (safeXPercent / 100) * availableWidth;
+            const safeY = safetyMargin + (safeYPercent / 100) * availableHeight;
+            
+            logMessage(`Court dimensions: ${courtWidth}x${courtHeight}`);
+            logMessage(`Calculated position: ${safeX}, ${safeY}`);
+            
+            item.style.left = safeX + 'px';
+            item.style.top = safeY + 'px';
+            item.style.position = 'absolute';
+            
+            court.appendChild(item);
+            
+            logMessage('Equipment added to court: ' + item.id);
+        }
+    </script>
+</body>
+</html>

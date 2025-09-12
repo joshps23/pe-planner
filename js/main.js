@@ -10,6 +10,11 @@ let timerInterval = null;
 let timerSeconds = 0;
 let lessonPlans = JSON.parse(localStorage.getItem('lessonPlans') || '{}');
 let currentLayout = 'custom';
+let currentSuggestedLayout = null; // For backward compatibility
+let currentSuggestedLayouts = null; // For multi-layout support
+let selectedLayoutIndex = null;
+let lastAnalysisResults = null; // Store last analysis for retrieval
+let lastAnalysisTimestamp = null;
 
 // Custom activity space specification
 const courtSpecs = {
@@ -61,8 +66,24 @@ function addEquipment(type) {
     item.id = 'item-' + (++itemCounter);
     item.dataset.phase = currentPhase;
     
-    item.style.left = '50px';
-    item.style.top = '50px';
+    // Use safe default position (40% from edges)
+    const safeXPercent = 40; 
+    const safeYPercent = 40;
+    const safetyMargin = 15;
+    
+    const elementWidth = 30; // Default element size
+    const elementHeight = 30;
+    
+    const courtWidth = court.clientWidth;
+    const courtHeight = court.clientHeight;
+    const availableWidth = courtWidth - elementWidth - (2 * safetyMargin);
+    const availableHeight = courtHeight - elementHeight - (2 * safetyMargin);
+    
+    const safeX = safetyMargin + (safeXPercent / 100) * availableWidth;
+    const safeY = safetyMargin + (safeYPercent / 100) * availableHeight;
+    
+    item.style.left = safeX + 'px';
+    item.style.top = safeY + 'px';
     item.style.position = 'absolute';
     
     const removeBtn = document.createElement('button');
@@ -100,18 +121,39 @@ function addStudent(type) {
         const nameLabel = document.createElement('div');
         nameLabel.textContent = name.trim();
         nameLabel.style.position = 'absolute';
-        nameLabel.style.bottom = '-15px';
+        nameLabel.style.bottom = '-22px';
         nameLabel.style.left = '50%';
         nameLabel.style.transform = 'translateX(-50%)';
-        nameLabel.style.fontSize = '8px';
+        nameLabel.style.fontSize = '11px';
         nameLabel.style.color = type === 'attacker' ? '#e74c3c' : '#3498db';
         nameLabel.style.fontWeight = 'bold';
         nameLabel.style.whiteSpace = 'nowrap';
+        nameLabel.style.textAlign = 'center';
+        nameLabel.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        nameLabel.style.padding = '2px 6px';
+        nameLabel.style.borderRadius = '4px';
+        nameLabel.style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)';
         item.appendChild(nameLabel);
     }
     
-    item.style.left = '100px';
-    item.style.top = '100px';
+    // Use safe default position for students (45% from edges for variation)
+    const safeXPercent = 45; 
+    const safeYPercent = 45;
+    const safetyMargin = 15;
+    
+    const elementWidth = 60; // Student size
+    const elementHeight = 60;
+    
+    const courtWidth = court.clientWidth;
+    const courtHeight = court.clientHeight;
+    const availableWidth = courtWidth - elementWidth - (2 * safetyMargin);
+    const availableHeight = courtHeight - elementHeight - (2 * safetyMargin);
+    
+    const safeX = safetyMargin + (safeXPercent / 100) * availableWidth;
+    const safeY = safetyMargin + (safeYPercent / 100) * availableHeight;
+    
+    item.style.left = safeX + 'px';
+    item.style.top = safeY + 'px';
     item.style.position = 'absolute';
     
     const removeBtn = document.createElement('button');
@@ -222,6 +264,9 @@ function clearCourt() {
     const items = court.querySelectorAll('.draggable-item, .path-line, .path-arrow, .annotation');
     items.forEach(item => court.removeChild(item));
     itemCounter = 0;
+    
+    // Hide activity details when clearing court
+    hideActivityDetails();
 }
 
 function changeLayout() {
@@ -738,38 +783,169 @@ function applyLayoutFromJson() {
     }
 }
 
+function displayActivityDetails(layout) {
+    const detailsSection = document.getElementById('activityDetailsSection');
+    const titleElement = document.getElementById('activityTitle');
+    const instructionsElement = document.getElementById('activityInstructions');
+    const rulesElement = document.getElementById('activityRules');
+    const teachingPointsElement = document.getElementById('activityTeachingPoints');
+    
+    if (!detailsSection) return;
+    
+    // Set the content
+    titleElement.textContent = layout.name || 'Activity Layout';
+    instructionsElement.textContent = layout.instructions || 'No instructions provided';
+    rulesElement.textContent = layout.rules || 'No rules provided';
+    teachingPointsElement.textContent = layout.teachingPoints || 'No teaching points provided';
+    
+    // Show the section with smooth animation
+    detailsSection.style.display = 'block';
+    setTimeout(() => {
+        detailsSection.classList.add('show');
+    }, 10);
+}
+
+function hideActivityDetails() {
+    const detailsSection = document.getElementById('activityDetailsSection');
+    if (detailsSection) {
+        detailsSection.classList.remove('show');
+        setTimeout(() => {
+            detailsSection.style.display = 'none';
+        }, 300);
+    }
+}
+
+function applySelectedLayout() {
+    if (!currentSuggestedLayouts || !currentSuggestedLayouts.layouts) {
+        alert('No layout suggestions available to apply.');
+        return;
+    }
+    
+    // Determine which layout to apply
+    let layoutToApply;
+    if (selectedLayoutIndex !== null && currentSuggestedLayouts.layouts[selectedLayoutIndex]) {
+        layoutToApply = currentSuggestedLayouts.layouts[selectedLayoutIndex];
+    } else if (currentSuggestedLayouts.layouts.length === 1) {
+        layoutToApply = currentSuggestedLayouts.layouts[0];
+    } else {
+        alert('Please select a layout option first.');
+        return;
+    }
+    
+    // Confirm with user before clearing current layout
+    if (!confirm(`This will replace your current layout with "${layoutToApply.name}". Continue?`)) {
+        return;
+    }
+    
+    const court = document.getElementById('court');
+    
+    // Clear existing draggable items and annotations
+    court.querySelectorAll('.draggable-item, .annotation, .path-line, .path-arrow').forEach(item => {
+        item.remove();
+    });
+    
+    // Reset item counter to ensure unique IDs
+    itemCounter = 0;
+    
+    try {
+        // Apply elements (equipment and students)
+        if (layoutToApply.elements) {
+            layoutToApply.elements.forEach(element => {
+                createElementFromJson(element, court);
+            });
+        }
+        
+        // Apply annotations
+        if (layoutToApply.annotations) {
+            layoutToApply.annotations.forEach(annotation => {
+                createAnnotationFromJson(annotation, court);
+            });
+        }
+        
+        // Show success message
+        showSuccessMessage(`"${layoutToApply.name}" applied successfully!`);
+        
+        // Display activity details below the court
+        displayActivityDetails(layoutToApply);
+        
+        // Close the suggestions modal
+        closeAISuggestionsModal();
+        
+    } catch (error) {
+        console.error('Error applying layout:', error);
+        alert('Error applying layout. Please check the console for details.');
+    }
+}
+
 function createElementFromJson(element, court) {
     // Convert percentage positions to pixels with validation
     const courtWidth = court.clientWidth;
     const courtHeight = court.clientHeight;
     
-    // Validate and clamp coordinates to 0-100 range
+    // Validate and clamp coordinates to safe range (20-80%)
     let xPercent = element.position.xPercent || 50;
     let yPercent = element.position.yPercent || 50;
     
-    // Clamp to valid range
-    xPercent = Math.max(0, Math.min(100, xPercent));
-    yPercent = Math.max(0, Math.min(100, yPercent));
+    // Pre-validate coordinates with strict safe bounds
+    const originalX = xPercent;
+    const originalY = yPercent;
+    
+    // Clamp to safe range (20-80%) to ensure elements stay within court boundaries
+    xPercent = Math.max(20, Math.min(80, xPercent));
+    yPercent = Math.max(20, Math.min(80, yPercent));
     
     // Log warning if coordinates were adjusted
-    if (xPercent !== element.position.xPercent || yPercent !== element.position.yPercent) {
-        console.warn(`Adjusted coordinates for ${element.type}: (${element.position.xPercent}, ${element.position.yPercent}) -> (${xPercent}, ${yPercent})`);
+    if (xPercent !== originalX || yPercent !== originalY) {
+        console.warn(`Pre-validated coordinates for ${element.type}: (${originalX}, ${originalY}) -> (${xPercent}, ${yPercent}) - clamped to safe range`);
     }
     
-    // Calculate element size for boundary checking
-    const isStudent = (element.type === 'attacker' || element.type === 'defender');
-    const elementSize = isStudent ? 100 : 40; // Students are 100px, equipment is 40px
+    // Calculate element size for boundary checking based on type
+    let elementWidth, elementHeight;
     
-    // Calculate pixel positions with boundary consideration
-    const maxX = courtWidth - elementSize;
-    const maxY = courtHeight - elementSize;
+    switch (element.type) {
+        case 'attacker':
+        case 'defender':
+            elementWidth = elementHeight = 60;
+            break;
+        case 'cone':
+            elementWidth = elementHeight = 30;
+            break;
+        case 'ball':
+            elementWidth = elementHeight = 25;
+            break;
+        case 'equipment-net':
+        case 'net':
+            elementWidth = 80;
+            elementHeight = 20;
+            break;
+        case 'bench':
+            elementWidth = 60;
+            elementHeight = 20;
+            break;
+        case 'hoop':
+            elementWidth = elementHeight = 40;
+            break;
+        default:
+            // Default size for other equipment
+            elementWidth = elementHeight = 30;
+    }
     
-    let x = (xPercent / 100) * courtWidth;
-    let y = (yPercent / 100) * courtHeight;
+    // Calculate pixel positions with proper boundary consideration
+    // Use a safety margin of 10px to prevent elements from touching the edges
+    const safetyMargin = 10;
     
-    // Ensure elements don't go past court boundaries
-    x = Math.max(0, Math.min(maxX, x));
-    y = Math.max(0, Math.min(maxY, y));
+    // Calculate available space for positioning (court minus element size minus margins)
+    const availableWidth = courtWidth - elementWidth - (2 * safetyMargin);
+    const availableHeight = courtHeight - elementHeight - (2 * safetyMargin);
+    
+    // Convert percentage to pixel position within available space
+    // 0% = safetyMargin, 100% = courtWidth - elementWidth - safetyMargin
+    let x = safetyMargin + (xPercent / 100) * availableWidth;
+    let y = safetyMargin + (yPercent / 100) * availableHeight;
+    
+    // Double-check boundaries (should not be needed with correct calculation)
+    x = Math.max(safetyMargin, Math.min(courtWidth - elementWidth - safetyMargin, x));
+    y = Math.max(safetyMargin, Math.min(courtHeight - elementHeight - safetyMargin, y));
     
     if (element.type === 'attacker' || element.type === 'defender') {
         // Create student element
@@ -920,6 +1096,10 @@ window.deletePlan = deletePlan;
 window.exportToPDF = exportToPDF;
 window.analyzeLayout = analyzeLayout;
 window.applyLayoutFromJson = applyLayoutFromJson;
+window.applySelectedLayout = applySelectedLayout;
+window.viewLastAnalysis = viewLastAnalysis;
+window.runNewAnalysis = runNewAnalysis;
+window.updateAnalyzeButton = updateAnalyzeButton;
 window.closeAISuggestionsModal = closeAISuggestionsModal;
 window.toggleSection = toggleSection;
 window.closeOnboarding = closeOnboarding;
