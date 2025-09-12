@@ -17,22 +17,12 @@
             <div class="controls">
                 <div class="control-section">
                     <div class="control-header" onclick="toggleSection(this)">
-                        <h3><span>🏟️</span> Layout Format</h3>
+                        <h3><span>📏</span> Space Dimensions</h3>
                     </div>
                     <div class="control-content">
-                        <div style="margin-bottom: 15px;">
-                            <label for="layoutType" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 13px;">Select Layout:</label>
-                            <select id="layoutType" onchange="changeLayout()" style="width: 100%; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; outline: none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
-                                <option value="badminton">Badminton Court</option>
-                                <option value="basketball">Basketball Court</option>
-                                <option value="volleyball">Volleyball Court</option>
-                                <option value="soccer">Soccer Field</option>
-                                <option value="tennis">Tennis Court</option>
-                                <option value="blank">Blank Space (Custom)</option>
-                            </select>
-                        </div>
-                        <div id="customDimensions" style="margin-top: 15px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 13px;">Court Dimensions (meters):</label>
+                        <input type="hidden" id="layoutType" value="custom">
+                        <div id="customDimensions">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 13px;">Activity Space Dimensions (meters):</label>
                             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                                 <div style="flex: 1;">
                                     <label style="display: block; margin-bottom: 3px; font-size: 12px; color: #64748b;">Width (m):</label>

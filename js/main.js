@@ -9,70 +9,12 @@ let drawingStartPoint = null;
 let timerInterval = null;
 let timerSeconds = 0;
 let lessonPlans = JSON.parse(localStorage.getItem('lessonPlans') || '{}');
-let currentLayout = 'badminton';
+let currentLayout = 'custom';
 
-// Court specifications with accurate dimensions and proportions
+// Custom activity space specification
 const courtSpecs = {
-    badminton: {
-        name: 'Badminton Court',
-        realDimensions: { width: 13.4, height: 6.1 }, // meters
-        aspectRatio: 13.4 / 6.1, // 2.2:1
-        lines: {
-            serviceLineShort: 1.98 / 6.1,  // % from net (1.98m from net line)
-            serviceLineLong: 0.76 / 6.1,   // % from back (0.76m from back line)
-            centerLine: true,
-            doublesLines: true,
-            netPosition: 0.5  // center of court
-        }
-    },
-    basketball: {
-        name: 'Basketball Court',
-        realDimensions: { width: 28, height: 15 }, // meters
-        aspectRatio: 28 / 15, // 1.87:1
-        lines: {
-            freeThrowLine: 4.6 / 15,      // % from baseline (4.6m from baseline)
-            threePointLine: 6.75 / 15,    // % from baseline (6.75m from basket)
-            centerCircle: true,
-            centerCircleRadius: 1.8 / 15, // % of court height (1.8m radius)
-            keyWidth: 4.9 / 28,          // % of court width (4.9m wide)
-            keyLength: 5.8 / 15          // % of court height (5.8m long)
-        }
-    },
-    volleyball: {
-        name: 'Volleyball Court',
-        realDimensions: { width: 18, height: 9 }, // meters
-        aspectRatio: 18 / 9, // 2:1
-        lines: {
-            attackLine: 3 / 9,    // % from net (3m from net)
-            serviceArea: true,
-            netPosition: 0.5      // center of court
-        }
-    },
-    tennis: {
-        name: 'Tennis Court',
-        realDimensions: { width: 23.77, height: 10.97 }, // meters
-        aspectRatio: 23.77 / 10.97, // 2.17:1
-        lines: {
-            serviceBox: 6.4 / 10.97,     // % from net (6.4m from net)
-            baseline: 11.885 / 23.77,    // % from side (11.885m from net)
-            doublesLine: 1.37 / 23.77,   // % from singles line (1.37m)
-            netPosition: 0.5             // center of court
-        }
-    },
-    soccer: {
-        name: 'Soccer Field',
-        realDimensions: { width: 100, height: 50 }, // meters (approximate)
-        aspectRatio: 100 / 50, // 2:1
-        lines: {
-            penaltyArea: 16.5 / 50,      // % from goal (16.5m from goal)
-            goalArea: 5.5 / 50,          // % from goal (5.5m from goal)
-            centerCircle: true,
-            centerCircleRadius: 9.15 / 50, // % of field width (9.15m radius)
-            goalWidth: 7.32 / 100        // % of field length (7.32m wide)
-        }
-    },
-    blank: {
-        name: 'Custom Space',
+    custom: {
+        name: 'Custom Activity Space',
         realDimensions: { width: 20, height: 10 }, // default meters
         aspectRatio: 2, // default 2:1
         lines: {}
@@ -107,6 +49,13 @@ function getMousePosition(e, court) {
 
 function addEquipment(type) {
     const court = document.getElementById('court');
+    if (!court) {
+        console.error('Court element not found!');
+        return;
+    }
+    
+    console.log('Adding equipment:', type);
+    
     const item = document.createElement('div');
     item.className = `draggable-item ${type}`;
     item.id = 'item-' + (++itemCounter);
@@ -114,6 +63,7 @@ function addEquipment(type) {
     
     item.style.left = '50px';
     item.style.top = '50px';
+    item.style.position = 'absolute';
     
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-btn';
@@ -126,12 +76,21 @@ function addEquipment(type) {
     item.appendChild(removeBtn);
     court.appendChild(item);
     
+    console.log('Equipment added to court:', item);
+    
     makeDraggable(item);
 }
 
 function addStudent(type) {
     const name = prompt(`Enter student name (or leave blank for ${type.toUpperCase()}):`)
     const court = document.getElementById('court');
+    if (!court) {
+        console.error('Court element not found!');
+        return;
+    }
+    
+    console.log('Adding student:', type);
+    
     const item = document.createElement('div');
     item.className = `draggable-item student ${type}`;
     item.id = 'item-' + (++itemCounter);
@@ -153,6 +112,7 @@ function addStudent(type) {
     
     item.style.left = '100px';
     item.style.top = '100px';
+    item.style.position = 'absolute';
     
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-btn';
@@ -164,6 +124,8 @@ function addStudent(type) {
     
     item.appendChild(removeBtn);
     court.appendChild(item);
+    
+    console.log('Student added to court:', item);
     
     makeDraggable(item);
 }
@@ -263,26 +225,19 @@ function clearCourt() {
 }
 
 function changeLayout() {
-    const layoutType = document.getElementById('layoutType').value;
     const court = document.getElementById('court');
-    const courtLines = document.getElementById('courtLines');
-    const courtNet = document.getElementById('courtNet');
     const customDimensions = document.getElementById('customDimensions');
     
-    // Remove all existing layout classes
-    court.className = 'playing-area';
+    // Set standard class for custom space
+    court.className = 'playing-area custom-space';
     
-    // Add new layout class
-    court.classList.add(layoutType + '-court');
-    if (layoutType === 'blank') {
-        court.classList.add('blank-space');
-    }
-    
-    // Auto-fill dimensions with default values for the selected court type
-    const spec = courtSpecs[layoutType];
+    // Initialize with default dimensions if not set
+    const spec = courtSpecs.custom;
     if (spec && spec.realDimensions) {
-        document.getElementById('customWidth').value = spec.realDimensions.width;
-        document.getElementById('customHeight').value = spec.realDimensions.height;
+        const widthInput = document.getElementById('customWidth');
+        const heightInput = document.getElementById('customHeight');
+        if (!widthInput.value) widthInput.value = spec.realDimensions.width;
+        if (!heightInput.value) heightInput.value = spec.realDimensions.height;
     }
     
     // Always show custom dimensions
@@ -290,226 +245,52 @@ function changeLayout() {
         customDimensions.style.display = 'block';
     }
     
-    // Apply dimensions - this will use defaults and remove inline styles to let CSS classes work
+    // Apply custom dimensions
     applyCustomDimensions();
     
-    // Update court lines based on layout
-    updateCourtLines(layoutType);
+    // Clear any existing lines (custom spaces start clean)
+    updateCourtLines('custom');
     
-    currentLayout = layoutType;
+    currentLayout = 'custom';
 }
 
 function updateCourtLines(layoutType) {
     const courtLines = document.getElementById('courtLines');
     const courtNet = document.getElementById('courtNet');
     
-    // Clear existing lines and nets
+    // Clear existing lines and hide nets for custom spaces
     courtLines.innerHTML = '';
     courtNet.style.display = 'none';
     
-    const spec = courtSpecs[layoutType];
-    if (!spec || !spec.lines) return;
-    
-    const lines = spec.lines;
-    const margin = 20; // pixels margin from edge
-    
-    switch(layoutType) {
-        case 'badminton':
-            courtLines.innerHTML = `
-                <!-- Outer boundary -->
-                <div class="court-line outer-boundary" style="border: 3px solid white; width: calc(100% - ${margin*2}px); height: calc(100% - ${margin*2}px); left: ${margin}px; top: ${margin}px; position: absolute;"></div>
-                
-                <!-- Center line (net line) -->
-                <div class="court-line center-line" style="width: 2px; height: calc(100% - ${margin*2}px); left: 50%; top: ${margin}px; transform: translateX(-50%); background: white; position: absolute;"></div>
-                
-                <!-- Service lines - short service line (1.98m from net) -->
-                <div class="court-line front-service-line" style="width: calc(100% - ${margin*2}px); height: 2px; left: ${margin}px; top: calc(50% - ${lines.serviceLineShort * 50}%); background: white; position: absolute;"></div>
-                <div class="court-line front-service-line" style="width: calc(100% - ${margin*2}px); height: 2px; left: ${margin}px; top: calc(50% + ${lines.serviceLineShort * 50}%); background: white; position: absolute;"></div>
-                
-                <!-- Back service lines (0.76m from back) -->
-                <div class="court-line back-service-line" style="width: calc(100% - ${margin*2}px); height: 2px; left: ${margin}px; top: calc(${margin + lines.serviceLineLong * 50}px); background: white; position: absolute;"></div>
-                <div class="court-line back-service-line" style="width: calc(100% - ${margin*2}px); height: 2px; left: ${margin}px; top: calc(100% - ${margin + lines.serviceLineLong * 50}px); background: white; position: absolute;"></div>
-            `;
-            courtNet.style.display = 'block';
-            break;
-            
-        case 'basketball':
-            const keyWidth = lines.keyWidth * 100; // % of court width
-            const keyLength = lines.keyLength * 100; // % of court height
-            const freeThrowPos = lines.freeThrowLine * 100; // % from baseline
-            const circleRadius = lines.centerCircleRadius * 200; // diameter as % of height
-            
-            courtLines.innerHTML = `
-                <!-- Outer boundary -->
-                <div class="court-line outer-boundary" style="border: 3px solid white; width: calc(100% - ${margin*2}px); height: calc(100% - ${margin*2}px); left: ${margin}px; top: ${margin}px; position: absolute;"></div>
-                
-                <!-- Center line -->
-                <div class="court-line center-line" style="width: calc(100% - ${margin*2}px); height: 2px; left: ${margin}px; top: 50%; transform: translateY(-50%); background: white; position: absolute;"></div>
-                
-                <!-- Center circle -->
-                <div class="court-line center-circle" style="width: ${circleRadius}%; height: ${circleRadius}%; border: 2px solid white; border-radius: 50%; left: calc(50% - ${circleRadius/2}%); top: calc(50% - ${circleRadius/2}%); position: absolute;"></div>
-                
-                <!-- Key areas -->
-                <div class="court-line key-top" style="width: ${keyWidth}%; height: ${keyLength}%; border: 2px solid white; border-top: none; left: calc(50% - ${keyWidth/2}%); top: ${margin}px; position: absolute;"></div>
-                <div class="court-line key-bottom" style="width: ${keyWidth}%; height: ${keyLength}%; border: 2px solid white; border-bottom: none; left: calc(50% - ${keyWidth/2}%); bottom: ${margin}px; position: absolute;"></div>
-                
-                <!-- Free throw circles -->
-                <div class="court-line ft-circle-top" style="width: ${circleRadius}%; height: ${circleRadius}%; border: 2px solid white; border-radius: 50%; left: calc(50% - ${circleRadius/2}%); top: calc(${freeThrowPos}% - ${circleRadius/2}%); position: absolute;"></div>
-                <div class="court-line ft-circle-bottom" style="width: ${circleRadius}%; height: ${circleRadius}%; border: 2px solid white; border-radius: 50%; left: calc(50% - ${circleRadius/2}%); bottom: calc(${freeThrowPos}% - ${circleRadius/2}%); position: absolute;"></div>
-            `;
-            break;
-            
-        case 'volleyball':
-            const attackLine = lines.attackLine * 100; // % from center
-            
-            courtLines.innerHTML = `
-                <!-- Outer boundary -->
-                <div class="court-line outer-boundary" style="border: 3px solid white; width: calc(100% - ${margin*2}px); height: calc(100% - ${margin*2}px); left: ${margin}px; top: ${margin}px; position: absolute;"></div>
-                
-                <!-- Center line (net line) -->
-                <div class="court-line center-line" style="width: calc(100% - ${margin*2}px); height: 2px; left: ${margin}px; top: 50%; transform: translateY(-50%); background: white; position: absolute;"></div>
-                
-                <!-- Attack lines (3m from net) -->
-                <div class="court-line attack-line" style="width: calc(100% - ${margin*2}px); height: 2px; left: ${margin}px; top: calc(50% - ${attackLine/2}%); background: white; position: absolute;"></div>
-                <div class="court-line attack-line" style="width: calc(100% - ${margin*2}px); height: 2px; left: ${margin}px; top: calc(50% + ${attackLine/2}%); background: white; position: absolute;"></div>
-            `;
-            courtNet.style.display = 'block';
-            courtNet.style.height = '8px';
-            break;
-            
-        case 'tennis':
-            const serviceBox = lines.serviceBox * 100; // % from center
-            
-            courtLines.innerHTML = `
-                <!-- Outer boundary -->
-                <div class="court-line outer-boundary" style="border: 3px solid white; width: calc(100% - ${margin*2}px); height: calc(100% - ${margin*2}px); left: ${margin}px; top: ${margin}px; position: absolute;"></div>
-                
-                <!-- Net line (center) -->
-                <div class="court-line center-line" style="width: 2px; height: calc(100% - ${margin*2}px); left: 50%; top: ${margin}px; transform: translateX(-50%); background: white; position: absolute;"></div>
-                
-                <!-- Service lines -->
-                <div class="court-line service-line" style="width: calc(50% - ${margin}px); height: 2px; left: ${margin}px; top: calc(50% - ${serviceBox/2}%); background: white; position: absolute;"></div>
-                <div class="court-line service-line" style="width: calc(50% - ${margin}px); height: 2px; right: ${margin}px; top: calc(50% - ${serviceBox/2}%); background: white; position: absolute;"></div>
-                <div class="court-line service-line" style="width: calc(50% - ${margin}px); height: 2px; left: ${margin}px; top: calc(50% + ${serviceBox/2}%); background: white; position: absolute;"></div>
-                <div class="court-line service-line" style="width: calc(50% - ${margin}px); height: 2px; right: ${margin}px; top: calc(50% + ${serviceBox/2}%); background: white; position: absolute;"></div>
-                
-                <!-- Service box center lines -->
-                <div class="court-line service-center" style="width: calc(25% - ${margin/2}px); height: 2px; left: ${margin}px; top: 50%; transform: translateY(-50%); background: white; position: absolute;"></div>
-                <div class="court-line service-center" style="width: calc(25% - ${margin/2}px); height: 2px; right: ${margin}px; top: 50%; transform: translateY(-50%); background: white; position: absolute;"></div>
-            `;
-            courtNet.style.display = 'block';
-            courtNet.style.height = '4px';
-            break;
-            
-        case 'soccer':
-            const penaltyArea = lines.penaltyArea * 100; // % of width
-            const goalArea = lines.goalArea * 100; // % of width  
-            const circleRadius = lines.centerCircleRadius * 200; // diameter as % of width
-            
-            courtLines.innerHTML = `
-                <!-- Outer boundary -->
-                <div class="court-line outer-boundary" style="border: 3px solid white; width: calc(100% - ${margin*2}px); height: calc(100% - ${margin*2}px); left: ${margin}px; top: ${margin}px; position: absolute;"></div>
-                
-                <!-- Center line -->
-                <div class="court-line center-line" style="width: 2px; height: calc(100% - ${margin*2}px); left: 50%; top: ${margin}px; transform: translateX(-50%); background: white; position: absolute;"></div>
-                
-                <!-- Center circle -->
-                <div class="court-line center-circle" style="width: ${circleRadius}%; height: ${circleRadius}%; border: 2px solid white; border-radius: 50%; left: calc(50% - ${circleRadius/2}%); top: calc(50% - ${circleRadius/2}%); position: absolute;"></div>
-                
-                <!-- Penalty areas -->
-                <div class="court-line penalty-left" style="width: ${penaltyArea}%; height: 60%; border: 2px solid white; border-left: none; left: ${margin}px; top: 20%; position: absolute;"></div>
-                <div class="court-line penalty-right" style="width: ${penaltyArea}%; height: 60%; border: 2px solid white; border-right: none; right: ${margin}px; top: 20%; position: absolute;"></div>
-                
-                <!-- Goal areas -->
-                <div class="court-line goal-left" style="width: ${goalArea}%; height: 30%; border: 2px solid white; border-left: none; left: ${margin}px; top: 35%; position: absolute;"></div>
-                <div class="court-line goal-right" style="width: ${goalArea}%; height: 30%; border: 2px solid white; border-right: none; right: ${margin}px; top: 35%; position: absolute;"></div>
-            `;
-            break;
-            
-        case 'blank':
-            // No lines for blank space
-            break;
-    }
+    // For custom layouts, we keep it clean with no predefined lines
+    // Users can add their own markings using cones, markers, and drawing tools
 }
 
 function applyCustomDimensions() {
     const width = parseFloat(document.getElementById('customWidth').value) || 20;
     const height = parseFloat(document.getElementById('customHeight').value) || 10;
     const court = document.getElementById('court');
-    const layoutType = document.getElementById('layoutType').value;
+    const layoutType = 'custom'; // Always custom now
     
-    const spec = courtSpecs[layoutType];
-    const defaultWidth = spec?.realDimensions?.width || 20;
-    const defaultHeight = spec?.realDimensions?.height || 10;
+    // Apply custom aspect ratio
+    const customRatio = width / height;
+    court.style.aspectRatio = `${customRatio} / 1`;
     
-    // Check if dimensions match the default values for this court type
-    const isUsingDefaults = (width === defaultWidth && height === defaultHeight);
-    
-    if (isUsingDefaults) {
-        // Remove inline aspect ratio to let CSS class handle it
-        court.style.aspectRatio = '';
-        
-        // Reset courtSpecs to original default values
-        if (spec) {
-            const originalSpec = getOriginalCourtSpec(layoutType);
-            if (originalSpec) {
-                courtSpecs[layoutType].realDimensions = { ...originalSpec.realDimensions };
-                courtSpecs[layoutType].aspectRatio = originalSpec.aspectRatio;
-            }
-        }
-        
-        // Update the aspect ratio display with default value
-        updateAspectRatioDisplay(spec?.aspectRatio || (width / height));
-    } else {
-        // Apply custom aspect ratio
-        const customRatio = width / height;
-        court.style.aspectRatio = `${customRatio} / 1`;
-        
-        // Update the courtSpecs for the current layout type
-        if (courtSpecs[layoutType]) {
-            courtSpecs[layoutType].realDimensions = { width: width, height: height };
-            courtSpecs[layoutType].aspectRatio = customRatio;
-        }
-        
-        // Update the aspect ratio display
-        updateAspectRatioDisplay(customRatio);
+    // Update the courtSpecs for the custom layout
+    if (courtSpecs.custom) {
+        courtSpecs.custom.realDimensions = { width: width, height: height };
+        courtSpecs.custom.aspectRatio = customRatio;
     }
     
-    // Update court lines with new dimensions (they scale proportionally)
+    // Update the aspect ratio display
+    updateAspectRatioDisplay(customRatio);
+    
+    // Update court lines (will be simplified to remove sport-specific lines)
     updateCourtLines(layoutType);
     
     // Don't clear court items - let users keep their placements with new dimensions
 }
 
-function getOriginalCourtSpec(layoutType) {
-    const originalSpecs = {
-        badminton: {
-            realDimensions: { width: 13.4, height: 6.1 },
-            aspectRatio: 13.4 / 6.1
-        },
-        basketball: {
-            realDimensions: { width: 28, height: 15 },
-            aspectRatio: 28 / 15
-        },
-        volleyball: {
-            realDimensions: { width: 18, height: 9 },
-            aspectRatio: 18 / 9
-        },
-        tennis: {
-            realDimensions: { width: 23.77, height: 10.97 },
-            aspectRatio: 23.77 / 10.97
-        },
-        soccer: {
-            realDimensions: { width: 100, height: 50 },
-            aspectRatio: 100 / 50
-        },
-        blank: {
-            realDimensions: { width: 20, height: 10 },
-            aspectRatio: 2
-        }
-    };
-    return originalSpecs[layoutType];
-}
 
 function updateAspectRatioDisplay(ratio) {
     const display = document.getElementById('aspectRatioDisplay');
@@ -868,8 +649,8 @@ window.addEventListener('load', () => {
     updatePlanSelect();
     switchPhase('warmup');
     
-    // Initialize with default badminton court dimensions
-    const defaultSpec = courtSpecs.badminton;
+    // Initialize with default custom dimensions
+    const defaultSpec = courtSpecs.custom;
     document.getElementById('customWidth').value = defaultSpec.realDimensions.width;
     document.getElementById('customHeight').value = defaultSpec.realDimensions.height;
     applyCustomDimensions(); // This will set the aspect ratio display
@@ -1121,3 +902,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set initial court layout (default is badminton)
     changeLayout();
 });
+
+// Make all functions globally accessible for HTML onclick handlers
+window.addEquipment = addEquipment;
+window.addStudent = addStudent;
+window.addAnnotation = addAnnotation;
+window.clearCourt = clearCourt;
+window.clearPaths = clearPaths;
+window.changeLayout = changeLayout;
+window.switchPhase = switchPhase;
+window.toggleDrawing = toggleDrawing;
+window.startTimer = startTimer;
+window.stopTimer = stopTimer;
+window.savePlan = savePlan;
+window.loadPlan = loadPlan;
+window.deletePlan = deletePlan;
+window.exportToPDF = exportToPDF;
+window.analyzeLayout = analyzeLayout;
+window.applyLayoutFromJson = applyLayoutFromJson;
+window.closeAISuggestionsModal = closeAISuggestionsModal;
+window.toggleSection = toggleSection;
+window.closeOnboarding = closeOnboarding;
+window.startTour = startTour;

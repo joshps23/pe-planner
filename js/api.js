@@ -16,30 +16,21 @@ async function loadApiConfig() {
 function captureCourtLayout() {
     const court = document.getElementById('court');
     const courtRect = court.getBoundingClientRect();
-    const layoutType = document.getElementById('layoutType').value;
+    const layoutType = 'custom'; // Always custom now
     
     // Get real-world dimensions from court specifications
-    const spec = courtSpecs[layoutType] || courtSpecs.blank;
+    const spec = courtSpecs.custom;
     let realWorldDimensions;
     
-    if (layoutType === 'blank') {
-        // For blank space, use custom dimensions if available
-        const customWidth = document.getElementById('customWidth').value || spec.realDimensions.width;
-        const customHeight = document.getElementById('customHeight').value || spec.realDimensions.height;
-        realWorldDimensions = { 
-            width: parseFloat(customWidth), 
-            height: parseFloat(customHeight), 
-            units: 'meters', 
-            type: spec.name
-        };
-    } else {
-        realWorldDimensions = { 
-            width: spec.realDimensions.width, 
-            height: spec.realDimensions.height, 
-            units: 'meters', 
-            type: spec.name
-        };
-    }
+    // Use custom dimensions from user input
+    const customWidth = document.getElementById('customWidth').value || spec.realDimensions.width;
+    const customHeight = document.getElementById('customHeight').value || spec.realDimensions.height;
+    realWorldDimensions = { 
+        width: parseFloat(customWidth), 
+        height: parseFloat(customHeight), 
+        units: 'meters', 
+        type: spec.name
+    };
     
     const layout = {
         phase: currentPhase,

@@ -217,8 +217,9 @@
             position: relative;
             background: #16a34a;
             margin: 30px;
+            padding: 30px;
             border-radius: 15px;
-            overflow: hidden;
+            overflow: visible;
             box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
@@ -233,73 +234,20 @@
                 linear-gradient(90deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 100%),
                 linear-gradient(0deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 100%);
             background-size: 30px 30px;
+            overflow: visible;
         }
         
-        /* Dynamic aspect ratios for accurate court proportions */
-        .badminton-court {
-            aspect-ratio: 2.2 / 1;
-        }
-        
-        .basketball-court {
-            aspect-ratio: 1.87 / 1;
-        }
-        
-        .volleyball-court {
-            aspect-ratio: 2 / 1;
-        }
-        
-        .tennis-court {
-            aspect-ratio: 2.17 / 1;
-        }
-        
-        .soccer-field {
-            aspect-ratio: 2 / 1;
-        }
-        
-        .blank-space {
-            aspect-ratio: 2 / 1; /* default ratio */
+        /* Custom space styling - aspect ratio controlled by JavaScript */
+        .custom-space {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
         }
         
         /* Fallback for browsers without aspect-ratio support */
         @supports not (aspect-ratio: 1) {
-            .badminton-court::before {
+            .custom-space::before {
                 content: '';
-                padding-bottom: 45.45%; /* 1/2.2 * 100 */
-                display: block;
-                width: 100%;
-            }
-            
-            .basketball-court::before {
-                content: '';
-                padding-bottom: 53.48%; /* 1/1.87 * 100 */
-                display: block;
-                width: 100%;
-            }
-            
-            .volleyball-court::before {
-                content: '';
-                padding-bottom: 50%; /* 1/2 * 100 */
-                display: block;
-                width: 100%;
-            }
-            
-            .tennis-court::before {
-                content: '';
-                padding-bottom: 46.08%; /* 1/2.17 * 100 */
-                display: block;
-                width: 100%;
-            }
-            
-            .soccer-field::before {
-                content: '';
-                padding-bottom: 50%; /* 1/2 * 100 */
-                display: block;
-                width: 100%;
-            }
-            
-            .blank-space::before {
-                content: '';
-                padding-bottom: 50%; /* 1/2 * 100 */
+                padding-bottom: 50%; /* Default 2:1 ratio */
                 display: block;
                 width: 100%;
             }
@@ -313,30 +261,6 @@
             }
         }
 
-        .badminton-court {
-            background: radial-gradient(ellipse at center, #22c55e 0%, #16a34a 100%);
-        }
-
-        .basketball-court {
-            background: linear-gradient(135deg, #d97706 0%, #c2410c 100%);
-        }
-
-        .volleyball-court {
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-        }
-
-        .soccer-field {
-            background: radial-gradient(ellipse at center, #15803d 0%, #14532d 100%);
-        }
-
-        .tennis-court {
-            background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
-        }
-
-        .blank-space {
-            background: #ffffff;
-            border: 2px solid #e5e7eb;
-        }
 
         .court-lines {
             position: absolute;
@@ -1108,6 +1032,7 @@
             
             .court-container {
                 margin: 15px;
+                padding: 20px;
                 min-height: 400px;
             }
             
@@ -1266,7 +1191,7 @@
             }
             
             .playing-area {
-                height: 500px;
+                height: auto;
             }
             
             .onboarding-features {
@@ -1295,7 +1220,7 @@
             }
             
             .playing-area {
-                height: 600px;
+                height: auto;
             }
         }
         
@@ -1311,7 +1236,7 @@
             }
             
             .playing-area {
-                height: 700px;
+                height: auto;
             }
         }
         
@@ -1326,7 +1251,8 @@
             }
             
             .playing-area {
-                height: 300px;
+                height: auto;
+                max-height: 60vh;
             }
             
             .controls {

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Element Addition</title>
+    <style>
+        #court {
+            width: 800px;
+            height: 400px;
+            background: lightgreen;
+            position: relative;
+            border: 2px solid black;
+            margin: 20px;
+        }
+        .draggable-item {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: orange;
+            cursor: move;
+        }
+        .cone {
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 30px solid #ff6600;
+            background: transparent;
+            width: 0;
+            height: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Court</h1>
+    <button onclick="testAddEquipment()">Add Cone</button>
+    <div id="court"></div>
+
+    <script>
+        let itemCounter = 0;
+        
+        function testAddEquipment() {
+            console.log('testAddEquipment called');
+            const court = document.getElementById('court');
+            
+            if (!court) {
+                console.error('Court not found!');
+                return;
+            }
+            
+            const item = document.createElement('div');
+            item.className = 'draggable-item cone';
+            item.id = 'item-' + (++itemCounter);
+            item.style.left = '50px';
+            item.style.top = '50px';
+            item.style.position = 'absolute';
+            
+            court.appendChild(item);
+            console.log('Item added:', item);
+            console.log('Court children:', court.children.length);
+        }
+    </script>
+</body>
+</html>
