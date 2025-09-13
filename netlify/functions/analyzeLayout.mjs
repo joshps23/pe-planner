@@ -65,9 +65,7 @@ export default async (request, context) => {
 
 ${layoutData}
 
-Give 2-3 brief improvement tips.`;
-
-    // Removed verbose guidance to reduce tokens
+Give 2-3 brief improvement tips.
 
 RESPONSE FORMAT - OPTIMIZED FOR SPEED:
 Provide a concise analysis and ONE improved layout:
