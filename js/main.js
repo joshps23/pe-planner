@@ -1090,25 +1090,21 @@ function applySelectedLayout() {
 function createElementFromJson(element, court) {
     // Detect if we're using a custom space (white court) or standard court
     const isCustomSpace = court.classList.contains('custom-space');
-    
-    // For custom spaces with white background and green border, we need to account for the visual border
-    // Based on visual inspection, the green border is approximately 8-10% of the court width/height on each side
+
+    // For custom spaces, the white area IS the entire court element
+    // The green border is from the parent container, not part of the court
     let courtInsetX = 0;
     let courtInsetY = 0;
-    
-    if (isCustomSpace) {
-        // For custom spaces, the white area starts at about 8% from each edge
-        // This creates the green border effect visible in the UI
-        courtInsetX = court.clientWidth * 0.08;  // 8% inset from left and right
-        courtInsetY = court.clientHeight * 0.08; // 8% inset from top and bottom
-    } else {
+
+    if (!isCustomSpace) {
         // For standard courts, check for actual padding
         const computedStyle = window.getComputedStyle(court);
         courtInsetX = parseFloat(computedStyle.paddingLeft) || 0;
         courtInsetY = parseFloat(computedStyle.paddingTop) || 0;
     }
-    
-    // Calculate the actual white playing area dimensions
+    // For custom spaces, insets remain 0 as the white area is the full court
+
+    // Calculate the actual playing area dimensions
     const playingAreaWidth = court.clientWidth - (2 * courtInsetX);
     const playingAreaHeight = court.clientHeight - (2 * courtInsetY);
     
@@ -1253,22 +1249,19 @@ function createAnnotationFromJson(annotation, court) {
     // Use the same logic as createElementFromJson to detect the white court area
     const isCustomSpace = court.classList.contains('custom-space');
     
-    // Calculate court insets (green border area)
+    // Calculate court insets
     let courtInsetX = 0;
     let courtInsetY = 0;
-    
-    if (isCustomSpace) {
-        // For custom spaces, the white area starts at about 8% from each edge
-        courtInsetX = court.clientWidth * 0.08;
-        courtInsetY = court.clientHeight * 0.08;
-    } else {
+
+    if (!isCustomSpace) {
         // For standard courts, check for actual padding
         const computedStyle = window.getComputedStyle(court);
         courtInsetX = parseFloat(computedStyle.paddingLeft) || 0;
         courtInsetY = parseFloat(computedStyle.paddingTop) || 0;
     }
-    
-    // Calculate the actual white playing area dimensions
+    // For custom spaces, insets remain 0 as the white area is the full court
+
+    // Calculate the actual playing area dimensions
     const playingAreaWidth = court.clientWidth - (2 * courtInsetX);
     const playingAreaHeight = court.clientHeight - (2 * courtInsetY);
     
