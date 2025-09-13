@@ -1198,12 +1198,13 @@
 
         /* Activity Details Section */
         .activity-details-section {
-            margin-top: 20px;
+            margin: 20px auto;
+            padding: 0 20px;
+            max-width: 1400px;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
             position: relative;
             z-index: 10;
-            background: white;
         }
 
         .activity-details-section.show {
@@ -1213,8 +1214,8 @@
         .activity-details-card {
             background: white;
             border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             border: 1px solid #e5e7eb;
         }
 
