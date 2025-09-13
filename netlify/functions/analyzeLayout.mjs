@@ -60,16 +60,30 @@ export default async (request, context) => {
     
     console.log(`Using Gemini model: ${geminiModel}`);
 
-    // ULTRA-MINIMAL PROMPT to avoid MAX_TOKENS
-    let prompt = `Suggest ONE improved PE layout.
+    // Extract key info from layout data to keep prompt short but informative
+    const lines = layoutData.split('\n');
+    let activityInfo = '';
+    let equipmentCount = { cones: 0, balls: 0, attackers: 0, defenders: 0 };
 
-Current: ${layoutData.substring(0, 200)}...
+    for (const line of lines) {
+      if (line.includes('Activity Name:') || line.includes('Playing area:')) {
+        activityInfo += line + '\n';
+      }
+      if (line.includes('CONE')) equipmentCount.cones++;
+      if (line.includes('BALL')) equipmentCount.balls++;
+      if (line.includes('ATTACKER')) equipmentCount.attackers++;
+      if (line.includes('DEFENDER')) equipmentCount.defenders++;
+    }
 
-Return ONLY this JSON (coordinates 20-80 only):
+    // MINIMAL BUT INFORMATIVE PROMPT
+    let prompt = `PE Layout: ${activityInfo}
+Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
+
+Suggest improved layout. Return JSON:
 ===SUGGESTIONS===
-Brief tip
+One key improvement
 ===LAYOUT_OPTIONS===
-{"layouts":[{"name":"Better","description":"improved","instructions":"how to play","rules":"main rule","teachingPoints":"key tip","elements":[{"type":"cone","position":{"xPercent":50,"yPercent":50}}]}]}
+{"layouts":[{"name":"Improved","description":"Better setup","instructions":"How to play","rules":"Main rules","teachingPoints":"Key tips","elements":[{"type":"cone","position":{"xPercent":30,"yPercent":30}},{"type":"cone","position":{"xPercent":70,"yPercent":30}},{"type":"cone","position":{"xPercent":30,"yPercent":70}},{"type":"cone","position":{"xPercent":70,"yPercent":70}},{"type":"attacker","position":{"xPercent":40,"yPercent":50}},{"type":"defender","position":{"xPercent":60,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":50}}]}]}
 ===END===`;
 
     // Add timeout for the API request - keep it shorter for reliability
@@ -90,10 +104,10 @@ Brief tip
           }]
         }],
         generationConfig: {
-          temperature: 0.1,  // Ultra-low for shortest possible responses
-          topK: 1,           // No variety - fastest generation
-          topP: 0.5,         // Extremely focused
-          maxOutputTokens: 500,  // Minimal tokens to prevent MAX_TOKENS
+          temperature: 0.2,  // Low but allowing some creativity
+          topK: 5,           // Minimal variety for better suggestions
+          topP: 0.7,         // Focused but not too restrictive
+          maxOutputTokens: 800,  // Enough for complete layout with players
           candidateCount: 1
         }
       })
