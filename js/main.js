@@ -1123,17 +1123,17 @@ function createElementFromJson(element, court) {
     const playingAreaHeight = isCustomSpace ? court.offsetHeight - (2 * courtInsetY) : court.clientHeight - (2 * courtInsetY);
     console.log(`Playing area: ${playingAreaWidth}x${playingAreaHeight}px (using ${isCustomSpace ? 'offset' : 'client'} dimensions)`);
     
-    // Validate and clamp coordinates to safe range (20-80%)
+    // Validate and clamp coordinates to safe range (15-85%)
     let xPercent = element.position.xPercent || 50;
     let yPercent = element.position.yPercent || 50;
-    
+
     // Pre-validate coordinates with strict safe bounds
     const originalX = xPercent;
     const originalY = yPercent;
-    
-    // Clamp to safe range (20-80%) to ensure elements stay within court boundaries
-    xPercent = Math.max(20, Math.min(80, xPercent));
-    yPercent = Math.max(20, Math.min(80, yPercent));
+
+    // Clamp to safe range (15-85%) to ensure elements stay within court boundaries with margin
+    xPercent = Math.max(15, Math.min(85, xPercent));
+    yPercent = Math.max(15, Math.min(85, yPercent));
     
     // Log warning if coordinates were adjusted
     if (xPercent !== originalX || yPercent !== originalY) {
@@ -1337,17 +1337,17 @@ function createAnnotationFromJson(annotation, court) {
     const playingAreaWidth = isCustomSpace ? court.offsetWidth - (2 * courtInsetX) : court.clientWidth - (2 * courtInsetX);
     const playingAreaHeight = isCustomSpace ? court.offsetHeight - (2 * courtInsetY) : court.clientHeight - (2 * courtInsetY);
     
-    // Validate and clamp coordinates to safe range (20-80%)
+    // Validate and clamp coordinates to safe range (15-85%)
     let xPercent = annotation.position.xPercent || 50;
     let yPercent = annotation.position.yPercent || 50;
-    
+
     // Pre-validate coordinates
     const originalX = xPercent;
     const originalY = yPercent;
-    
-    // Clamp to safe range
-    xPercent = Math.max(20, Math.min(80, xPercent));
-    yPercent = Math.max(20, Math.min(80, yPercent));
+
+    // Clamp to safe range with margin
+    xPercent = Math.max(15, Math.min(85, xPercent));
+    yPercent = Math.max(15, Math.min(85, yPercent));
     
     // Log warning if coordinates were adjusted
     if (xPercent !== originalX || yPercent !== originalY) {

@@ -79,11 +79,11 @@ export default async (request, context) => {
     let prompt = `PE Layout: ${activityInfo}
 Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
 
-Suggest improved layout. Return JSON:
+Suggest improved layout. Keep ALL elements within 15-85% of court area for safety. Return JSON:
 ===SUGGESTIONS===
 One key improvement
 ===LAYOUT_OPTIONS===
-{"layouts":[{"name":"Improved","description":"Better setup","instructions":"How to play","rules":"Main rules","teachingPoints":"Key tips","elements":[{"type":"cone","position":{"xPercent":30,"yPercent":30}},{"type":"cone","position":{"xPercent":70,"yPercent":30}},{"type":"cone","position":{"xPercent":30,"yPercent":70}},{"type":"cone","position":{"xPercent":70,"yPercent":70}},{"type":"attacker","position":{"xPercent":40,"yPercent":50}},{"type":"defender","position":{"xPercent":60,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":50}}]}]}
+{"layouts":[{"name":"Improved","description":"Better setup","instructions":"How to play","rules":"Main rules","teachingPoints":"Key tips","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":40,"yPercent":50}},{"type":"defender","position":{"xPercent":60,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":50}}]}]}
 ===END===`;
 
     // Add timeout for the API request - keep it shorter for reliability
@@ -174,13 +174,13 @@ One key improvement
                 if (layout.elements) {
                   layout.elements.forEach(element => {
                     if (element.position) {
-                      // Ensure coordinates are within 20-80% range
+                      // Ensure coordinates are within 15-85% range for safety margin
                       const originalX = element.position.xPercent;
                       const originalY = element.position.yPercent;
-                      
-                      element.position.xPercent = Math.max(20, Math.min(80, element.position.xPercent || 50));
-                      element.position.yPercent = Math.max(20, Math.min(80, element.position.yPercent || 50));
-                      
+
+                      element.position.xPercent = Math.max(15, Math.min(85, element.position.xPercent || 50));
+                      element.position.yPercent = Math.max(15, Math.min(85, element.position.yPercent || 50));
+
                       if (originalX !== element.position.xPercent || originalY !== element.position.yPercent) {
                         console.log(`Adjusted coordinates for ${element.type}: (${originalX}, ${originalY}) -> (${element.position.xPercent}, ${element.position.yPercent})`);
                       }
@@ -190,8 +190,8 @@ One key improvement
                 if (layout.annotations) {
                   layout.annotations.forEach(annotation => {
                     if (annotation.position) {
-                      annotation.position.xPercent = Math.max(20, Math.min(80, annotation.position.xPercent || 50));
-                      annotation.position.yPercent = Math.max(20, Math.min(80, annotation.position.yPercent || 50));
+                      annotation.position.xPercent = Math.max(15, Math.min(85, annotation.position.xPercent || 50));
+                      annotation.position.yPercent = Math.max(15, Math.min(85, annotation.position.yPercent || 50));
                     }
                   });
                 }

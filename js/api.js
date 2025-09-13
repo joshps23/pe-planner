@@ -26,22 +26,22 @@ function validateLayout(layout) {
             
             const { xPercent, yPercent } = element.position;
             
-            // Validate coordinates are within safe bounds (20-80%)
+            // Validate coordinates are within safe bounds (15-85%)
             const originalX = xPercent;
             const originalY = yPercent;
 
-            if (xPercent < 20 || xPercent > 80) {
-                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid xPercent ${xPercent}, should be 20-80`);
+            if (xPercent < 15 || xPercent > 85) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid xPercent ${xPercent}, should be 15-85`);
                 // Auto-fix by clamping to safe range
-                element.position.xPercent = Math.max(20, Math.min(80, xPercent));
+                element.position.xPercent = Math.max(15, Math.min(85, xPercent));
                 console.log(`  Fixed X: ${originalX} -> ${element.position.xPercent}`);
                 hasErrors = true;
             }
 
-            if (yPercent < 20 || yPercent > 80) {
-                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid yPercent ${yPercent}, should be 20-80`);
+            if (yPercent < 15 || yPercent > 85) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid yPercent ${yPercent}, should be 15-85`);
                 // Auto-fix by clamping to safe range
-                element.position.yPercent = Math.max(20, Math.min(80, yPercent));
+                element.position.yPercent = Math.max(15, Math.min(85, yPercent));
                 console.log(`  Fixed Y: ${originalY} -> ${element.position.yPercent}`);
                 hasErrors = true;
             }
