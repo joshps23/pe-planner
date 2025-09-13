@@ -16,6 +16,23 @@ let selectedLayoutIndex = null;
 let lastAnalysisResults = null; // Store last analysis for retrieval
 let lastAnalysisTimestamp = null;
 
+// Group selection variables
+let selectedElements = new Set();
+let isGroupMode = false;
+let groups = new Map(); // Map of group ID to Set of element IDs
+let nextGroupId = 1;
+let isLassoSelecting = false;
+let lassoStart = null;
+let lassoElement = null;
+
+// Context menu variables
+let contextMenuTarget = null;
+let currentZIndex = 100;
+
+// Custom prompt variables
+let customPromptCallback = null;
+let customPromptType = null;
+
 // Custom activity space specification
 const courtSpecs = {
     custom: {
@@ -85,6 +102,7 @@ function addEquipment(type) {
     item.style.left = safeX + 'px';
     item.style.top = safeY + 'px';
     item.style.position = 'absolute';
+    item.style.zIndex = currentZIndex++; // Set initial z-index
     
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-btn';
@@ -102,13 +120,24 @@ function addEquipment(type) {
     makeDraggable(item);
 }
 
-function addStudent(type) {
-    const name = prompt(`Enter student name (or leave blank for ${type.toUpperCase()}):`)
+async function addStudent(type) {
     const court = document.getElementById('court');
     if (!court) {
         console.error('Court element not found!');
         return;
     }
+    
+    const studentType = type === 'attacker' ? 'Attacker' : 'Defender';
+    const name = await showCustomPrompt(
+        `Add ${studentType}`,
+        `Enter student name:`,
+        '',
+        'text',
+        `Leave blank to use default label "${studentType.toUpperCase()}"`
+    );
+    
+    // If user cancelled, don't add student
+    if (name === null) return;
     
     console.log('Adding student:', type);
     
@@ -155,6 +184,7 @@ function addStudent(type) {
     item.style.left = safeX + 'px';
     item.style.top = safeY + 'px';
     item.style.position = 'absolute';
+    item.style.zIndex = currentZIndex++; // Set initial z-index
     
     const removeBtn = document.createElement('button');
     removeBtn.className = 'remove-btn';
@@ -175,6 +205,7 @@ function addStudent(type) {
 function makeDraggable(element) {
     element.addEventListener('mousedown', startDrag);
     element.addEventListener('touchstart', startDrag);
+    attachContextMenu(element);
 }
 
 function startDrag(e) {
@@ -185,8 +216,16 @@ function startDrag(e) {
     
     e.preventDefault();
     // Find the draggable element (could be the target itself or a parent)
-    draggedElement = e.target.closest('.draggable-item, .annotation') || e.target;
+    const element = e.target.closest('.draggable-item, .annotation') || e.target;
     
+    // Handle selection mode
+    if (isGroupMode) {
+        const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+        selectElement(element, isCtrlOrCmd);
+        return;
+    }
+    
+    draggedElement = element;
     const court = document.getElementById('court');
     const mousePos = getMousePosition(e, court);
     
@@ -198,12 +237,39 @@ function startDrag(e) {
     dragOffset.x = mousePos.x - currentLeft;
     dragOffset.y = mousePos.y - currentTop;
     
+    // Store original z-index before temporarily boosting it
+    // If element doesn't have z-index, assign one now
+    if (!draggedElement.style.zIndex || draggedElement.style.zIndex === '') {
+        draggedElement.style.zIndex = currentZIndex++;
+    }
+    dragOffset.originalZIndex = draggedElement.style.zIndex;
+    
+    // Store initial positions if dragging a grouped element
+    if (draggedElement.dataset.groupId) {
+        const groupId = draggedElement.dataset.groupId;
+        dragOffset.groupOffsets = new Map();
+        
+        court.querySelectorAll(`[data-group-id="${groupId}"]`).forEach(el => {
+            if (el !== draggedElement) {
+                const left = parseInt(el.style.left) || 0;
+                const top = parseInt(el.style.top) || 0;
+                dragOffset.groupOffsets.set(el.id, {
+                    x: left - currentLeft,
+                    y: top - currentTop
+                });
+            }
+        });
+    }
+    
     document.addEventListener('mousemove', drag);
     document.addEventListener('mouseup', stopDrag);
     document.addEventListener('touchmove', drag);
     document.addEventListener('touchend', stopDrag);
     
-    draggedElement.style.zIndex = '1000';
+    // Add dragging class for visual feedback
+    draggedElement.classList.add('dragging');
+    // Temporarily boost z-index while dragging
+    draggedElement.style.zIndex = '9999';
 }
 
 function drag(e) {
@@ -245,11 +311,39 @@ function drag(e) {
     
     draggedElement.style.left = newX + 'px';
     draggedElement.style.top = newY + 'px';
+    
+    // Move grouped elements together
+    if (draggedElement.dataset.groupId && dragOffset.groupOffsets) {
+        const groupId = draggedElement.dataset.groupId;
+        court.querySelectorAll(`[data-group-id="${groupId}"]`).forEach(el => {
+            if (el !== draggedElement && dragOffset.groupOffsets.has(el.id)) {
+                const offset = dragOffset.groupOffsets.get(el.id);
+                el.style.left = (newX + offset.x) + 'px';
+                el.style.top = (newY + offset.y) + 'px';
+            }
+        });
+    }
 }
 
 function stopDrag() {
     if (draggedElement) {
-        draggedElement.style.zIndex = 'auto';
+        // Remove dragging class
+        draggedElement.classList.remove('dragging');
+        
+        // Restore original z-index
+        if (dragOffset.originalZIndex !== undefined) {
+            draggedElement.style.zIndex = dragOffset.originalZIndex;
+        } else {
+            // If no original z-index was stored, assign a new one
+            draggedElement.style.zIndex = currentZIndex++;
+        }
+        
+        // Clear group offsets and original z-index
+        if (dragOffset.groupOffsets) {
+            delete dragOffset.groupOffsets;
+        }
+        delete dragOffset.originalZIndex;
+        
         draggedElement = null;
     }
     
@@ -582,6 +676,9 @@ function loadPlan() {
     
     itemCounter = Math.max(...plan.items.map(item => parseInt(item.id.split('-')[1]))) || 0;
     switchPhase(currentPhase);
+    
+    // Initialize z-indexes for loaded elements
+    initializeZIndexes();
 }
 
 function deletePlan() {
@@ -783,13 +880,50 @@ window.addEventListener('load', () => {
         element.addEventListener('mouseleave', hideTooltip);
     });
     
-    // Add keyboard shortcuts for modal
+    // Add keyboard shortcuts for modal and grouping
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             const aiModal = document.getElementById('aiSuggestionsModal');
             if (aiModal.classList.contains('show')) {
                 closeAISuggestionsModal();
+            } else if (isGroupMode) {
+                toggleGroupMode();
             }
+        }
+        
+        // Group/Ungroup shortcuts
+        if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                ungroupSelected();
+            } else {
+                groupSelected();
+            }
+        }
+        
+        // Select all
+        if ((e.ctrlKey || e.metaKey) && e.key === 'a' && isGroupMode) {
+            e.preventDefault();
+            const court = document.getElementById('court');
+            court.querySelectorAll('.draggable-item, .annotation').forEach(el => {
+                if (el.style.display !== 'none') {
+                    el.classList.add('selected');
+                    selectedElements.add(el.id);
+                }
+            });
+            updateSelectionInfo();
+        }
+        
+        // Delete selected elements
+        if (e.key === 'Delete' && selectedElements.size > 0) {
+            e.preventDefault();
+            selectedElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.remove();
+                }
+            });
+            clearSelection();
         }
     });
     
@@ -840,6 +974,9 @@ function applyLayoutFromJson() {
         
         // Show success message
         alert('Suggested layout applied successfully!');
+        
+        // Initialize z-indexes for new elements
+        initializeZIndexes();
         
         // Close the suggestions modal
         closeAISuggestionsModal();
@@ -934,6 +1071,9 @@ function applySelectedLayout() {
         
         // Display activity details below the court
         displayActivityDetails(layoutToApply);
+        
+        // Initialize z-indexes for new elements
+        initializeZIndexes();
         
         // Close the suggestions modal
         closeAISuggestionsModal();
@@ -1147,6 +1287,434 @@ function createAnnotationFromJson(annotation, court) {
     makeDraggable(annotationDiv);
 }
 
+// Group selection functions
+function toggleGroupMode() {
+    isGroupMode = !isGroupMode;
+    const court = document.getElementById('court');
+    const btn = document.getElementById('groupModeBtn');
+    
+    if (isGroupMode) {
+        court.classList.add('group-mode');
+        btn.classList.add('active');
+        btn.innerHTML = '<span>✅</span> Selection Active';
+        
+        // Disable drawing mode if active
+        if (isDrawingMode) {
+            toggleDrawing();
+        }
+        
+        // Add lasso selection handlers
+        court.addEventListener('mousedown', startLassoSelection);
+    } else {
+        court.classList.remove('group-mode');
+        btn.classList.remove('active');
+        btn.innerHTML = '<span>🔲</span> Selection Mode';
+        clearSelection();
+        
+        // Remove lasso selection handlers
+        court.removeEventListener('mousedown', startLassoSelection);
+    }
+}
+
+function selectElement(element, addToSelection = false) {
+    if (!addToSelection && !element.classList.contains('selected')) {
+        clearSelection();
+    }
+    
+    if (element.classList.contains('selected')) {
+        // Deselect
+        element.classList.remove('selected');
+        selectedElements.delete(element.id);
+    } else {
+        // Select
+        element.classList.add('selected');
+        selectedElements.add(element.id);
+    }
+    
+    updateSelectionInfo();
+}
+
+function clearSelection() {
+    selectedElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.classList.remove('selected');
+        }
+    });
+    selectedElements.clear();
+    updateSelectionInfo();
+}
+
+function updateSelectionInfo() {
+    const count = selectedElements.size;
+    const selectionCount = document.getElementById('selectionCount');
+    const groupBtn = document.getElementById('groupBtn');
+    const ungroupBtn = document.getElementById('ungroupBtn');
+    
+    if (count === 0) {
+        selectionCount.textContent = 'No elements selected';
+        groupBtn.disabled = true;
+        ungroupBtn.disabled = true;
+    } else if (count === 1) {
+        selectionCount.textContent = '1 element selected';
+        groupBtn.disabled = true;
+        ungroupBtn.disabled = false;
+    } else {
+        selectionCount.textContent = `${count} elements selected`;
+        groupBtn.disabled = false;
+        ungroupBtn.disabled = false;
+    }
+}
+
+function groupSelected() {
+    if (selectedElements.size < 2) return;
+    
+    const groupId = `group-${nextGroupId++}`;
+    const groupSet = new Set(selectedElements);
+    groups.set(groupId, groupSet);
+    
+    // Add group attributes to elements
+    selectedElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.dataset.groupId = groupId;
+            element.classList.add('grouped');
+        }
+    });
+    
+    clearSelection();
+}
+
+function ungroupSelected() {
+    selectedElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element && element.dataset.groupId) {
+            const groupId = element.dataset.groupId;
+            
+            // Remove from groups map
+            if (groups.has(groupId)) {
+                groups.delete(groupId);
+            }
+            
+            // Remove group attributes from all elements in the group
+            const court = document.getElementById('court');
+            court.querySelectorAll(`[data-group-id="${groupId}"]`).forEach(el => {
+                delete el.dataset.groupId;
+                el.classList.remove('grouped');
+            });
+        }
+    });
+    
+    clearSelection();
+}
+
+// Lasso selection functions
+function startLassoSelection(e) {
+    // Only start lasso if clicking on empty court area
+    if (e.target.id !== 'court') return;
+    if (!isGroupMode) return;
+    
+    e.preventDefault();
+    isLassoSelecting = true;
+    const court = document.getElementById('court');
+    const rect = court.getBoundingClientRect();
+    
+    lassoStart = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+    
+    // Create lasso element
+    lassoElement = document.createElement('div');
+    lassoElement.className = 'selection-lasso';
+    lassoElement.style.left = lassoStart.x + 'px';
+    lassoElement.style.top = lassoStart.y + 'px';
+    lassoElement.style.width = '0px';
+    lassoElement.style.height = '0px';
+    court.appendChild(lassoElement);
+    
+    document.addEventListener('mousemove', updateLassoSelection);
+    document.addEventListener('mouseup', endLassoSelection);
+}
+
+function updateLassoSelection(e) {
+    if (!isLassoSelecting || !lassoElement) return;
+    
+    const court = document.getElementById('court');
+    const rect = court.getBoundingClientRect();
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
+    
+    const width = Math.abs(currentX - lassoStart.x);
+    const height = Math.abs(currentY - lassoStart.y);
+    const left = Math.min(currentX, lassoStart.x);
+    const top = Math.min(currentY, lassoStart.y);
+    
+    lassoElement.style.left = left + 'px';
+    lassoElement.style.top = top + 'px';
+    lassoElement.style.width = width + 'px';
+    lassoElement.style.height = height + 'px';
+}
+
+function endLassoSelection(e) {
+    if (!isLassoSelecting || !lassoElement) return;
+    
+    const court = document.getElementById('court');
+    const lassoRect = lassoElement.getBoundingClientRect();
+    const courtRect = court.getBoundingClientRect();
+    
+    // Clear previous selection if not holding Ctrl/Cmd
+    if (!e.ctrlKey && !e.metaKey) {
+        clearSelection();
+    }
+    
+    // Select elements within lasso
+    court.querySelectorAll('.draggable-item, .annotation').forEach(el => {
+        if (el.style.display === 'none') return;
+        
+        const elRect = el.getBoundingClientRect();
+        const elCenterX = elRect.left + elRect.width / 2;
+        const elCenterY = elRect.top + elRect.height / 2;
+        
+        // Check if element center is within lasso
+        if (elCenterX >= lassoRect.left && elCenterX <= lassoRect.right &&
+            elCenterY >= lassoRect.top && elCenterY <= lassoRect.bottom) {
+            el.classList.add('selected');
+            selectedElements.add(el.id);
+        }
+    });
+    
+    // Clean up
+    if (lassoElement) {
+        court.removeChild(lassoElement);
+        lassoElement = null;
+    }
+    isLassoSelecting = false;
+    lassoStart = null;
+    
+    document.removeEventListener('mousemove', updateLassoSelection);
+    document.removeEventListener('mouseup', endLassoSelection);
+    
+    updateSelectionInfo();
+}
+
+// Custom prompt modal functions
+function showCustomPrompt(title, message, defaultValue = '', type = 'text', hint = '') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('customPromptModal');
+        const titleEl = document.getElementById('promptTitle');
+        const messageEl = document.getElementById('promptMessage');
+        const input = document.getElementById('promptInput');
+        const hintEl = document.getElementById('promptHint');
+        
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        input.value = defaultValue;
+        input.type = type;
+        hintEl.textContent = hint;
+        
+        customPromptCallback = resolve;
+        customPromptType = type;
+        
+        modal.style.display = 'flex';
+        
+        // Focus input after modal animation
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 100);
+        
+        // Handle enter key
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                submitCustomPrompt();
+            } else if (e.key === 'Escape') {
+                closeCustomPrompt();
+            }
+        };
+    });
+}
+
+function submitCustomPrompt() {
+    const modal = document.getElementById('customPromptModal');
+    const input = document.getElementById('promptInput');
+    
+    if (customPromptCallback) {
+        customPromptCallback(input.value);
+        customPromptCallback = null;
+    }
+    
+    modal.style.display = 'none';
+    input.value = '';
+}
+
+function closeCustomPrompt() {
+    const modal = document.getElementById('customPromptModal');
+    const input = document.getElementById('promptInput');
+    
+    if (customPromptCallback) {
+        customPromptCallback(null);
+        customPromptCallback = null;
+    }
+    
+    modal.style.display = 'none';
+    input.value = '';
+}
+
+// Initialize z-index for all elements on the court
+function initializeZIndexes() {
+    const court = document.getElementById('court');
+    let zIndex = 100;
+    court.querySelectorAll('.draggable-item, .annotation').forEach(el => {
+        if (!el.style.zIndex || el.style.zIndex === '') {
+            el.style.zIndex = zIndex++;
+        }
+    });
+    currentZIndex = Math.max(currentZIndex, zIndex);
+}
+
+// Context menu functions
+function showContextMenu(e, element) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Ensure all elements have z-index before showing menu
+    initializeZIndexes();
+    
+    const contextMenu = document.getElementById('contextMenu');
+    contextMenuTarget = element;
+    
+    // Position the context menu at cursor location
+    contextMenu.style.left = e.clientX + 'px';
+    contextMenu.style.top = e.clientY + 'px';
+    contextMenu.style.display = 'block';
+    
+    // Hide menu when clicking elsewhere
+    document.addEventListener('click', hideContextMenu);
+}
+
+function hideContextMenu() {
+    const contextMenu = document.getElementById('contextMenu');
+    contextMenu.style.display = 'none';
+    document.removeEventListener('click', hideContextMenu);
+}
+
+function bringToFront() {
+    if (contextMenuTarget) {
+        // Find the maximum z-index among all elements
+        const court = document.getElementById('court');
+        let maxZ = 0;
+        court.querySelectorAll('.draggable-item, .annotation').forEach(el => {
+            const z = parseInt(el.style.zIndex) || 10;
+            if (z > maxZ) maxZ = z;
+        });
+        
+        // Set target to one more than maximum
+        contextMenuTarget.style.zIndex = maxZ + 1;
+        currentZIndex = Math.max(currentZIndex, maxZ + 2);
+    }
+    hideContextMenu();
+}
+
+function sendToBack() {
+    if (contextMenuTarget) {
+        const court = document.getElementById('court');
+        
+        // First ensure all elements have z-index
+        initializeZIndexes();
+        
+        // Find all z-indexes
+        const zIndexes = [];
+        court.querySelectorAll('.draggable-item, .annotation').forEach(el => {
+            if (el !== contextMenuTarget) {
+                const z = parseInt(el.style.zIndex) || 100;
+                zIndexes.push(z);
+            }
+        });
+        
+        // Set target to 1, and shift all others up if needed
+        contextMenuTarget.style.zIndex = '1';
+        
+        // Shift other elements up to make room
+        court.querySelectorAll('.draggable-item, .annotation').forEach(el => {
+            if (el !== contextMenuTarget) {
+                const currentZ = parseInt(el.style.zIndex) || 100;
+                if (currentZ <= 1) {
+                    el.style.zIndex = currentZ + 1;
+                }
+            }
+        });
+    }
+    hideContextMenu();
+}
+
+function bringForward() {
+    if (contextMenuTarget) {
+        const currentZ = parseInt(contextMenuTarget.style.zIndex) || 10;
+        contextMenuTarget.style.zIndex = currentZ + 1;
+        currentZIndex = Math.max(currentZIndex, currentZ + 1);
+    }
+    hideContextMenu();
+}
+
+function sendBackward() {
+    if (contextMenuTarget) {
+        const currentZ = parseInt(contextMenuTarget.style.zIndex) || 10;
+        if (currentZ > 1) {
+            contextMenuTarget.style.zIndex = currentZ - 1;
+        }
+    }
+    hideContextMenu();
+}
+
+function duplicateElement() {
+    if (contextMenuTarget) {
+        const court = document.getElementById('court');
+        const clone = contextMenuTarget.cloneNode(true);
+        
+        // Generate new ID
+        clone.id = 'item-' + (++itemCounter);
+        
+        // Offset position slightly
+        const currentLeft = parseInt(contextMenuTarget.style.left) || 0;
+        const currentTop = parseInt(contextMenuTarget.style.top) || 0;
+        clone.style.left = (currentLeft + 20) + 'px';
+        clone.style.top = (currentTop + 20) + 'px';
+        
+        // Remove any selection or group classes
+        clone.classList.remove('selected', 'grouped');
+        delete clone.dataset.groupId;
+        
+        // Re-attach event handlers
+        makeDraggable(clone);
+        attachContextMenu(clone);
+        
+        // Re-attach remove button handler
+        const removeBtn = clone.querySelector('.remove-btn');
+        if (removeBtn) {
+            removeBtn.onclick = (e) => {
+                e.stopPropagation();
+                court.removeChild(clone);
+            };
+        }
+        
+        court.appendChild(clone);
+    }
+    hideContextMenu();
+}
+
+function deleteElement() {
+    if (contextMenuTarget) {
+        contextMenuTarget.remove();
+        contextMenuTarget = null;
+    }
+    hideContextMenu();
+}
+
+function attachContextMenu(element) {
+    element.addEventListener('contextmenu', (e) => showContextMenu(e, element));
+}
+
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize API configuration
@@ -1154,6 +1722,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set initial court layout (default is badminton)
     changeLayout();
+    
+    // Initialize z-indexes for any existing elements
+    initializeZIndexes();
+    
+    // Prevent default context menu on court
+    document.getElementById('court').addEventListener('contextmenu', (e) => {
+        if (e.target.id === 'court') {
+            e.preventDefault();
+        }
+    });
 });
 
 // Make all functions globally accessible for HTML onclick handlers
@@ -1181,3 +1759,15 @@ window.closeAISuggestionsModal = closeAISuggestionsModal;
 window.toggleSection = toggleSection;
 window.closeOnboarding = closeOnboarding;
 window.startTour = startTour;
+window.toggleGroupMode = toggleGroupMode;
+window.groupSelected = groupSelected;
+window.ungroupSelected = ungroupSelected;
+window.clearSelection = clearSelection;
+window.bringToFront = bringToFront;
+window.sendToBack = sendToBack;
+window.bringForward = bringForward;
+window.sendBackward = sendBackward;
+window.duplicateElement = duplicateElement;
+window.deleteElement = deleteElement;
+window.submitCustomPrompt = submitCustomPrompt;
+window.closeCustomPrompt = closeCustomPrompt;

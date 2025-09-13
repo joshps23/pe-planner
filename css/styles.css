@@ -343,7 +343,292 @@
             justify-content: center;
             font-weight: bold;
             font-size: 12px;
-            z-index: 10;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+
+        /* Dragging state - highly visible for screen casting */
+        .draggable-item.dragging,
+        .annotation.dragging {
+            z-index: 9999 !important;
+            transform: scale(1.25);
+            opacity: 0.95;
+            filter: brightness(1.3) saturate(1.5) drop-shadow(0 0 20px rgba(255, 215, 0, 0.9));
+            animation: pulse-glow 1s ease-in-out infinite;
+        }
+        
+        /* Special styling for student elements when dragging - no background */
+        .student.dragging {
+            background-color: transparent !important;
+            filter: brightness(1.4) saturate(1.6) 
+                   drop-shadow(0 0 25px rgba(255, 215, 0, 1))
+                   drop-shadow(0 0 50px rgba(255, 215, 0, 0.8))
+                   drop-shadow(0 0 75px rgba(255, 215, 0, 0.6));
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                filter: brightness(1.3) saturate(1.5) 
+                       drop-shadow(0 0 20px rgba(255, 215, 0, 0.9))
+                       drop-shadow(0 0 40px rgba(255, 215, 0, 0.6));
+            }
+            50% {
+                filter: brightness(1.5) saturate(1.7) 
+                       drop-shadow(0 0 30px rgba(255, 215, 0, 1))
+                       drop-shadow(0 0 60px rgba(255, 215, 0, 0.8))
+                       drop-shadow(0 0 90px rgba(255, 215, 0, 0.5));
+            }
+        }
+
+        /* Selection and grouping styles */
+        .draggable-item.selected,
+        .annotation.selected {
+            outline: 2px solid #3b82f6 !important;
+            outline-offset: 2px;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        /* Only show grouped border when in group mode */
+        #court.group-mode .draggable-item.grouped,
+        #court.group-mode .annotation.grouped {
+            border: 2px dashed #8b5cf6;
+            border-radius: 4px;
+        }
+
+        .selection-lasso {
+            position: absolute;
+            border: 2px dashed #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* Group mode active indicator */
+        #court.group-mode {
+            cursor: crosshair;
+        }
+
+        #court.group-mode .draggable-item,
+        #court.group-mode .annotation {
+            cursor: pointer;
+        }
+
+        /* Selection info button */
+        .info-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .info-btn:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+
+        .info-btn.active {
+            background: linear-gradient(135deg, #4c51bf, #5a3d8a);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Context Menu Styles */
+        .context-menu {
+            position: fixed;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 4px;
+            min-width: 180px;
+            z-index: 10000;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s ease;
+            color: #334155;
+        }
+
+        .context-menu-item:hover {
+            background-color: #f1f5f9;
+        }
+
+        .context-menu-item.danger {
+            color: #dc2626;
+        }
+
+        .context-menu-item.danger:hover {
+            background-color: #fee2e2;
+        }
+
+        .context-menu-divider {
+            height: 1px;
+            background-color: #e2e8f0;
+            margin: 4px 8px;
+        }
+
+        /* Custom Prompt Modal Styles */
+        .custom-prompt-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .custom-prompt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .custom-prompt-dialog {
+            position: relative;
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+            overflow: hidden;
+        }
+
+        .custom-prompt-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .custom-prompt-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .prompt-close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .prompt-close-btn:hover {
+            opacity: 1;
+        }
+
+        .custom-prompt-body {
+            padding: 24px;
+        }
+
+        .custom-prompt-body p {
+            margin: 0 0 16px 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .prompt-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+        }
+
+        .prompt-input:focus {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .prompt-hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .custom-prompt-footer {
+            padding: 16px 24px;
+            background: #f8fafc;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .prompt-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+        }
+
+        .prompt-btn-cancel {
+            background: #e2e8f0;
+            color: #64748b;
+        }
+
+        .prompt-btn-cancel:hover {
+            background: #cbd5e1;
+        }
+
+        .prompt-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .prompt-btn-primary:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b42ac 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         /* Player visual representation with emojis */
@@ -644,6 +929,78 @@
             height: 4px;
             background-color: #5a3a1a;
             box-shadow: 24px 0 0 #5a3a1a;
+        }
+
+        /* Floorball stick visual representation */
+        .floorball-stick {
+            width: 40px;
+            height: 40px;
+            position: relative;
+            background: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .floorball-stick::before {
+            content: '';
+            position: absolute;
+            width: 3px;
+            height: 35px;
+            background: linear-gradient(to bottom, #333 0%, #555 100%);
+            transform: rotate(-15deg);
+            transform-origin: bottom;
+            left: 18px;
+            top: 0;
+        }
+
+        .floorball-stick::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 8px;
+            background: #e74c3c;
+            border-radius: 0 0 8px 8px;
+            bottom: 3px;
+            left: 8px;
+            transform: rotate(-15deg);
+            border: 1px solid #c0392b;
+        }
+
+        /* Frisbee visual representation */
+        .frisbee {
+            width: 35px;
+            height: 35px;
+            position: relative;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 50%;
+            border: 2px solid #2471a3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .frisbee::before {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            top: 4px;
+            left: 4px;
+        }
+
+        .frisbee::after {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
         }
 
         .remove-btn {

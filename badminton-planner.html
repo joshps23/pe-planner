@@ -52,6 +52,8 @@
                         <button class="control-btn equipment-btn" onclick="addEquipment('marker')" title="Add field marker"><span>🚩</span> Marker</button>
                         <button class="control-btn equipment-btn" onclick="addEquipment('hoop')" title="Add target hoop"><span>⭕</span> Hoop</button>
                         <button class="control-btn equipment-btn" onclick="addEquipment('ball')" title="Add ball"><span>🟡</span> Ball</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('floorball-stick')" title="Add floorball stick"><span>🏒</span> Floorball Stick</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('frisbee')" title="Add frisbee disc"><span>🥏</span> Frisbee</button>
                         <button class="control-btn equipment-btn" onclick="addEquipment('bench')" title="Add bench for seating"><span>🪑</span> Bench</button>
                     </div>
                 </div>
@@ -135,6 +137,21 @@
                 
                 <div class="control-section">
                     <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>👥</span> Group Tools</h3>
+                    </div>
+                    <div class="control-content">
+                        <button class="control-btn info-btn" onclick="toggleGroupMode()" id="groupModeBtn" title="Enable selection mode for grouping"><span>🔲</span> Selection Mode</button>
+                        <button class="control-btn success-btn" onclick="groupSelected()" id="groupBtn" title="Group selected elements" disabled><span>🔗</span> Group</button>
+                        <button class="control-btn warning-btn" onclick="ungroupSelected()" id="ungroupBtn" title="Ungroup selected elements" disabled><span>🔓</span> Ungroup</button>
+                        <button class="control-btn secondary-btn" onclick="clearSelection()" title="Clear selection"><span>❌</span> Clear Selection</button>
+                        <div id="selectionInfo" style="margin-top: 10px; font-size: 12px; color: #64748b; text-align: center;">
+                            <span id="selectionCount">No elements selected</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
                         <h3><span>✏️</span> Drawing Tools</h3>
                     </div>
                     <div class="control-content">
@@ -199,6 +216,49 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+    
+    <!-- Custom Input Modal -->
+    <div id="customPromptModal" class="custom-prompt-modal" style="display: none;">
+        <div class="custom-prompt-overlay"></div>
+        <div class="custom-prompt-dialog">
+            <div class="custom-prompt-header">
+                <h3 id="promptTitle">Enter Information</h3>
+                <button class="prompt-close-btn" onclick="closeCustomPrompt()">&times;</button>
+            </div>
+            <div class="custom-prompt-body">
+                <p id="promptMessage">Please enter a value:</p>
+                <input type="text" id="promptInput" class="prompt-input" autocomplete="off">
+                <div id="promptHint" class="prompt-hint"></div>
+            </div>
+            <div class="custom-prompt-footer">
+                <button class="prompt-btn prompt-btn-cancel" onclick="closeCustomPrompt()">Cancel</button>
+                <button class="prompt-btn prompt-btn-primary" onclick="submitCustomPrompt()">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Context Menu for Layer Adjustment -->
+    <div id="contextMenu" class="context-menu" style="display: none;">
+        <div class="context-menu-item" onclick="bringToFront()">
+            <span>⬆️</span> Bring to Front
+        </div>
+        <div class="context-menu-item" onclick="sendToBack()">
+            <span>⬇️</span> Send to Back
+        </div>
+        <div class="context-menu-item" onclick="bringForward()">
+            <span>↗️</span> Bring Forward
+        </div>
+        <div class="context-menu-item" onclick="sendBackward()">
+            <span>↙️</span> Send Backward
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" onclick="duplicateElement()">
+            <span>📋</span> Duplicate
+        </div>
+        <div class="context-menu-item danger" onclick="deleteElement()">
+            <span>🗑️</span> Delete
         </div>
     </div>
     

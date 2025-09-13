@@ -48,21 +48,37 @@ The app uses Netlify Functions for secure API integration with Google Gemini API
 
 ## Recent Updates (2025-09-12)
 
+### Latest Session Fixes (Evening)
+- **Background Functions**: Extended timeout from 30 seconds to 15 minutes for AI analysis
+- **Rules Display Fix**: Fixed ID conflict that prevented activity rules from showing
+- **Coordinate System**: Fixed elements rendering outside court boundaries in AI suggestions
+- **Larger Players**: Increased player size from 60px to 80px for better visibility
+- **Save/Load Enhancement**: Added court dimensions to saved plans
+- **Backward Compatibility**: Fixed loading of old saved plans with larger player sizes
+
 ### Major Enhancements
 - **Multiple Layout Suggestions**: AI now generates 3 different layout variations with complete activity details
 - **Activity Details Display**: Instructions, rules, and teaching points display below court after applying layouts
 - **Analysis Persistence**: Added "View Last Analysis" button to retrieve previous AI suggestions
 - **Improved Layout Accuracy**: Fixed coordinate system to ensure elements stay within court boundaries
+- **Extended Timeout**: Netlify Functions now run as background functions (15-minute timeout)
 
 ### Bug Fixes
+- **Rules Display**: Fixed duplicate ID conflict between input field and display element
+- **Element Positioning**: Fixed AI-generated layouts rendering outside court boundaries
+- **Saved Plan Loading**: Added boundary validation for backward compatibility with larger players
+- **Coordinate Mapping**: Unified coordinate system between elements and annotations
 - Fixed element addition issue caused by CSS inheritance (`.playing-area > *` selector)
 - Fixed attacker/defender image loading (corrected CSS path references)
 - Removed circular backgrounds from player images for cleaner UI
 - Fixed cone shadow positioning to stay within element bounds
-- Improved percentage-to-pixel conversion for accurate element positioning
 
 ### Technical Improvements
+- **ES Module Functions**: Converted analyzeLayout to modern ES module format (.mjs)
+- **Player Size Scaling**: Updated all size-dependent calculations for 80px players
+- **Safety Margins**: Proportionally scaled margins and boundaries for larger elements
+- **Layout Previews**: Updated suggestion modal previews to match actual element sizes
 - Added layout validation function to auto-correct invalid coordinates
 - Strengthened AI prompt constraints (20-80% coordinate range)
 - Implemented safe default positions for newly added elements
-- Added pre-validation for all element positioning
+- Added comprehensive boundary validation for loaded plans
