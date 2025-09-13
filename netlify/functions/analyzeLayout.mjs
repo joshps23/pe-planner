@@ -75,16 +75,18 @@ export default async (request, context) => {
       if (line.includes('DEFENDER')) equipmentCount.defenders++;
     }
 
-    // PROMPT WITH MANDATORY ELEMENTS
+    // STRICT FORMAT PROMPT
     let prompt = `PE Layout: ${activityInfo}
 Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
 
-Suggest improved layout. CRITICAL: You MUST include "elements" array with positions for ALL equipment. Keep within 15-85% of court. Return JSON:
+Return EXACTLY this format. DO NOT use layoutOptions or any other structure:
 ===SUGGESTIONS===
-One key improvement
+One sentence improvement suggestion here
 ===LAYOUT_OPTIONS===
-{"layouts":[{"name":"Improved","description":"Better setup","instructions":"How to play","rules":"Main rules","teachingPoints":"Key tips","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":35,"yPercent":35}},{"type":"attacker","position":{"xPercent":65,"yPercent":35}},{"type":"attacker","position":{"xPercent":50,"yPercent":65}},{"type":"defender","position":{"xPercent":50,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":45}}]}]}
-===END===`;
+{"layouts":[{"name":"Activity Name","description":"Brief description","instructions":"How to play","rules":"Game rules","teachingPoints":"Key teaching points","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":35,"yPercent":35}},{"type":"attacker","position":{"xPercent":65,"yPercent":35}},{"type":"attacker","position":{"xPercent":50,"yPercent":65}},{"type":"defender","position":{"xPercent":50,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":45}}]}]}
+===END===
+
+IMPORTANT: Keep ALL elements within 15-85% of court. Include positions for ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, and ${equipmentCount.balls} balls.`;
 
     // Add timeout for the API request - use most of the 26s Netlify allows
     const controller = new AbortController();
@@ -107,7 +109,7 @@ One key improvement
           temperature: 0.2,  // Low but allowing some creativity
           topK: 5,           // Minimal variety for better suggestions
           topP: 0.7,         // Focused but not too restrictive
-          maxOutputTokens: 65000,  // High limit for complete, quality AI analysis without cutoffs
+          maxOutputTokens: 4000,  // Reasonable limit for complete responses
           candidateCount: 1
         }
       })
@@ -167,6 +169,12 @@ One key improvement
             // Handle markdown code blocks that some models add
             layoutsStr = layoutsStr.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
             layoutJson = JSON.parse(layoutsStr);
+
+            // Handle alternative format where AI returns layoutOptions instead of layouts
+            if (!layoutJson.layouts && layoutJson.layoutOptions && layoutJson.layoutOptions.layouts) {
+              console.log('Converting layoutOptions format to expected format');
+              layoutJson = { layouts: layoutJson.layoutOptions.layouts };
+            }
             
             // Validate and fix coordinates for all layouts
             if (layoutJson && layoutJson.layouts) {
