@@ -302,11 +302,30 @@ function drag(e) {
         // For equipment and students, constrain to court boundaries
         const elementRect = draggedElement.getBoundingClientRect();
         const courtRect = court.getBoundingClientRect();
-        const maxX = court.clientWidth - (elementRect.width);
-        const maxY = court.clientHeight - (elementRect.height);
-        
-        newX = Math.max(0, Math.min(newX, maxX));
-        newY = Math.max(0, Math.min(newY, maxY));
+
+        // Check if the element is currently outside court boundaries (can happen with AI suggestions)
+        // If so, allow it to be dragged back in, but don't allow dragging further out
+        const currentLeft = parseInt(draggedElement.style.left) || 0;
+        const currentTop = parseInt(draggedElement.style.top) || 0;
+
+        // Calculate the actual boundaries considering element size
+        const minX = -(elementRect.width / 2); // Allow slightly outside for easier grabbing
+        const maxX = court.clientWidth - (elementRect.width / 2);
+        const minY = -(elementRect.height / 2);
+        const maxY = court.clientHeight - (elementRect.height / 2);
+
+        // If element is outside boundaries, allow movement back towards court
+        if (currentLeft < 0 || currentTop < 0 ||
+            currentLeft > court.clientWidth - elementRect.width ||
+            currentTop > court.clientHeight - elementRect.height) {
+            // Element is outside - allow more freedom to drag it back
+            newX = Math.max(minX, Math.min(newX, maxX));
+            newY = Math.max(minY, Math.min(newY, maxY));
+        } else {
+            // Element is inside - normal constraints
+            newX = Math.max(0, Math.min(newX, court.clientWidth - elementRect.width));
+            newY = Math.max(0, Math.min(newY, court.clientHeight - elementRect.height));
+        }
     }
     
     draggedElement.style.left = newX + 'px';
@@ -1273,10 +1292,18 @@ function createElementFromJson(element, court) {
             item.appendChild(nameLabel);
         }
         
-        // Position element
-        item.style.left = x + 'px';
-        item.style.top = y + 'px';
-        
+        // Position element - ensure it's within court boundaries
+        // Clamp position to ensure element is visible and draggable
+        const clampedX = Math.max(0, Math.min(x, court.clientWidth - 80));
+        const clampedY = Math.max(0, Math.min(y, court.clientHeight - 80));
+
+        if (x !== clampedX || y !== clampedY) {
+            console.warn(`Element position adjusted from (${x}, ${y}) to (${clampedX}, ${clampedY}) to keep within court`);
+        }
+
+        item.style.left = clampedX + 'px';
+        item.style.top = clampedY + 'px';
+
         // Add remove button
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-btn';
@@ -1297,10 +1324,18 @@ function createElementFromJson(element, court) {
         item.id = 'item-' + (++itemCounter);
         item.dataset.phase = currentPhase;
         
-        // Position element
-        item.style.left = x + 'px';
-        item.style.top = y + 'px';
-        
+        // Position element - ensure it's within court boundaries
+        // Clamp position to ensure element is visible and draggable
+        const clampedX = Math.max(0, Math.min(x, court.clientWidth - 80));
+        const clampedY = Math.max(0, Math.min(y, court.clientHeight - 80));
+
+        if (x !== clampedX || y !== clampedY) {
+            console.warn(`Element position adjusted from (${x}, ${y}) to (${clampedX}, ${clampedY}) to keep within court`);
+        }
+
+        item.style.left = clampedX + 'px';
+        item.style.top = clampedY + 'px';
+
         // Add remove button
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-btn';
