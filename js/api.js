@@ -3,13 +3,14 @@ let geminiApiKey = '';
 
 // Layout validation function to ensure coordinates are within safe bounds
 function validateLayout(layout) {
+    console.log('=== VALIDATING LAYOUT ===');
     if (!layout || !layout.layouts || !Array.isArray(layout.layouts)) {
         console.warn('Invalid layout structure');
         return false;
     }
-    
+
     let hasErrors = false;
-    
+
     layout.layouts.forEach((layoutVariant, layoutIndex) => {
         if (!layoutVariant.elements || !Array.isArray(layoutVariant.elements)) {
             console.warn(`Layout ${layoutIndex}: Missing or invalid elements array`);
@@ -26,17 +27,22 @@ function validateLayout(layout) {
             const { xPercent, yPercent } = element.position;
             
             // Validate coordinates are within safe bounds (20-80%)
+            const originalX = xPercent;
+            const originalY = yPercent;
+
             if (xPercent < 20 || xPercent > 80) {
                 console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid xPercent ${xPercent}, should be 20-80`);
                 // Auto-fix by clamping to safe range
                 element.position.xPercent = Math.max(20, Math.min(80, xPercent));
+                console.log(`  Fixed X: ${originalX} -> ${element.position.xPercent}`);
                 hasErrors = true;
             }
-            
+
             if (yPercent < 20 || yPercent > 80) {
                 console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid yPercent ${yPercent}, should be 20-80`);
                 // Auto-fix by clamping to safe range
                 element.position.yPercent = Math.max(20, Math.min(80, yPercent));
+                console.log(`  Fixed Y: ${originalY} -> ${element.position.yPercent}`);
                 hasErrors = true;
             }
         });
@@ -406,6 +412,22 @@ async function analyzeLayout() {
         }
         
         if (data.suggestions) {
+            // Log raw AI response for debugging
+            console.log('=== RAW AI RESPONSE ===');
+            console.log('Full response:', JSON.stringify(data, null, 2));
+            if (data.layoutJson && data.layoutJson.layouts) {
+                console.log('Layouts received:', data.layoutJson.layouts.length);
+                data.layoutJson.layouts.forEach((layout, idx) => {
+                    console.log(`Layout ${idx} - ${layout.name}:`);
+                    if (layout.elements) {
+                        layout.elements.forEach((el, elIdx) => {
+                            console.log(`  Element ${elIdx}: ${el.type} at (${el.position?.xPercent}%, ${el.position?.yPercent}%)`);
+                        });
+                    }
+                });
+            }
+            console.log('======================');
+
             // Validate and fix layout coordinates before storing/displaying
             if (data.layoutJson) {
                 validateLayout(data.layoutJson);

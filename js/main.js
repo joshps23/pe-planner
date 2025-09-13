@@ -1088,8 +1088,14 @@ function applySelectedLayout() {
 }
 
 function createElementFromJson(element, court) {
+    console.log(`\n=== CREATING ELEMENT: ${element.type} ===`);
+    console.log(`Input coordinates: (${element.position?.xPercent}%, ${element.position?.yPercent}%)`);
+
     // Detect if we're using a custom space (white court) or standard court
     const isCustomSpace = court.classList.contains('custom-space');
+    console.log(`Is custom space: ${isCustomSpace}`);
+    console.log(`Court dimensions: ${court.clientWidth}x${court.clientHeight}px`);
+    console.log(`Court offset from page: left=${court.offsetLeft}, top=${court.offsetTop}`);
 
     // For custom spaces, the white area IS the entire court element
     // The green border is from the parent container, not part of the court
@@ -1103,10 +1109,12 @@ function createElementFromJson(element, court) {
         courtInsetY = parseFloat(computedStyle.paddingTop) || 0;
     }
     // For custom spaces, insets remain 0 as the white area is the full court
+    console.log(`Court insets: X=${courtInsetX}, Y=${courtInsetY}`);
 
     // Calculate the actual playing area dimensions
     const playingAreaWidth = court.clientWidth - (2 * courtInsetX);
     const playingAreaHeight = court.clientHeight - (2 * courtInsetY);
+    console.log(`Playing area: ${playingAreaWidth}x${playingAreaHeight}px`);
     
     // Validate and clamp coordinates to safe range (20-80%)
     let xPercent = element.position.xPercent || 50;
@@ -1165,24 +1173,30 @@ function createElementFromJson(element, court) {
     // Calculate the center position based on percentage of the full court
     let centerX = courtInsetX + (xPercent / 100) * playingAreaWidth;
     let centerY = courtInsetY + (yPercent / 100) * playingAreaHeight;
+    console.log(`Center position: (${centerX}, ${centerY})`);
 
     // Calculate top-left position (elements are positioned by top-left corner)
     let x = centerX - (elementWidth / 2);
     let y = centerY - (elementHeight / 2);
+    console.log(`Initial position (top-left): (${x}, ${y})`);
 
     // Ensure elements stay within the white playing area boundaries
     const minX = courtInsetX;
     const maxX = courtInsetX + playingAreaWidth - elementWidth;
     const minY = courtInsetY;
     const maxY = courtInsetY + playingAreaHeight - elementHeight;
+    console.log(`Boundaries: X=[${minX}, ${maxX}], Y=[${minY}, ${maxY}]`);
 
+    const oldX = x, oldY = y;
     x = Math.max(minX, Math.min(maxX, x));
     y = Math.max(minY, Math.min(maxY, y));
-    
-    // Debug logging to verify positioning
-    if (isCustomSpace) {
-        console.log(`Positioning ${element.type} at ${xPercent}%, ${yPercent}% -> pixel (${x}, ${y}) within white area`);
+
+    if (oldX !== x || oldY !== y) {
+        console.warn(`Position clamped: (${oldX}, ${oldY}) -> (${x}, ${y})`);
     }
+    console.log(`Final position: (${x}, ${y})`);
+    console.log(`=================================`);
+    
     
     if (element.type === 'attacker' || element.type === 'defender') {
         // Create student element
