@@ -75,18 +75,24 @@ export default async (request, context) => {
       if (line.includes('DEFENDER')) equipmentCount.defenders++;
     }
 
-    // STRICT FORMAT PROMPT
+    // STRICT FORMAT PROMPT WITH CLEAR BOUNDARIES
     let prompt = `PE Layout: ${activityInfo}
 Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
 
-Return EXACTLY this format. DO NOT use layoutOptions or any other structure:
+CRITICAL FORMAT RULES:
+1. Use ONLY the exact format shown between ===SUGGESTIONS=== and ===END===
+2. Do NOT create your own JSON structure
+3. Do NOT use "layoutOptions", "suggestions" as array, or any other format
+4. teachingPoints must be a STRING, not an array
+
+Return response in EXACTLY this format:
 ===SUGGESTIONS===
-One sentence improvement suggestion here
+Write one sentence improvement suggestion here as plain text
 ===LAYOUT_OPTIONS===
-{"layouts":[{"name":"Activity Name","description":"Brief description","instructions":"How to play","rules":"Game rules","teachingPoints":"Key teaching points","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":35,"yPercent":35}},{"type":"attacker","position":{"xPercent":65,"yPercent":35}},{"type":"attacker","position":{"xPercent":50,"yPercent":65}},{"type":"defender","position":{"xPercent":50,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":45}}]}]}
+{"layouts":[{"name":"Activity Name","description":"Brief description","instructions":"How to play instructions","rules":"List game rules here","teachingPoints":"Key teaching points as a single string","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":35,"yPercent":35}},{"type":"attacker","position":{"xPercent":65,"yPercent":35}},{"type":"attacker","position":{"xPercent":50,"yPercent":65}},{"type":"defender","position":{"xPercent":50,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":45}}]}]}
 ===END===
 
-IMPORTANT: Keep ALL elements within 15-85% of court. Include positions for ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, and ${equipmentCount.balls} balls.`;
+Keep ALL elements within 15-85% range. Include ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.balls} balls.`;
 
     // Add timeout for the API request - use most of the 26s Netlify allows
     const controller = new AbortController();
@@ -109,7 +115,7 @@ IMPORTANT: Keep ALL elements within 15-85% of court. Include positions for ALL $
           temperature: 0.2,  // Low but allowing some creativity
           topK: 5,           // Minimal variety for better suggestions
           topP: 0.7,         // Focused but not too restrictive
-          maxOutputTokens: 4000,  // Reasonable limit for complete responses
+          maxOutputTokens: 30000,  // High limit required for Gemini 2.5 Flash to avoid abortion
           candidateCount: 1
         }
       })
@@ -154,26 +160,63 @@ IMPORTANT: Keep ALL elements within 15-85% of court. Include positions for ALL $
       // Parse the response to extract suggestions and JSON
       let suggestions = fullResponse;
       let layoutJson = null;
-      
+
       if (fullResponse.includes('===SUGGESTIONS===') && fullResponse.includes('===LAYOUT_OPTIONS===')) {
         try {
           const suggestionsMatch = fullResponse.match(/===SUGGESTIONS===\s*([\s\S]*?)===LAYOUT_OPTIONS===/);
           const layoutsMatch = fullResponse.match(/===LAYOUT_OPTIONS===\s*([\s\S]*?)===END===/);
-          
+
           if (suggestionsMatch) {
             suggestions = suggestionsMatch[1].trim();
+            // If suggestions is accidentally an array in string form, extract the first item
+            if (suggestions.startsWith('[') && suggestions.endsWith(']')) {
+              try {
+                const suggestionsArray = JSON.parse(suggestions);
+                suggestions = Array.isArray(suggestionsArray) ? suggestionsArray[0] : suggestions;
+              } catch (e) {
+                // Keep as is if not valid JSON
+              }
+            }
           }
-          
+
           if (layoutsMatch) {
             let layoutsStr = layoutsMatch[1].trim();
             // Handle markdown code blocks that some models add
             layoutsStr = layoutsStr.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
+            layoutsStr = layoutsStr.replace(/```\s*$/, '');
+
+            // Try to parse the JSON
             layoutJson = JSON.parse(layoutsStr);
 
-            // Handle alternative format where AI returns layoutOptions instead of layouts
-            if (!layoutJson.layouts && layoutJson.layoutOptions && layoutJson.layoutOptions.layouts) {
-              console.log('Converting layoutOptions format to expected format');
-              layoutJson = { layouts: layoutJson.layoutOptions.layouts };
+            // Handle various alternative formats the AI might return
+            if (!layoutJson.layouts) {
+              // Handle layoutOptions structure
+              if (layoutJson.layoutOptions && layoutJson.layoutOptions.layouts) {
+                console.log('Converting layoutOptions format to expected format');
+                layoutJson = { layouts: layoutJson.layoutOptions.layouts };
+              }
+              // Handle direct array of layouts
+              else if (Array.isArray(layoutJson)) {
+                console.log('Converting array format to expected format');
+                layoutJson = { layouts: layoutJson };
+              }
+              // Handle single layout object
+              else if (layoutJson.name && layoutJson.elements) {
+                console.log('Converting single layout to array format');
+                layoutJson = { layouts: [layoutJson] };
+              }
+            }
+
+            // Ensure teachingPoints is a string, not an array
+            if (layoutJson && layoutJson.layouts) {
+              layoutJson.layouts.forEach(layout => {
+                if (Array.isArray(layout.teachingPoints)) {
+                  layout.teachingPoints = layout.teachingPoints.join(' ');
+                }
+                if (Array.isArray(layout.rules)) {
+                  layout.rules = layout.rules.join(' ');
+                }
+              });
             }
             
             // Validate and fix coordinates for all layouts
