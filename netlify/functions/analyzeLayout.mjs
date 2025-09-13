@@ -75,15 +75,15 @@ export default async (request, context) => {
       if (line.includes('DEFENDER')) equipmentCount.defenders++;
     }
 
-    // MINIMAL BUT INFORMATIVE PROMPT
+    // PROMPT WITH MANDATORY ELEMENTS
     let prompt = `PE Layout: ${activityInfo}
 Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
 
-Suggest improved layout. Keep ALL elements within 15-85% of court area for safety. Return JSON:
+Suggest improved layout. CRITICAL: You MUST include "elements" array with positions for ALL equipment. Keep within 15-85% of court. Return JSON:
 ===SUGGESTIONS===
 One key improvement
 ===LAYOUT_OPTIONS===
-{"layouts":[{"name":"Improved","description":"Better setup","instructions":"How to play","rules":"Main rules","teachingPoints":"Key tips","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":40,"yPercent":50}},{"type":"defender","position":{"xPercent":60,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":50}}]}]}
+{"layouts":[{"name":"Improved","description":"Better setup","instructions":"How to play","rules":"Main rules","teachingPoints":"Key tips","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":35,"yPercent":35}},{"type":"attacker","position":{"xPercent":65,"yPercent":35}},{"type":"attacker","position":{"xPercent":50,"yPercent":65}},{"type":"defender","position":{"xPercent":50,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":45}}]}]}
 ===END===`;
 
     // Add timeout for the API request - use most of the 26s Netlify allows
@@ -171,6 +171,45 @@ One key improvement
             // Validate and fix coordinates for all layouts
             if (layoutJson && layoutJson.layouts) {
               layoutJson.layouts.forEach(layout => {
+                // Ensure elements array exists
+                if (!layout.elements || !Array.isArray(layout.elements)) {
+                  console.warn('Layout missing elements array, adding default elements');
+                  // Add default elements based on equipment count
+                  layout.elements = [];
+
+                  // Add cones at corners
+                  if (equipmentCount.cones >= 4) {
+                    layout.elements.push(
+                      {"type":"cone","position":{"xPercent":25,"yPercent":25}},
+                      {"type":"cone","position":{"xPercent":75,"yPercent":25}},
+                      {"type":"cone","position":{"xPercent":25,"yPercent":75}},
+                      {"type":"cone","position":{"xPercent":75,"yPercent":75}}
+                    );
+                  }
+
+                  // Add attackers
+                  for (let i = 0; i < equipmentCount.attackers; i++) {
+                    const positions = [
+                      {"xPercent":35,"yPercent":35},
+                      {"xPercent":65,"yPercent":35},
+                      {"xPercent":50,"yPercent":65}
+                    ];
+                    if (positions[i]) {
+                      layout.elements.push({"type":"attacker","position":positions[i]});
+                    }
+                  }
+
+                  // Add defenders
+                  for (let i = 0; i < equipmentCount.defenders; i++) {
+                    layout.elements.push({"type":"defender","position":{"xPercent":50,"yPercent":50}});
+                  }
+
+                  // Add ball
+                  if (equipmentCount.balls > 0) {
+                    layout.elements.push({"type":"ball","position":{"xPercent":50,"yPercent":45}});
+                  }
+                }
+
                 if (layout.elements) {
                   layout.elements.forEach(element => {
                     if (element.position) {

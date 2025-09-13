@@ -132,7 +132,7 @@ function createLayoutCard(layout, index) {
             </div>` : ''}
         </div>
         <div class="layout-card-features">
-            ${layout.elements.length} elements • ${layout.annotations?.length || 0} notes
+            ${layout.elements?.length || 0} elements • ${layout.annotations?.length || 0} notes
         </div>
     `;
     
