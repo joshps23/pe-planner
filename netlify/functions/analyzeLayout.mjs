@@ -43,9 +43,9 @@ export default async (request, context) => {
     }
 
     const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
-    // Use Gemini 2.5 Flash - the latest multimodal model with next-generation features
+    // Use Gemini 1.5 Pro - powerful model with strong reasoning capabilities
     // Can be overridden with GEMINI_MODEL environment variable
-    const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
     
     if (!geminiApiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
@@ -248,7 +248,7 @@ One key improvement
     
     return new Response(JSON.stringify({ 
       error: errorMessage,
-      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
       suggestion: statusCode === 504 ? 'Try using gemini-1.5-flash or gemini-1.5-pro model instead' : undefined
     }), {
       status: statusCode,
