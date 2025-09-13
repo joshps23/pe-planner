@@ -1097,6 +1097,11 @@ function createElementFromJson(element, court) {
     console.log(`Court dimensions: ${court.clientWidth}x${court.clientHeight}px`);
     console.log(`Court offset from page: left=${court.offsetLeft}, top=${court.offsetTop}`);
 
+    // Additional debug info
+    const courtRect = court.getBoundingClientRect();
+    console.log(`Court getBoundingClientRect: width=${courtRect.width}, height=${courtRect.height}`);
+    console.log(`Court offsetWidth=${court.offsetWidth}, offsetHeight=${court.offsetHeight}`);
+
     // For custom spaces, the white area IS the entire court element
     // The green border is from the parent container, not part of the court
     let courtInsetX = 0;
@@ -1195,6 +1200,52 @@ function createElementFromJson(element, court) {
         console.warn(`Position clamped: (${oldX}, ${oldY}) -> (${x}, ${y})`);
     }
     console.log(`Final position: (${x}, ${y})`);
+
+    // Debug: Add visual marker at court boundaries
+    if (window.debugMode) {
+        // Draw debug rectangle showing the actual court boundaries
+        const debugMarker = document.createElement('div');
+        debugMarker.style.position = 'absolute';
+        debugMarker.style.left = '0px';
+        debugMarker.style.top = '0px';
+        debugMarker.style.width = '100%';
+        debugMarker.style.height = '100%';
+        debugMarker.style.border = '2px dashed red';
+        debugMarker.style.pointerEvents = 'none';
+        debugMarker.style.zIndex = '9999';
+        debugMarker.className = 'debug-boundary';
+
+        // Remove any existing debug markers
+        court.querySelectorAll('.debug-boundary').forEach(m => m.remove());
+        court.appendChild(debugMarker);
+
+        // Add corner markers
+        const corners = [
+            {x: 0, y: 0, label: '0,0'},
+            {x: playingAreaWidth - 20, y: 0, label: 'TR'},
+            {x: 0, y: playingAreaHeight - 20, label: 'BL'},
+            {x: playingAreaWidth - 20, y: playingAreaHeight - 20, label: 'BR'}
+        ];
+
+        corners.forEach(corner => {
+            const marker = document.createElement('div');
+            marker.style.position = 'absolute';
+            marker.style.left = corner.x + 'px';
+            marker.style.top = corner.y + 'px';
+            marker.style.width = '20px';
+            marker.style.height = '20px';
+            marker.style.background = 'red';
+            marker.style.color = 'white';
+            marker.style.fontSize = '10px';
+            marker.style.display = 'flex';
+            marker.style.alignItems = 'center';
+            marker.style.justifyContent = 'center';
+            marker.textContent = corner.label;
+            marker.className = 'debug-corner';
+            court.appendChild(marker);
+        });
+    }
+
     console.log(`=================================`);
     
     
@@ -1780,6 +1831,9 @@ function attachContextMenu(element) {
 
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('PE Activity Consultant loaded.');
+    console.log('TIP: Type "window.debugMode = true" in console then re-apply layout to see court boundary markers');
+
     // Initialize API configuration
     loadApiConfig();
     
