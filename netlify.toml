@@ -7,6 +7,6 @@
 
   # Configure analyzeLayout function timeout
   [functions.analyzeLayout]
-    # Maximum timeout for free tier is 10 seconds
-    # Using simplified prompt and fastest model to work within this limit
-    timeout = 10  # 10 seconds (max for free tier)
+    # Netlify Pro tier supports up to 26 seconds for synchronous functions
+    # Using Gemini 2.5 Flash with full 3-layout response
+    timeout = 26  # 26 seconds (max for synchronous functions on Pro tier)

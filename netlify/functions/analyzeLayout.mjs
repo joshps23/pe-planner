@@ -43,9 +43,9 @@ export default async (request, context) => {
     }
 
     const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
-    // Use FASTEST model for production to avoid timeouts on Netlify free tier
-    // gemini-1.5-flash is the fastest available model
-    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash'; // Fastest model
+    // Use Gemini 2.5 Flash for best quality with Netlify Pro tier
+    // Netlify Pro supports longer timeouts (up to 26 seconds for synchronous functions)
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash'; // Best quality model
     
     if (!geminiApiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
@@ -92,27 +92,69 @@ Focus on practical, real-world measurements and distances that a PE teacher can 
     
     prompt += `\n\nKeep your response practical, actionable, and suitable for a PE teacher. Focus on pedagogy, safety, and student engagement. Adapt your advice to the specific sport/activity indicated by the equipment and activity description.
 
-RESPONSE FORMAT (SIMPLIFIED FOR SPEED):
-Provide a brief analysis and ONE improved layout:
+IMPORTANT RESPONSE FORMAT:
+Please provide your response in this exact format:
 
 ===SUGGESTIONS===
-[Brief analysis in 2-3 sentences]
+[Your detailed text analysis and suggestions here]
 
 ===LAYOUT_OPTIONS===
 {
   "layouts": [
     {
-      "name": "Improved Layout",
-      "description": "Brief description",
-      "instructions": "How to use this layout",
-      "rules": "1-2 simple rules",
-      "teachingPoints": "1-2 key points",
+      "name": "Beginner-Friendly Layout",
+      "description": "Simplified setup focusing on safety and basic skill development",
+      "instructions": "Clear, step-by-step instructions for how students should use this layout",
+      "rules": "Simple rules that are easy for beginners to understand and follow",
+      "teachingPoints": "Key coaching points and safety considerations for this setup",
       "elements": [
         {
-          "type": "cone|ball|attacker|defender",
+          "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender|floorball-stick|frisbee",
+          "name": "Student Name (only for attacker/defender)",
+          "position": {
+            "xPercent": 25,
+            "yPercent": 30
+          }
+        }
+      ],
+      "annotations": [
+        {
+          "text": "Coaching point or instruction",
           "position": {
             "xPercent": 50,
-            "yPercent": 50
+            "yPercent": 20
+          }
+        }
+      ]
+    },
+    {
+      "name": "Skill-Focused Layout",
+      "description": "Advanced setup targeting specific skill development",
+      "instructions": "Detailed instructions for skill-building activities and progressions",
+      "rules": "Structured rules that challenge students and promote skill mastery",
+      "teachingPoints": "Technical coaching points and skill development cues",
+      "elements": [
+        {
+          "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender|floorball-stick|frisbee",
+          "position": {
+            "xPercent": 40,
+            "yPercent": 25
+          }
+        }
+      ]
+    },
+    {
+      "name": "High-Engagement Layout",
+      "description": "Dynamic setup maximizing student participation and fun",
+      "instructions": "Energetic activity instructions that keep all students actively involved",
+      "rules": "Fun, competitive rules that motivate students and maintain engagement",
+      "teachingPoints": "Engagement strategies and participation management tips",
+      "elements": [
+        {
+          "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender|floorball-stick|frisbee",
+          "position": {
+            "xPercent": 35,
+            "yPercent": 45
           }
         }
       ]
@@ -121,7 +163,7 @@ Provide a brief analysis and ONE improved layout:
 }
 ===END===
 
-Keep response BRIEF and FOCUSED. Only suggest ONE layout.
+Please provide 3 different layout variations with complete activity details.
 
 CRITICAL COORDINATE REQUIREMENTS:
 - The court is a rectangular area with coordinates from (0,0) at top-left to (100,100) at bottom-right
@@ -147,10 +189,10 @@ POSITIONING EXAMPLES FOR REFERENCE:
 
 Make realistic improvements based on the activity type and objectives for each variation.`;
 
-    // Add timeout for the API request - must complete within Netlify's 10-second limit
+    // Add timeout for the API request - Netlify Pro supports up to 26 seconds
     const controller = new AbortController();
-    // Set timeout to 8 seconds to ensure completion within Netlify's free tier limit
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for API call
+    // Set timeout to 25 seconds for Netlify Pro tier
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout for API call
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
@@ -165,10 +207,10 @@ Make realistic improvements based on the activity type and objectives for each v
           }]
         }],
         generationConfig: {
-          temperature: 0.4,  // Very low for fastest, most deterministic output
-          topK: 10,          // Minimal for speed
-          topP: 0.8,         // Focused generation
-          maxOutputTokens: 1024,  // Minimal tokens for fastest response
+          temperature: 0.7,  // Balanced for quality and variety
+          topK: 40,          // Good variety for creative suggestions
+          topP: 0.95,        // Natural, comprehensive responses
+          maxOutputTokens: 8192,  // Full responses with 3 complete layouts
           candidateCount: 1
         }
       })
