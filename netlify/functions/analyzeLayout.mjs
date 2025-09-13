@@ -205,8 +205,12 @@ Make realistic improvements based on the activity type and objectives for each v
     }
 
     const data = await response.json();
-    
-    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+
+    // Debug logging to understand response structure
+    console.log('API Response received, checking structure...');
+
+    if (data.candidates && data.candidates[0] && data.candidates[0].content &&
+        data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
       const fullResponse = data.candidates[0].content.parts[0].text;
       
       // Parse the response to extract suggestions and JSON
@@ -273,12 +277,13 @@ Make realistic improvements based on the activity type and objectives for each v
         }
       });
     } else {
-      throw new Error('No suggestions received from AI');
+      console.error('Unexpected API response structure:', JSON.stringify(data, null, 2));
+      throw new Error('Unexpected response format from AI. The API response structure may have changed.');
     }
     
   } catch (error) {
     console.error('Error calling Gemini API:', error);
-    console.error('Model used:', process.env.GEMINI_MODEL || 'gemini-2.5-flash');
+    console.error('Model used:', process.env.GEMINI_MODEL || 'gemini-1.5-flash');
     
     let errorMessage = 'Failed to analyze layout. ';
     let statusCode = 500;
