@@ -1,6 +1,13 @@
 [build]
   functions = "netlify/functions"
-  
+
 [functions]
   # Directory where Netlify Functions are stored
   directory = "netlify/functions"
+
+  # Configure analyzeLayout as a background function with extended timeout
+  [functions.analyzeLayout]
+    # Use background function for longer timeout (15 minutes max)
+    # Note: Background functions are only available on paid Netlify plans
+    # For free tier, consider using a faster model like gemini-1.5-pro
+    timeout = 26  # 26 seconds (max for synchronous functions on free tier)

@@ -43,7 +43,9 @@ export default async (request, context) => {
     }
 
     const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
-    const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash'; // Configurable model with default
+    // Use faster model for production to avoid timeouts
+    // gemini-1.5-pro is faster than 2.5-flash and works within timeout limits
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-pro'; // Default to faster model
     
     if (!geminiApiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
@@ -219,9 +221,10 @@ POSITIONING EXAMPLES FOR REFERENCE:
 
 Make realistic improvements based on the activity type and objectives for each variation.`;
 
-    // Add timeout for the API request - background functions have 15 minutes total
+    // Add timeout for the API request - must complete within Netlify's timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout for API call
+    // Set timeout to 20 seconds to ensure completion within Netlify's 26-second limit
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout for API call
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
@@ -236,10 +239,10 @@ Make realistic improvements based on the activity type and objectives for each v
           }]
         }],
         generationConfig: {
-          temperature: 0.7,  // Slightly lower for more consistent outputs
-          topK: 40,          // Reduced from 64 for better compatibility
-          topP: 0.95,
-          maxOutputTokens: 8192,  // Increased for 2.5 Flash's capabilities
+          temperature: 0.6,  // Lower for faster, more consistent outputs
+          topK: 20,          // Reduced for faster generation
+          topP: 0.85,        // More focused for speed
+          maxOutputTokens: 4096,  // Reduced for faster response times
           candidateCount: 1
         }
       })
