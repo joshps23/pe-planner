@@ -1131,9 +1131,9 @@ function createElementFromJson(element, court) {
     const originalX = xPercent;
     const originalY = yPercent;
 
-    // Clamp to safe range (15-85%) to ensure elements stay within court boundaries with margin
-    xPercent = Math.max(15, Math.min(85, xPercent));
-    yPercent = Math.max(15, Math.min(85, yPercent));
+    // Clamp to safe range (20-80%) to ensure elements stay within white court area
+    xPercent = Math.max(20, Math.min(80, xPercent));
+    yPercent = Math.max(20, Math.min(80, yPercent));
     
     // Log warning if coordinates were adjusted
     if (xPercent !== originalX || yPercent !== originalY) {
@@ -1337,7 +1337,7 @@ function createAnnotationFromJson(annotation, court) {
     const playingAreaWidth = isCustomSpace ? court.offsetWidth - (2 * courtInsetX) : court.clientWidth - (2 * courtInsetX);
     const playingAreaHeight = isCustomSpace ? court.offsetHeight - (2 * courtInsetY) : court.clientHeight - (2 * courtInsetY);
     
-    // Validate and clamp coordinates to safe range (15-85%)
+    // Validate and clamp coordinates to safe range (20-80%)
     let xPercent = annotation.position.xPercent || 50;
     let yPercent = annotation.position.yPercent || 50;
 
@@ -1345,9 +1345,9 @@ function createAnnotationFromJson(annotation, court) {
     const originalX = xPercent;
     const originalY = yPercent;
 
-    // Clamp to safe range with margin
-    xPercent = Math.max(15, Math.min(85, xPercent));
-    yPercent = Math.max(15, Math.min(85, yPercent));
+    // Clamp to safe range to stay within white court area
+    xPercent = Math.max(20, Math.min(80, xPercent));
+    yPercent = Math.max(20, Math.min(80, yPercent));
     
     // Log warning if coordinates were adjusted
     if (xPercent !== originalX || yPercent !== originalY) {

@@ -79,20 +79,33 @@ export default async (request, context) => {
     let prompt = `PE Layout: ${activityInfo}
 Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
 
+COURT BOUNDARIES:
+- The WHITE COURT area spans from coordinates (20%, 20%) to (80%, 80%)
+- Top-left corner of white court: xPercent=20, yPercent=20
+- Bottom-right corner of white court: xPercent=80, yPercent=80
+- Center of white court: xPercent=50, yPercent=50
+- Anything outside 20-80% range is in the GREEN BORDER (forbidden area)
+
 CRITICAL FORMAT RULES:
 1. Use ONLY the exact format shown between ===SUGGESTIONS=== and ===END===
 2. Do NOT create your own JSON structure
 3. Do NOT use "layoutOptions", "suggestions" as array, or any other format
 4. teachingPoints must be a STRING, not an array
 
+CRITICAL POSITIONING RULES:
+- ALL elements MUST be within 20-80% range to stay inside the white court area
+- The white court has a green border - elements must NOT be placed in the green border area
+- Use xPercent and yPercent values between 20 and 80 ONLY
+- Any values outside 20-80% will place elements in the green border (FORBIDDEN)
+
 Return response in EXACTLY this format:
 ===SUGGESTIONS===
 Write one sentence improvement suggestion here as plain text
 ===LAYOUT_OPTIONS===
-{"layouts":[{"name":"Activity Name","description":"Brief description","instructions":"How to play instructions","rules":"List game rules here","teachingPoints":"Key teaching points as a single string","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":35,"yPercent":35}},{"type":"attacker","position":{"xPercent":65,"yPercent":35}},{"type":"attacker","position":{"xPercent":50,"yPercent":65}},{"type":"defender","position":{"xPercent":50,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":45}}]}]}
+{"layouts":[{"name":"Activity Name","description":"Brief description","instructions":"How to play instructions","rules":"List game rules here","teachingPoints":"Key teaching points as a single string","elements":[{"type":"cone","position":{"xPercent":30,"yPercent":30}},{"type":"cone","position":{"xPercent":70,"yPercent":30}},{"type":"cone","position":{"xPercent":30,"yPercent":70}},{"type":"cone","position":{"xPercent":70,"yPercent":70}},{"type":"attacker","position":{"xPercent":40,"yPercent":40}},{"type":"attacker","position":{"xPercent":60,"yPercent":40}},{"type":"attacker","position":{"xPercent":50,"yPercent":60}},{"type":"defender","position":{"xPercent":50,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":45}}]}]}
 ===END===
 
-Keep ALL elements within 15-85% range. Include ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.balls} balls.`;
+IMPORTANT: Keep ALL elements within 20-80% range (NOT 15-85%). Include ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.balls} balls.`;
 
     // Add timeout for the API request - use most of the 26s Netlify allows
     const controller = new AbortController();
@@ -228,22 +241,22 @@ Keep ALL elements within 15-85% range. Include ALL ${equipmentCount.cones} cones
                   // Add default elements based on equipment count
                   layout.elements = [];
 
-                  // Add cones at corners
+                  // Add cones at corners (within 20-80% range)
                   if (equipmentCount.cones >= 4) {
                     layout.elements.push(
-                      {"type":"cone","position":{"xPercent":25,"yPercent":25}},
-                      {"type":"cone","position":{"xPercent":75,"yPercent":25}},
-                      {"type":"cone","position":{"xPercent":25,"yPercent":75}},
-                      {"type":"cone","position":{"xPercent":75,"yPercent":75}}
+                      {"type":"cone","position":{"xPercent":30,"yPercent":30}},
+                      {"type":"cone","position":{"xPercent":70,"yPercent":30}},
+                      {"type":"cone","position":{"xPercent":30,"yPercent":70}},
+                      {"type":"cone","position":{"xPercent":70,"yPercent":70}}
                     );
                   }
 
                   // Add attackers
                   for (let i = 0; i < equipmentCount.attackers; i++) {
                     const positions = [
-                      {"xPercent":35,"yPercent":35},
-                      {"xPercent":65,"yPercent":35},
-                      {"xPercent":50,"yPercent":65}
+                      {"xPercent":40,"yPercent":40},
+                      {"xPercent":60,"yPercent":40},
+                      {"xPercent":50,"yPercent":60}
                     ];
                     if (positions[i]) {
                       layout.elements.push({"type":"attacker","position":positions[i]});
@@ -264,12 +277,12 @@ Keep ALL elements within 15-85% range. Include ALL ${equipmentCount.cones} cones
                 if (layout.elements) {
                   layout.elements.forEach(element => {
                     if (element.position) {
-                      // Ensure coordinates are within 15-85% range for safety margin
+                      // Ensure coordinates are within 20-80% range to stay in white court area
                       const originalX = element.position.xPercent;
                       const originalY = element.position.yPercent;
 
-                      element.position.xPercent = Math.max(15, Math.min(85, element.position.xPercent || 50));
-                      element.position.yPercent = Math.max(15, Math.min(85, element.position.yPercent || 50));
+                      element.position.xPercent = Math.max(20, Math.min(80, element.position.xPercent || 50));
+                      element.position.yPercent = Math.max(20, Math.min(80, element.position.yPercent || 50));
 
                       if (originalX !== element.position.xPercent || originalY !== element.position.yPercent) {
                         console.log(`Adjusted coordinates for ${element.type}: (${originalX}, ${originalY}) -> (${element.position.xPercent}, ${element.position.yPercent})`);
@@ -280,8 +293,8 @@ Keep ALL elements within 15-85% range. Include ALL ${equipmentCount.cones} cones
                 if (layout.annotations) {
                   layout.annotations.forEach(annotation => {
                     if (annotation.position) {
-                      annotation.position.xPercent = Math.max(15, Math.min(85, annotation.position.xPercent || 50));
-                      annotation.position.yPercent = Math.max(15, Math.min(85, annotation.position.yPercent || 50));
+                      annotation.position.xPercent = Math.max(20, Math.min(80, annotation.position.xPercent || 50));
+                      annotation.position.yPercent = Math.max(20, Math.min(80, annotation.position.yPercent || 50));
                     }
                   });
                 }

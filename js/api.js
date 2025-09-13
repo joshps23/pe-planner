@@ -30,18 +30,18 @@ function validateLayout(layout) {
             const originalX = xPercent;
             const originalY = yPercent;
 
-            if (xPercent < 15 || xPercent > 85) {
-                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid xPercent ${xPercent}, should be 15-85`);
+            if (xPercent < 20 || xPercent > 80) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid xPercent ${xPercent}, should be 20-80`);
                 // Auto-fix by clamping to safe range
-                element.position.xPercent = Math.max(15, Math.min(85, xPercent));
+                element.position.xPercent = Math.max(20, Math.min(80, xPercent));
                 console.log(`  Fixed X: ${originalX} -> ${element.position.xPercent}`);
                 hasErrors = true;
             }
 
-            if (yPercent < 15 || yPercent > 85) {
-                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid yPercent ${yPercent}, should be 15-85`);
+            if (yPercent < 20 || yPercent > 80) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid yPercent ${yPercent}, should be 20-80`);
                 // Auto-fix by clamping to safe range
-                element.position.yPercent = Math.max(15, Math.min(85, yPercent));
+                element.position.yPercent = Math.max(20, Math.min(80, yPercent));
                 console.log(`  Fixed Y: ${originalY} -> ${element.position.yPercent}`);
                 hasErrors = true;
             }
