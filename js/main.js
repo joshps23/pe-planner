@@ -301,31 +301,14 @@ function drag(e) {
     } else {
         // For equipment and students, constrain to court boundaries
         const elementRect = draggedElement.getBoundingClientRect();
-        const courtRect = court.getBoundingClientRect();
 
-        // Check if the element is currently outside court boundaries (can happen with AI suggestions)
-        // If so, allow it to be dragged back in, but don't allow dragging further out
-        const currentLeft = parseInt(draggedElement.style.left) || 0;
-        const currentTop = parseInt(draggedElement.style.top) || 0;
+        // Calculate maximum positions based on element size
+        const maxX = court.clientWidth - elementRect.width;
+        const maxY = court.clientHeight - elementRect.height;
 
-        // Calculate the actual boundaries considering element size
-        const minX = -(elementRect.width / 2); // Allow slightly outside for easier grabbing
-        const maxX = court.clientWidth - (elementRect.width / 2);
-        const minY = -(elementRect.height / 2);
-        const maxY = court.clientHeight - (elementRect.height / 2);
-
-        // If element is outside boundaries, allow movement back towards court
-        if (currentLeft < 0 || currentTop < 0 ||
-            currentLeft > court.clientWidth - elementRect.width ||
-            currentTop > court.clientHeight - elementRect.height) {
-            // Element is outside - allow more freedom to drag it back
-            newX = Math.max(minX, Math.min(newX, maxX));
-            newY = Math.max(minY, Math.min(newY, maxY));
-        } else {
-            // Element is inside - normal constraints
-            newX = Math.max(0, Math.min(newX, court.clientWidth - elementRect.width));
-            newY = Math.max(0, Math.min(newY, court.clientHeight - elementRect.height));
-        }
+        // Allow dragging anywhere within court boundaries (0 to max)
+        newX = Math.max(0, Math.min(newX, maxX));
+        newY = Math.max(0, Math.min(newY, maxY));
     }
     
     draggedElement.style.left = newX + 'px';
@@ -590,14 +573,13 @@ function loadPlan() {
         let x = parseInt(itemData.left) || 0;
         let y = parseInt(itemData.top) || 0;
         
-        // Apply boundary validation with safety margin
-        const safetyMargin = 20;
-        const maxX = courtWidth - elementWidth - safetyMargin;
-        const maxY = courtHeight - elementHeight - safetyMargin;
-        
-        // Clamp coordinates to safe boundaries
-        x = Math.max(safetyMargin, Math.min(maxX, x));
-        y = Math.max(safetyMargin, Math.min(maxY, y));
+        // Apply boundary validation - allow elements to reach edges
+        const maxX = courtWidth - elementWidth;
+        const maxY = courtHeight - elementHeight;
+
+        // Clamp coordinates to court boundaries (no artificial margin)
+        x = Math.max(0, Math.min(maxX, x));
+        y = Math.max(0, Math.min(maxY, y));
         
         // Apply validated coordinates
         item.style.left = x + 'px';
@@ -1293,9 +1275,14 @@ function createElementFromJson(element, court) {
         }
         
         // Position element - ensure it's within court boundaries
-        // Clamp position to ensure element is visible and draggable
-        const clampedX = Math.max(0, Math.min(x, court.clientWidth - 80));
-        const clampedY = Math.max(0, Math.min(y, court.clientHeight - 80));
+        // Use actual element size for clamping
+        const elementSize = (element.type === 'attacker' || element.type === 'defender') ? 80 :
+                           (element.type === 'cone') ? 30 :
+                           (element.type === 'ball') ? 25 :
+                           (element.type === 'hoop') ? 35 : 30;
+
+        const clampedX = Math.max(0, Math.min(x, court.clientWidth - elementSize));
+        const clampedY = Math.max(0, Math.min(y, court.clientHeight - elementSize));
 
         if (x !== clampedX || y !== clampedY) {
             console.warn(`Element position adjusted from (${x}, ${y}) to (${clampedX}, ${clampedY}) to keep within court`);
@@ -1325,9 +1312,14 @@ function createElementFromJson(element, court) {
         item.dataset.phase = currentPhase;
         
         // Position element - ensure it's within court boundaries
-        // Clamp position to ensure element is visible and draggable
-        const clampedX = Math.max(0, Math.min(x, court.clientWidth - 80));
-        const clampedY = Math.max(0, Math.min(y, court.clientHeight - 80));
+        // Use actual element size for clamping
+        const elementSize = (element.type === 'attacker' || element.type === 'defender') ? 80 :
+                           (element.type === 'cone') ? 30 :
+                           (element.type === 'ball') ? 25 :
+                           (element.type === 'hoop') ? 35 : 30;
+
+        const clampedX = Math.max(0, Math.min(x, court.clientWidth - elementSize));
+        const clampedY = Math.max(0, Math.min(y, court.clientHeight - elementSize));
 
         if (x !== clampedX || y !== clampedY) {
             console.warn(`Element position adjusted from (${x}, ${y}) to (${clampedX}, ${clampedY}) to keep within court`);
