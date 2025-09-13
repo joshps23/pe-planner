@@ -43,9 +43,9 @@ export default async (request, context) => {
     }
 
     const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
-    // FORCE gemini-1.5-flash - it's much faster than 2.5-flash
-    // Ignore environment variable to ensure we use the fastest model
-    const geminiModel = 'gemini-1.5-flash'; // HARDCODED to fastest model
+    // Use Gemini 2.5 Flash - the latest multimodal model with next-generation features
+    // Can be overridden with GEMINI_MODEL environment variable
+    const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     
     if (!geminiApiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
@@ -240,7 +240,7 @@ One key improvement
       errorMessage += 'Content was blocked by safety filters.';
       statusCode = 400;
     } else if (error.message.includes('model')) {
-      errorMessage += `Model error: ${error.message}. Try setting GEMINI_MODEL environment variable to 'gemini-1.5-pro' or 'gemini-2.0-flash'.`;
+      errorMessage += `Model error: ${error.message}. Try setting GEMINI_MODEL environment variable to 'gemini-1.5-flash', 'gemini-1.5-pro', or 'gemini-2.0-flash'.`;
       statusCode = 400;
     } else {
       errorMessage += `Error: ${error.message}`;
@@ -249,7 +249,7 @@ One key improvement
     return new Response(JSON.stringify({ 
       error: errorMessage,
       model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
-      suggestion: statusCode === 504 ? 'Try using gemini-2.0-flash or gemini-1.5-pro model instead' : undefined
+      suggestion: statusCode === 504 ? 'Try using gemini-1.5-flash or gemini-1.5-pro model instead' : undefined
     }), {
       status: statusCode,
       headers: {
