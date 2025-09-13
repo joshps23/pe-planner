@@ -60,7 +60,14 @@ export default async (request, context) => {
 
     let prompt = `You are an expert Physical Education teacher with experience across multiple sports and activities. Please analyze this lesson layout and provide constructive feedback and suggestions.
 
-IMPORTANT: The layout data contains pixel coordinates from a digital interface. When analyzing distances and positioning, interpret these in terms of real-world court/field measurements in METERS, not pixels. Assume a standard-sized court/field for the activity type.
+IMPORTANT COURT BOUNDARY INFORMATION:
+- The court is a rectangular playing area visible on screen
+- Court boundaries: x coordinates from 0 (left edge) to 100 (right edge), y coordinates from 0 (top edge) to 100 (bottom edge)
+- ALL elements MUST be placed within these boundaries using percentage coordinates
+- To ensure elements remain visible within the court, use coordinates between 20% and 80% only
+- Elements placed outside 20-80% range will appear outside the court boundaries
+
+The layout data below uses percentage coordinates where (0,0) is top-left corner and (100,100) is bottom-right corner of the court.
 
 ${layoutData}
 
@@ -189,16 +196,18 @@ For each layout, you MUST provide:
 Each layout should be a complete, ready-to-use activity that a PE teacher can implement immediately.
 
 CRITICAL COORDINATE REQUIREMENTS:
-- xPercent and yPercent MUST be numbers between 20 and 80 (inclusive) for optimal positioning
-- 0% = left/top edge of court, 100% = right/bottom edge of court
-- STRICT positioning guidelines to ensure elements stay fully visible:
-  - ALL elements: use 20-80 range for maximum safety and visibility
-  - Center positioning works best: 40-60 range for balanced layouts
-  - Edge positioning: minimum 25% from edges (25-75 range)
-  - NEVER use coordinates below 20% or above 80%
-- Examples of IDEAL coordinates: 25, 35, 45, 55, 65, 75
-- Examples of GOOD coordinates: 30, 40, 50, 60, 70
-- Examples of FORBIDDEN coordinates: 5, 10, 15, 85, 90, 95, 100, 0, -10, 105
+- The court is a rectangular area with coordinates from (0,0) at top-left to (100,100) at bottom-right
+- xPercent and yPercent represent percentage positions within the court boundaries
+- xPercent: 0 = left edge of court, 100 = right edge of court
+- yPercent: 0 = top edge of court, 100 = bottom edge of court
+- IMPORTANT: Elements MUST be placed INSIDE the court area between 20-80% to ensure visibility
+- STRICT positioning rules for ALL elements:
+  - Minimum: xPercent = 20, yPercent = 20 (safety margin from edges)
+  - Maximum: xPercent = 80, yPercent = 80 (safety margin from edges)
+  - Center of court: xPercent = 50, yPercent = 50
+- NEVER place elements outside the 20-80 range or they will appear outside the court
+- Examples of VALID coordinates: 25, 35, 45, 50, 55, 65, 75
+- Examples of INVALID coordinates: 0, 5, 10, 15, 85, 90, 95, 100, -10, 105
 
 POSITIONING EXAMPLES FOR REFERENCE:
 - Center court element: xPercent: 50, yPercent: 50
@@ -276,8 +285,40 @@ Make realistic improvements based on the activity type and objectives for each v
           }
           
           if (layoutsMatch) {
-            const layoutsStr = layoutsMatch[1].trim();
+            let layoutsStr = layoutsMatch[1].trim();
+            // Handle markdown code blocks that some models add
+            layoutsStr = layoutsStr.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
             layoutJson = JSON.parse(layoutsStr);
+            
+            // Validate and fix coordinates for all layouts
+            if (layoutJson && layoutJson.layouts) {
+              layoutJson.layouts.forEach(layout => {
+                if (layout.elements) {
+                  layout.elements.forEach(element => {
+                    if (element.position) {
+                      // Ensure coordinates are within 20-80% range
+                      const originalX = element.position.xPercent;
+                      const originalY = element.position.yPercent;
+                      
+                      element.position.xPercent = Math.max(20, Math.min(80, element.position.xPercent || 50));
+                      element.position.yPercent = Math.max(20, Math.min(80, element.position.yPercent || 50));
+                      
+                      if (originalX !== element.position.xPercent || originalY !== element.position.yPercent) {
+                        console.log(`Adjusted coordinates for ${element.type}: (${originalX}, ${originalY}) -> (${element.position.xPercent}, ${element.position.yPercent})`);
+                      }
+                    }
+                  });
+                }
+                if (layout.annotations) {
+                  layout.annotations.forEach(annotation => {
+                    if (annotation.position) {
+                      annotation.position.xPercent = Math.max(20, Math.min(80, annotation.position.xPercent || 50));
+                      annotation.position.yPercent = Math.max(20, Math.min(80, annotation.position.yPercent || 50));
+                    }
+                  });
+                }
+              });
+            }
           }
         } catch (parseError) {
           console.log('Error parsing structured response:', parseError);

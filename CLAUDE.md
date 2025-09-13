@@ -46,6 +46,28 @@ The app uses Netlify Functions for secure API integration with Google Gemini API
 - `test.html` - Basic element addition testing
 - `debug.html` - Function debugging interface
 
+## Recent Updates (2025-09-13)
+
+### UI/UX Enhancements
+- **Enhanced Drag Visibility**: Golden glow effect with drop-shadow filters for dragged elements
+- **Group Selection**: Multi-element selection with lasso tool and synchronized dragging
+- **Layer Management**: Right-click context menu with z-index controls (Send to Back/Front, Bring Forward/Backward)
+- **New Equipment**: Added floorball stick and frisbee options
+- **Modern Modal**: Custom prompt dialog replacing browser defaults with gradient design
+- **Auto-fill Title**: Lesson plan title auto-populates when loading saved plans
+
+### API & Performance Improvements
+- **Gemini 2.5 Flash**: Updated from 1.5 Pro with configurable model support via environment variables
+- **Extended Timeouts**: Background functions with 15-minute timeout for complex analysis
+- **Better Error Handling**: Improved 504 timeout handling with specific error messages
+- **JSON Parsing**: Fixed parsing for markdown-wrapped JSON responses from newer models
+
+### Court Boundary Fixes
+- **White Court Detection**: Properly detects custom space (white court) vs standard courts
+- **8% Border Calculation**: Accounts for green border area in custom spaces
+- **Triple-layer Protection**: Prompt instructions + server validation + client validation
+- **Consistent Positioning**: Both elements and annotations use same boundary logic
+
 ## Recent Updates (2025-09-12)
 
 ### Latest Session Fixes (Evening)

@@ -517,6 +517,9 @@ function loadPlan() {
     const plan = lessonPlans[planName];
     const court = document.getElementById('court');
     
+    // Populate the lesson plan title field with the loaded plan's name
+    document.getElementById('planName').value = planName;
+    
     // Load activity details if they exist
     if (plan.activityDetails) {
         document.getElementById('activityName').value = plan.activityDetails.name || '';
@@ -1085,9 +1088,29 @@ function applySelectedLayout() {
 }
 
 function createElementFromJson(element, court) {
-    // Convert percentage positions to pixels with validation
-    const courtWidth = court.clientWidth;
-    const courtHeight = court.clientHeight;
+    // Detect if we're using a custom space (white court) or standard court
+    const isCustomSpace = court.classList.contains('custom-space');
+    
+    // For custom spaces with white background and green border, we need to account for the visual border
+    // Based on visual inspection, the green border is approximately 8-10% of the court width/height on each side
+    let courtInsetX = 0;
+    let courtInsetY = 0;
+    
+    if (isCustomSpace) {
+        // For custom spaces, the white area starts at about 8% from each edge
+        // This creates the green border effect visible in the UI
+        courtInsetX = court.clientWidth * 0.08;  // 8% inset from left and right
+        courtInsetY = court.clientHeight * 0.08; // 8% inset from top and bottom
+    } else {
+        // For standard courts, check for actual padding
+        const computedStyle = window.getComputedStyle(court);
+        courtInsetX = parseFloat(computedStyle.paddingLeft) || 0;
+        courtInsetY = parseFloat(computedStyle.paddingTop) || 0;
+    }
+    
+    // Calculate the actual white playing area dimensions
+    const playingAreaWidth = court.clientWidth - (2 * courtInsetX);
+    const playingAreaHeight = court.clientHeight - (2 * courtInsetY);
     
     // Validate and clamp coordinates to safe range (20-80%)
     let xPercent = element.position.xPercent || 50;
@@ -1137,22 +1160,29 @@ function createElementFromJson(element, court) {
             elementWidth = elementHeight = 30;
     }
     
-    // Calculate pixel positions with proper boundary consideration
-    // Use a safety margin of 10px to prevent elements from touching the edges
-    const safetyMargin = 13;
+    // Calculate pixel positions within the actual white playing area
+    // Use a small safety margin to prevent elements from touching the edges
+    const safetyMargin = 5;
     
-    // Calculate available space for positioning (court minus element size minus margins)
-    const availableWidth = courtWidth - elementWidth - (2 * safetyMargin);
-    const availableHeight = courtHeight - elementHeight - (2 * safetyMargin);
+    // Calculate available space for positioning within the white playing area
+    const availableWidth = playingAreaWidth - elementWidth - (2 * safetyMargin);
+    const availableHeight = playingAreaHeight - elementHeight - (2 * safetyMargin);
     
-    // Convert percentage to pixel position within available space
-    // 0% = safetyMargin, 100% = courtWidth - elementWidth - safetyMargin
-    let x = safetyMargin + (xPercent / 100) * availableWidth;
-    let y = safetyMargin + (yPercent / 100) * availableHeight;
+    // Convert percentage to pixel position within the white playing area
+    // Important: Position relative to the white area, accounting for the green border inset
+    let x = courtInsetX + safetyMargin + (xPercent / 100) * availableWidth;
+    let y = courtInsetY + safetyMargin + (yPercent / 100) * availableHeight;
     
-    // Double-check boundaries (should not be needed with correct calculation)
-    x = Math.max(safetyMargin, Math.min(courtWidth - elementWidth - safetyMargin, x));
-    y = Math.max(safetyMargin, Math.min(courtHeight - elementHeight - safetyMargin, y));
+    // Double-check boundaries to ensure elements stay within the white playing area
+    x = Math.max(courtInsetX + safetyMargin, 
+                 Math.min(courtInsetX + playingAreaWidth - elementWidth - safetyMargin, x));
+    y = Math.max(courtInsetY + safetyMargin, 
+                 Math.min(courtInsetY + playingAreaHeight - elementHeight - safetyMargin, y));
+    
+    // Debug logging to verify positioning
+    if (isCustomSpace) {
+        console.log(`Positioning ${element.type} at ${xPercent}%, ${yPercent}% -> pixel (${x}, ${y}) within white area`);
+    }
     
     if (element.type === 'attacker' || element.type === 'defender') {
         // Create student element
@@ -1220,19 +1250,37 @@ function createElementFromJson(element, court) {
 }
 
 function createAnnotationFromJson(annotation, court) {
-    // Convert percentage positions to pixels with validation
-    const courtWidth = court.clientWidth;
-    const courtHeight = court.clientHeight;
+    // Use the same logic as createElementFromJson to detect the white court area
+    const isCustomSpace = court.classList.contains('custom-space');
     
-    // Validate and clamp coordinates to safe range (20-80%) - same as elements
+    // Calculate court insets (green border area)
+    let courtInsetX = 0;
+    let courtInsetY = 0;
+    
+    if (isCustomSpace) {
+        // For custom spaces, the white area starts at about 8% from each edge
+        courtInsetX = court.clientWidth * 0.08;
+        courtInsetY = court.clientHeight * 0.08;
+    } else {
+        // For standard courts, check for actual padding
+        const computedStyle = window.getComputedStyle(court);
+        courtInsetX = parseFloat(computedStyle.paddingLeft) || 0;
+        courtInsetY = parseFloat(computedStyle.paddingTop) || 0;
+    }
+    
+    // Calculate the actual white playing area dimensions
+    const playingAreaWidth = court.clientWidth - (2 * courtInsetX);
+    const playingAreaHeight = court.clientHeight - (2 * courtInsetY);
+    
+    // Validate and clamp coordinates to safe range (20-80%)
     let xPercent = annotation.position.xPercent || 50;
     let yPercent = annotation.position.yPercent || 50;
     
-    // Pre-validate coordinates with strict safe bounds to match element positioning
+    // Pre-validate coordinates
     const originalX = xPercent;
     const originalY = yPercent;
     
-    // Clamp to safe range (20-80%) to ensure annotations stay within court boundaries
+    // Clamp to safe range
     xPercent = Math.max(20, Math.min(80, xPercent));
     yPercent = Math.max(20, Math.min(80, yPercent));
     
@@ -1245,21 +1293,23 @@ function createAnnotationFromJson(annotation, court) {
     const annotationWidth = 120; // Approximate width of annotation
     const annotationHeight = 60;  // Approximate height of annotation
     
-    // Use same safety margin system as elements
-    const safetyMargin = 13;
+    // Use small safety margin
+    const safetyMargin = 5;
     
-    // Calculate available space for positioning (court minus annotation size minus margins)
-    const availableWidth = courtWidth - annotationWidth - (2 * safetyMargin);
-    const availableHeight = courtHeight - annotationHeight - (2 * safetyMargin);
+    // Calculate available space within the white playing area
+    const availableWidth = playingAreaWidth - annotationWidth - (2 * safetyMargin);
+    const availableHeight = playingAreaHeight - annotationHeight - (2 * safetyMargin);
     
-    // Convert percentage to pixel position within available space
-    // 0% = safetyMargin, 100% = courtWidth - annotationWidth - safetyMargin
-    let x = safetyMargin + (xPercent / 100) * availableWidth;
-    let y = safetyMargin + (yPercent / 100) * availableHeight;
+    // Convert percentage to pixel position within the white playing area
+    // Position relative to the white area, accounting for the green border inset
+    let x = courtInsetX + safetyMargin + (xPercent / 100) * availableWidth;
+    let y = courtInsetY + safetyMargin + (yPercent / 100) * availableHeight;
     
-    // Double-check boundaries (should not be needed with correct calculation)
-    x = Math.max(safetyMargin, Math.min(courtWidth - annotationWidth - safetyMargin, x));
-    y = Math.max(safetyMargin, Math.min(courtHeight - annotationHeight - safetyMargin, y));
+    // Double-check boundaries to ensure annotations stay within the white playing area
+    x = Math.max(courtInsetX + safetyMargin, 
+                 Math.min(courtInsetX + playingAreaWidth - annotationWidth - safetyMargin, x));
+    y = Math.max(courtInsetY + safetyMargin, 
+                 Math.min(courtInsetY + playingAreaHeight - annotationHeight - safetyMargin, y));
     
     const annotationDiv = document.createElement('div');
     annotationDiv.className = 'annotation';

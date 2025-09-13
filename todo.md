@@ -181,3 +181,75 @@ The PE Activity Consultant is now a robust, production-ready application with:
 2. Add layout template library for common activities
 3. Implement undo/redo functionality
 4. Consider performance optimizations for large layouts
+
+## UI/UX Enhancements Session (2025-09-13)
+
+### ✅ Enhanced Drag Visibility
+- [x] Added golden glow effect for dragged elements
+- [x] Replaced ugly square outline with drop-shadow filters
+- [x] Implemented CSS animations for smooth visual feedback
+
+### ✅ Group Selection Feature
+- [x] Implemented multi-element selection mode
+- [x] Added lasso selection with visual feedback
+- [x] Created group/ungroup functionality
+- [x] Added keyboard shortcuts (Ctrl/Cmd for multi-select)
+- [x] Synchronized dragging for grouped elements
+
+### ✅ Layer Management (Z-Index)
+- [x] Added right-click context menu for elements
+- [x] Implemented Send to Back/Front functions
+- [x] Added Bring Forward/Send Backward options
+- [x] Fixed z-index persistence during drag operations
+- [x] Ensured z-index values are maintained properly
+
+### ✅ New Equipment Options
+- [x] Added floorball stick equipment
+- [x] Added frisbee equipment
+- [x] Created visual representations for new equipment
+
+### ✅ Modern Modal Dialog
+- [x] Replaced browser's default prompt with custom modal
+- [x] Added gradient header design
+- [x] Implemented smooth animations
+- [x] Created promise-based modal system
+
+### ✅ Gemini API Updates
+- [x] Updated from Gemini 1.5 Pro to Gemini 2.5 Flash
+- [x] Made model configurable via environment variable
+- [x] Improved 504 timeout error handling
+- [x] Added model-specific generation config
+- [x] Created GEMINI_CONFIG.md documentation
+- [x] Fixed JSON parsing for markdown-wrapped responses
+
+### ✅ Court Boundary Fixes
+- [x] Fixed elements appearing outside white court area
+- [x] Calculated proper insets for custom spaces (8% border)
+- [x] Updated positioning logic for elements and annotations
+- [x] Added triple-layer boundary protection system
+- [x] Ensured all AI suggestions stay within court boundaries
+
+### ✅ Quality of Life Improvements
+- [x] Auto-populate lesson plan title when loading saved plans
+- [x] Fixed coordinate validation in Netlify function
+- [x] Added debug logging for positioning verification
+
+## Technical Improvements Summary
+
+### API & Backend
+- Migrated to Gemini 2.5 Flash with configurable model support
+- Extended function timeouts using background functions
+- Improved error handling for 504 timeouts
+- Added server-side coordinate validation
+
+### Frontend Enhancements
+- Modern CSS with animations and transitions
+- Custom modal system replacing browser prompts
+- Comprehensive drag-and-drop improvements
+- Multi-element selection and grouping
+
+### Data Management
+- Z-index persistence across operations
+- Court boundary detection and enforcement
+- Backward compatibility maintained
+- Improved save/load functionality
