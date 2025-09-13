@@ -107,7 +107,7 @@ One key improvement
           temperature: 0.2,  // Low but allowing some creativity
           topK: 5,           // Minimal variety for better suggestions
           topP: 0.7,         // Focused but not too restrictive
-          maxOutputTokens: 5000,  // High limit for complete, quality AI analysis without cutoffs
+          maxOutputTokens: 30000,  // High limit for complete, quality AI analysis without cutoffs
           candidateCount: 1
         }
       })
