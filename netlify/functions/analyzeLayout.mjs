@@ -107,7 +107,7 @@ One key improvement
           temperature: 0.2,  // Low but allowing some creativity
           topK: 5,           // Minimal variety for better suggestions
           topP: 0.7,         // Focused but not too restrictive
-          maxOutputTokens: 800,  // Enough for complete layout with players
+          maxOutputTokens: 2000,  // Increased to allow complete responses with instructions
           candidateCount: 1
         }
       })
