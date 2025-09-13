@@ -1117,9 +1117,11 @@ function createElementFromJson(element, court) {
     console.log(`Court insets: X=${courtInsetX}, Y=${courtInsetY}`);
 
     // Calculate the actual playing area dimensions
-    const playingAreaWidth = court.clientWidth - (2 * courtInsetX);
-    const playingAreaHeight = court.clientHeight - (2 * courtInsetY);
-    console.log(`Playing area: ${playingAreaWidth}x${playingAreaHeight}px`);
+    // Use offsetWidth/offsetHeight for custom spaces to include the border in the white area
+    // Use clientWidth/clientHeight for standard courts (no border)
+    const playingAreaWidth = isCustomSpace ? court.offsetWidth - (2 * courtInsetX) : court.clientWidth - (2 * courtInsetX);
+    const playingAreaHeight = isCustomSpace ? court.offsetHeight - (2 * courtInsetY) : court.clientHeight - (2 * courtInsetY);
+    console.log(`Playing area: ${playingAreaWidth}x${playingAreaHeight}px (using ${isCustomSpace ? 'offset' : 'client'} dimensions)`);
     
     // Validate and clamp coordinates to safe range (20-80%)
     let xPercent = element.position.xPercent || 50;
@@ -1331,8 +1333,9 @@ function createAnnotationFromJson(annotation, court) {
     // For custom spaces, insets remain 0 as the white area is the full court
 
     // Calculate the actual playing area dimensions
-    const playingAreaWidth = court.clientWidth - (2 * courtInsetX);
-    const playingAreaHeight = court.clientHeight - (2 * courtInsetY);
+    // Use offsetWidth/offsetHeight for custom spaces to include the border in the white area
+    const playingAreaWidth = isCustomSpace ? court.offsetWidth - (2 * courtInsetX) : court.clientWidth - (2 * courtInsetX);
+    const playingAreaHeight = isCustomSpace ? court.offsetHeight - (2 * courtInsetY) : court.clientHeight - (2 * courtInsetY);
     
     // Validate and clamp coordinates to safe range (20-80%)
     let xPercent = annotation.position.xPercent || 50;
