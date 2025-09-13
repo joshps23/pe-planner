@@ -43,9 +43,9 @@ export default async (request, context) => {
     }
 
     const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
-    // Use fastest model to ensure response within timeout
-    // Even with Pro tier, complex prompts can timeout
-    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash'; // Fastest model for reliability
+    // FORCE gemini-1.5-flash - it's much faster than 2.5-flash
+    // Ignore environment variable to ensure we use the fastest model
+    const geminiModel = 'gemini-1.5-flash'; // HARDCODED to fastest model
     
     if (!geminiApiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
@@ -60,76 +60,17 @@ export default async (request, context) => {
     
     console.log(`Using Gemini model: ${geminiModel}`);
 
-    // DRASTICALLY SIMPLIFIED PROMPT to avoid MAX_TOKENS
-    let prompt = `PE Teacher: Analyze this layout briefly.
+    // ULTRA-MINIMAL PROMPT to avoid MAX_TOKENS
+    let prompt = `Suggest ONE improved PE layout.
 
-${layoutData}
+Current: ${layoutData.substring(0, 200)}...
 
-Give 2-3 brief improvement tips.
-
-RESPONSE FORMAT - OPTIMIZED FOR SPEED:
-Provide a concise analysis and ONE improved layout:
-
+Return ONLY this JSON (coordinates 20-80 only):
 ===SUGGESTIONS===
-[Brief but helpful analysis - 3-4 key points maximum]
-
+Brief tip
 ===LAYOUT_OPTIONS===
-{
-  "layouts": [
-    {
-      "name": "Optimized Layout",
-      "description": "Improved setup based on your activity",
-      "instructions": "How to run this activity (2-3 sentences)",
-      "rules": "2-3 clear rules",
-      "teachingPoints": "2-3 key coaching points",
-      "elements": [
-        {
-          "type": "cone|ball|hoop|net|racket|shuttle|marker|bench|attacker|defender|floorball-stick|frisbee",
-          "position": {
-            "xPercent": 50,
-            "yPercent": 50
-          }
-        }
-      ],
-      "annotations": [
-        {
-          "text": "Key point",
-          "position": {
-            "xPercent": 50,
-            "yPercent": 20
-          }
-        }
-      ]
-    }
-  ]
-}
-===END===
-
-Keep response CONCISE. Generate ONE high-quality layout that best improves the current setup.
-
-CRITICAL COORDINATE REQUIREMENTS:
-- The court is a rectangular area with coordinates from (0,0) at top-left to (100,100) at bottom-right
-- xPercent and yPercent represent percentage positions within the court boundaries
-- xPercent: 0 = left edge of court, 100 = right edge of court
-- yPercent: 0 = top edge of court, 100 = bottom edge of court
-- IMPORTANT: Elements MUST be placed INSIDE the court area between 20-80% to ensure visibility
-- STRICT positioning rules for ALL elements:
-  - Minimum: xPercent = 20, yPercent = 20 (safety margin from edges)
-  - Maximum: xPercent = 80, yPercent = 80 (safety margin from edges)
-  - Center of court: xPercent = 50, yPercent = 50
-- NEVER place elements outside the 20-80 range or they will appear outside the court
-- Examples of VALID coordinates: 25, 35, 45, 50, 55, 65, 75
-- Examples of INVALID coordinates: 0, 5, 10, 15, 85, 90, 95, 100, -10, 105
-
-POSITIONING EXAMPLES FOR REFERENCE:
-- Center court element: xPercent: 50, yPercent: 50
-- Left side element: xPercent: 30, yPercent: 50  
-- Right side element: xPercent: 70, yPercent: 50
-- Front center: xPercent: 50, yPercent: 30
-- Back center: xPercent: 50, yPercent: 70
-- Safe corner positioning: xPercent: 25, yPercent: 25 (front-left)
-
-Make realistic improvements based on the activity type and objectives for each variation.`;
+{"layouts":[{"name":"Better","description":"improved","instructions":"how to play","rules":"main rule","teachingPoints":"key tip","elements":[{"type":"cone","position":{"xPercent":50,"yPercent":50}}]}]}
+===END===`;
 
     // Add timeout for the API request - keep it shorter for reliability
     const controller = new AbortController();
@@ -149,10 +90,10 @@ Make realistic improvements based on the activity type and objectives for each v
           }]
         }],
         generationConfig: {
-          temperature: 0.3,  // Very low for deterministic, short responses
-          topK: 10,          // Minimal variety for speed
-          topP: 0.8,         // Very focused generation
-          maxOutputTokens: 1024,  // Reduced to prevent MAX_TOKENS error
+          temperature: 0.1,  // Ultra-low for shortest possible responses
+          topK: 1,           // No variety - fastest generation
+          topP: 0.5,         // Extremely focused
+          maxOutputTokens: 500,  // Minimal tokens to prevent MAX_TOKENS
           candidateCount: 1
         }
       })
