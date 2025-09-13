@@ -1157,23 +1157,27 @@ function createElementFromJson(element, court) {
     }
     
     // Calculate pixel positions within the actual white playing area
-    // Use a small safety margin to prevent elements from touching the edges
-    const safetyMargin = 5;
-    
-    // Calculate available space for positioning within the white playing area
-    const availableWidth = playingAreaWidth - elementWidth - (2 * safetyMargin);
-    const availableHeight = playingAreaHeight - elementHeight - (2 * safetyMargin);
-    
-    // Convert percentage to pixel position within the white playing area
-    // Important: Position relative to the white area, accounting for the green border inset
-    let x = courtInsetX + safetyMargin + (xPercent / 100) * availableWidth;
-    let y = courtInsetY + safetyMargin + (yPercent / 100) * availableHeight;
-    
-    // Double-check boundaries to ensure elements stay within the white playing area
-    x = Math.max(courtInsetX + safetyMargin, 
-                 Math.min(courtInsetX + playingAreaWidth - elementWidth - safetyMargin, x));
-    y = Math.max(courtInsetY + safetyMargin, 
-                 Math.min(courtInsetY + playingAreaHeight - elementHeight - safetyMargin, y));
+    // The percentages represent positions on the court, where:
+    // 0% = left/top edge of white court
+    // 100% = right/bottom edge of white court
+    // Elements are centered at the specified percentage position
+
+    // Calculate the center position based on percentage of the full court
+    let centerX = courtInsetX + (xPercent / 100) * playingAreaWidth;
+    let centerY = courtInsetY + (yPercent / 100) * playingAreaHeight;
+
+    // Calculate top-left position (elements are positioned by top-left corner)
+    let x = centerX - (elementWidth / 2);
+    let y = centerY - (elementHeight / 2);
+
+    // Ensure elements stay within the white playing area boundaries
+    const minX = courtInsetX;
+    const maxX = courtInsetX + playingAreaWidth - elementWidth;
+    const minY = courtInsetY;
+    const maxY = courtInsetY + playingAreaHeight - elementHeight;
+
+    x = Math.max(minX, Math.min(maxX, x));
+    y = Math.max(minY, Math.min(maxY, y));
     
     // Debug logging to verify positioning
     if (isCustomSpace) {
@@ -1285,24 +1289,26 @@ function createAnnotationFromJson(annotation, court) {
     // Annotations dimensions
     const annotationWidth = 120; // Approximate width of annotation
     const annotationHeight = 60;  // Approximate height of annotation
+
+    // Calculate the center position based on percentage of the full court
+    // The percentages represent positions on the court, where:
+    // 0% = left/top edge of white court
+    // 100% = right/bottom edge of white court
+    let centerX = courtInsetX + (xPercent / 100) * playingAreaWidth;
+    let centerY = courtInsetY + (yPercent / 100) * playingAreaHeight;
+
+    // Calculate top-left position (annotations are positioned by top-left corner)
+    let x = centerX - (annotationWidth / 2);
+    let y = centerY - (annotationHeight / 2);
     
-    // Use small safety margin
-    const safetyMargin = 5;
-    
-    // Calculate available space within the white playing area
-    const availableWidth = playingAreaWidth - annotationWidth - (2 * safetyMargin);
-    const availableHeight = playingAreaHeight - annotationHeight - (2 * safetyMargin);
-    
-    // Convert percentage to pixel position within the white playing area
-    // Position relative to the white area, accounting for the green border inset
-    let x = courtInsetX + safetyMargin + (xPercent / 100) * availableWidth;
-    let y = courtInsetY + safetyMargin + (yPercent / 100) * availableHeight;
-    
-    // Double-check boundaries to ensure annotations stay within the white playing area
-    x = Math.max(courtInsetX + safetyMargin, 
-                 Math.min(courtInsetX + playingAreaWidth - annotationWidth - safetyMargin, x));
-    y = Math.max(courtInsetY + safetyMargin, 
-                 Math.min(courtInsetY + playingAreaHeight - annotationHeight - safetyMargin, y));
+    // Ensure annotations stay within the white playing area boundaries
+    const minX = courtInsetX;
+    const maxX = courtInsetX + playingAreaWidth - annotationWidth;
+    const minY = courtInsetY;
+    const maxY = courtInsetY + playingAreaHeight - annotationHeight;
+
+    x = Math.max(minX, Math.min(maxX, x));
+    y = Math.max(minY, Math.min(maxY, y));
     
     const annotationDiv = document.createElement('div');
     annotationDiv.className = 'annotation';
