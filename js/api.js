@@ -375,13 +375,48 @@ async function analyzeLayout() {
     analyzeBtn.disabled = true;
     
     try {
+        // Calculate actual court boundaries for custom spaces
+        const court = document.getElementById('court');
+        const isCustomSpace = court.classList.contains('custom-space');
+
+        // For custom spaces with green border, calculate the actual white court boundaries
+        let courtBoundaries = {
+            topLeftX: 20,
+            topLeftY: 20,
+            bottomRightX: 80,
+            bottomRightY: 80
+        };
+
+        if (isCustomSpace) {
+            // Get the parent container (green border area)
+            const container = court.parentElement;
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+            const courtWidth = court.offsetWidth;
+            const courtHeight = court.offsetHeight;
+
+            // Calculate the percentage of the container that is the white court
+            const borderWidthX = (containerWidth - courtWidth) / 2;
+            const borderWidthY = (containerHeight - courtHeight) / 2;
+
+            // Calculate boundaries as percentages
+            // The white court starts at the border width and ends at container width minus border width
+            courtBoundaries.topLeftX = Math.round((borderWidthX / containerWidth) * 100);
+            courtBoundaries.topLeftY = Math.round((borderWidthY / containerHeight) * 100);
+            courtBoundaries.bottomRightX = Math.round(((containerWidth - borderWidthX) / containerWidth) * 100);
+            courtBoundaries.bottomRightY = Math.round(((containerHeight - borderWidthY) / containerHeight) * 100);
+
+            console.log('Calculated court boundaries:', courtBoundaries);
+        }
+
         const response = await fetch('/.netlify/functions/analyzeLayout', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                layoutData: description
+                layoutData: description,
+                courtBoundaries: courtBoundaries
             })
         });
         
