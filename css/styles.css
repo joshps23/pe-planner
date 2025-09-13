@@ -234,7 +234,8 @@
                 linear-gradient(90deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 100%),
                 linear-gradient(0deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 100%);
             background-size: 30px 30px;
-            overflow: hidden;
+            overflow: visible;
+            z-index: 1;
         }
         
         /* Custom space styling - aspect ratio controlled by JavaScript */
@@ -1200,6 +1201,9 @@
             margin-top: 20px;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
+            position: relative;
+            z-index: 10;
+            background: white;
         }
 
         .activity-details-section.show {
