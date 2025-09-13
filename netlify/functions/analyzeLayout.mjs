@@ -86,10 +86,10 @@ One key improvement
 {"layouts":[{"name":"Improved","description":"Better setup","instructions":"How to play","rules":"Main rules","teachingPoints":"Key tips","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":25}},{"type":"cone","position":{"xPercent":75,"yPercent":25}},{"type":"cone","position":{"xPercent":25,"yPercent":75}},{"type":"cone","position":{"xPercent":75,"yPercent":75}},{"type":"attacker","position":{"xPercent":40,"yPercent":50}},{"type":"defender","position":{"xPercent":60,"yPercent":50}},{"type":"ball","position":{"xPercent":50,"yPercent":50}}]}]}
 ===END===`;
 
-    // Add timeout for the API request - keep it shorter for reliability
+    // Add timeout for the API request - use most of the 26s Netlify allows
     const controller = new AbortController();
-    // Set timeout to 20 seconds to ensure completion even with network delays
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout for API call
+    // Set timeout to 25 seconds (Netlify Pro allows 26s max for synchronous functions)
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout for API call
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
