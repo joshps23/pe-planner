@@ -60,37 +60,14 @@ export default async (request, context) => {
     
     console.log(`Using Gemini model: ${geminiModel}`);
 
-    let prompt = `You are an expert Physical Education teacher with experience across multiple sports and activities. Please analyze this lesson layout and provide constructive feedback and suggestions.
-
-IMPORTANT COURT BOUNDARY INFORMATION:
-- The court is a rectangular playing area visible on screen
-- Court boundaries: x coordinates from 0 (left edge) to 100 (right edge), y coordinates from 0 (top edge) to 100 (bottom edge)
-- ALL elements MUST be placed within these boundaries using percentage coordinates
-- To ensure elements remain visible within the court, use coordinates between 20% and 80% only
-- Elements placed outside 20-80% range will appear outside the court boundaries
-
-The layout data below uses percentage coordinates where (0,0) is top-left corner and (100,100) is bottom-right corner of the court.
+    // DRASTICALLY SIMPLIFIED PROMPT to avoid MAX_TOKENS
+    let prompt = `PE Teacher: Analyze this layout briefly.
 
 ${layoutData}
 
-Based on the activity details, court/field layout, and current phase, please provide:
-1. Assessment of the current setup (strengths and potential issues) - describe positioning and distances in METERS
-2. How well the layout supports the stated activity objectives and rules
-3. Specific suggestions to improve the activity effectiveness with real-world measurements
-4. Safety considerations and risk management with appropriate spacing distances in METERS  
-5. Alternative variations or progressions for this activity
-6. Tips for student engagement and maximizing learning outcomes
+Give 2-3 brief improvement tips.`;
 
-Focus on practical, real-world measurements and distances that a PE teacher can implement, not screen coordinates.`;
-
-    // Add specific guidance based on activity details
-    if (layoutData.includes('Activity Name:') || layoutData.includes('Rules & Instructions:')) {
-      prompt += `\n\nPay special attention to how the setup supports the specific activity rules and objectives described. Consider whether the equipment placement, student positioning, and space usage optimize the learning experience for the stated goals. If no specific sport is mentioned, analyze the layout based on the equipment and activity description provided.`;
-    } else {
-      prompt += `\n\nSince no specific activity details are provided, analyze the setup based on the visible equipment and student positioning. Make suggestions that would work for the types of activities that could be conducted with the current equipment layout.`;
-    }
-    
-    prompt += `\n\nKeep your response practical, actionable, and suitable for a PE teacher. Focus on pedagogy, safety, and student engagement. Adapt your advice to the specific sport/activity indicated by the equipment and activity description.
+    // Removed verbose guidance to reduce tokens
 
 RESPONSE FORMAT - OPTIMIZED FOR SPEED:
 Provide a concise analysis and ONE improved layout:
@@ -174,10 +151,10 @@ Make realistic improvements based on the activity type and objectives for each v
           }]
         }],
         generationConfig: {
-          temperature: 0.5,  // Lower for faster, more focused responses
-          topK: 20,          // Reduced for speed while maintaining quality
-          topP: 0.85,        // More focused generation
-          maxOutputTokens: 2048,  // Enough for one complete layout with details
+          temperature: 0.3,  // Very low for deterministic, short responses
+          topK: 10,          // Minimal variety for speed
+          topP: 0.8,         // Very focused generation
+          maxOutputTokens: 1024,  // Reduced to prevent MAX_TOKENS error
           candidateCount: 1
         }
       })
@@ -208,6 +185,12 @@ Make realistic improvements based on the activity type and objectives for each v
 
     // Debug logging to understand response structure
     console.log('API Response received, checking structure...');
+
+    // Check if the response was cut off due to token limit
+    if (data.candidates && data.candidates[0] && data.candidates[0].finishReason === 'MAX_TOKENS') {
+      console.error('Response hit MAX_TOKENS limit. Model could not complete the response.');
+      throw new Error('Response was too long and got cut off. Please try with simpler input.');
+    }
 
     if (data.candidates && data.candidates[0] && data.candidates[0].content &&
         data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
