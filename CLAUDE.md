@@ -175,7 +175,9 @@ netlify dev
 ### Environment Variables
 - `GOOGLE_GEMINI_API_KEY`: Required for AI analysis
 - `GEMINI_MODEL`: Optional, defaults to 'gemini-1.5-pro'
-  - Options: 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'
+  - Recommended: 'gemini-1.5-pro' (most reliable, best for production)
+  - Options: 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.5-flash'
+  - Note: gemini-2.5-flash may experience timeouts in development environment
 
 ## Code Organization
 
@@ -215,11 +217,13 @@ netlify dev
 ## AI Integration Details
 
 ### Gemini API Configuration
-- **Model Selection**: Configurable via environment variable
+- **Model Selection**: Configurable via environment variable (currently using gemini-1.5-pro)
 - **Temperature**: 0.2 for consistent, focused responses
-- **Token Limit**: 30,000 tokens for complete responses
-- **Timeout**: 25 seconds for API calls
-- **Retry Logic**: Automatic fallback on timeouts
+- **Token Limit**: 25,000 tokens for complete responses
+- **Timeout**: 25 seconds for API calls (Netlify dev has 30-second limit)
+- **Retry Logic**: Automatic fallback chain on timeouts:
+  - Primary model → gemini-1.5-pro → gemini-2.0-flash → gemini-1.5-flash
+- **Important**: Netlify dev server must be restarted after changing GEMINI_MODEL in .env
 
 ### Prompt Engineering
 - **Boundary Constraints**: Explicit coordinate ranges (20-80%)

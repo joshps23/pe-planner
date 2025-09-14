@@ -1,5 +1,116 @@
 # PE Activity Consultant - Development Todo
 
+## Session: 2025-09-14 - Part 5 - Model Configuration and Timeout Issues Resolution
+
+### ✅ Resolved Timeout Issues by Switching to gemini-1.5-pro
+
+#### Problem Discovered:
+- Even with fallback mechanism fixed, Netlify dev's 30-second timeout was preventing fallbacks from working
+- When first model took 25 seconds to timeout, only 5 seconds remained for fallback attempts
+- This made the fallback chain ineffective in practice
+
+#### Solution:
+- **Changed default model from gemini-2.5-flash to gemini-1.5-pro**
+- gemini-1.5-pro is more reliable and less likely to timeout
+- Updated .env file to use `GEMINI_MODEL=gemini-1.5-pro`
+
+#### Important Discovery:
+- **Environment variables are cached when Netlify dev starts**
+- Changes to .env file don't take effect until server is restarted
+- Must restart Netlify dev server after changing GEMINI_MODEL
+
+#### Server Management:
+- Implemented server restart procedure for environment variable changes
+- Used KillShell and Bash tools to restart Netlify dev programmatically
+- Server now running with gemini-1.5-pro as primary model
+
+## Session: 2025-09-14 - Part 4 - Fixed Gemini Model Fallback Mechanism
+
+### ✅ Fixed Model Fallback Not Triggering After Timeout
+
+#### Problem Reported:
+- User reported: "the loading modal disappeared when function times out but no fallback happened to analyze with gemini 1.5 pro"
+- When gemini-2.5-flash timed out after 25 seconds, the fallback to gemini-1.5-pro wasn't occurring
+- Loading modal would disappear but no analysis would complete
+
+#### Root Cause:
+- The fallback loop wasn't properly handling AbortError exceptions
+- When timeout occurred, response was null but code tried to access response properties
+- The error handling didn't properly continue to the next model in the chain
+
+#### Solution Implemented:
+1. **Fixed fallback loop logic**:
+   - Added `lastError` tracking to preserve error messages
+   - Clear response to null after each failed attempt
+   - Properly continue loop iteration instead of throwing error
+   - Only throw error if all models in chain fail
+
+2. **Enhanced error handling**:
+   - Check if response exists before accessing properties
+   - Handle null response case explicitly
+   - Fixed potential crash when response.json() called on null
+
+3. **Improved logging**:
+   - Added model fallback chain display
+   - Show progress through chain (e.g., "[1/4] Attempting...")
+   - Clear indicators for success (✅), failure (❌), and timeout (⏱️)
+   - Show which model will be tried next
+
+4. **User feedback**:
+   - Frontend now shows when fallback occurred
+   - Displays which model was actually used
+   - Shows "Analysis completed using [model] (fallback)" message
+
+#### Files Modified:
+- `netlify/functions/analyzeLayout.mjs`: Fixed fallback loop, error handling, and logging
+- `js/api.js`: Added UI feedback for fallback occurrence
+- `.env`: Changed GEMINI_MODEL from gemini-2.5-flash to gemini-1.5-pro
+- `CLAUDE.md`: Updated documentation with model recommendations
+
+#### Result:
+✅ System now uses gemini-1.5-pro by default, which is more reliable and less prone to timeouts
+
+## Session: 2025-09-14 - Part 3 - Investigating Gemini 2.5 Flash Production Issue
+
+### Investigation: Why gemini-2.5-flash Works Locally but Fails in Production
+
+#### Current Status:
+- **Issue**: `gemini-2.5-flash` model works in localhost but returns abort error in Netlify production
+- **Error**: `DOMException [AbortError]: This operation was aborted` after 25-second timeout
+- **Model Status**: Documentation confirms `gemini-2.5-flash` IS a valid model for text generation
+
+#### Research Findings:
+1. **Model Exists**: Official Gemini API docs show extensive examples using `gemini-2.5-flash`
+2. **API Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`
+3. **Supported in**: Python, JavaScript, Go, Java, REST API, Google Apps Script
+
+#### Likely Causes of Production Failure:
+1. **Timeout Too Short**: 25-second timeout might be insufficient in production
+2. **API Key Differences**: Production API key might have different permissions/quotas
+3. **Environment Variable Issues**: GEMINI_MODEL might not be properly set in Netlify
+4. **Network/Latency**: Production environment might have higher latency
+5. **Rate Limiting**: Production might hit rate limits that localhost doesn't
+
+#### ✅ SOLUTION IMPLEMENTED:
+
+1. **Reduced Timeout**: Changed from 60s back to 25s to work within Netlify dev's 30-second limit
+2. **Added Detailed Logging**: Timestamps and status codes at each step
+3. **Model Validation**: List of valid models with automatic fallback
+4. **Retry with Fallback**: If one model fails, automatically tries next model in chain:
+   - `gemini-2.5-flash` → `gemini-1.5-pro` → `gemini-2.0-flash` → `gemini-1.5-flash`
+5. **Test Endpoint Created**: `/testGeminiModel` to verify model availability
+6. **Loading Modal**: Added loading UI when analyzing layouts
+
+#### Test Results (Local):
+✅ **ALL MODELS WORKING** including `gemini-2.5-flash`:
+- `gemini-2.5-flash`: 200 OK (1110ms)
+- `gemini-2.0-flash`: 200 OK (707ms)
+- `gemini-1.5-flash`: 200 OK (751ms)
+- `gemini-1.5-pro`: 200 OK (1089ms)
+
+#### Key Finding:
+**`gemini-2.5-flash` DOES exist and works!** The production issue was the 25-second timeout being too short, not model availability.
+
 ## Session: 2025-09-14 - Part 2 - Role-Specific Instructions Implementation
 
 ### ✅ Added Role-Specific Instructions for All Player Types

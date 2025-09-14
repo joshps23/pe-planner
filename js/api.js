@@ -373,7 +373,10 @@ async function analyzeLayout() {
     const originalText = analyzeBtn.innerHTML;
     analyzeBtn.innerHTML = '<span>⏳</span> Analyzing...';
     analyzeBtn.disabled = true;
-    
+
+    // Show loading modal
+    showLoadingModal();
+
     try {
         const response = await fetch('/.netlify/functions/analyzeLayout', {
             method: 'POST',
@@ -440,9 +443,16 @@ async function analyzeLayout() {
                 timestamp: new Date()
             };
             lastAnalysisTimestamp = Date.now();
-            
+
+            // Show a message if fallback occurred
+            if (data.modelFallback && data.modelUsed) {
+                console.log(`Note: Analysis used ${data.modelUsed} model due to timeout`);
+                showAIStatus(`Analysis completed using ${data.modelUsed} model (fallback)`, true);
+            } else {
+                showAIStatus('Analysis complete!', true);
+            }
+
             showAISuggestions(data.suggestions, data.layoutJson);
-            showAIStatus('Analysis complete!', false);
             updateAnalyzeButton(); // Update button text
         } else {
             throw new Error('No suggestions received from AI');
@@ -464,6 +474,8 @@ async function analyzeLayout() {
         
         showAIStatus(errorMessage, true);
     } finally {
+        // Hide loading modal
+        hideLoadingModal();
         // Reset button
         analyzeBtn.innerHTML = originalText;
         analyzeBtn.disabled = false;

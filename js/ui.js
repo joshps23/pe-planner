@@ -354,8 +354,54 @@ function showSuccessMessage(message) {
     const successMsg = document.getElementById('successMessage');
     successMsg.textContent = message;
     successMsg.classList.add('show');
-    
+
     setTimeout(() => {
         successMsg.classList.remove('show');
     }, 4000);
+}
+
+// Loading Modal Functions
+function showLoadingModal() {
+    const modal = document.getElementById('loadingModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Reset animation by removing and re-adding
+        const progressBar = modal.querySelector('.loading-progress-bar');
+        if (progressBar) {
+            progressBar.style.animation = 'none';
+            setTimeout(() => {
+                progressBar.style.animation = 'loadingProgress 3s ease-in-out infinite';
+            }, 10);
+        }
+
+        // Randomize loading tips
+        const tips = [
+            "💡 Tip: AI will suggest 3 different layout variations",
+            "💡 Tip: Each layout includes instructions and teaching points",
+            "💡 Tip: You can preview layouts before applying them",
+            "💡 Tip: AI considers your lesson objectives for better suggestions",
+            "💡 Tip: Layouts are optimized for your specified court dimensions"
+        ];
+        const tipElement = modal.querySelector('.loading-tip');
+        if (tipElement) {
+            tipElement.textContent = tips[Math.floor(Math.random() * tips.length)];
+        }
+    }
+}
+
+function hideLoadingModal() {
+    const modal = document.getElementById('loadingModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function updateLoadingMessage(message) {
+    const modal = document.getElementById('loadingModal');
+    if (modal) {
+        const messageElement = modal.querySelector('.loading-message');
+        if (messageElement) {
+            messageElement.textContent = message;
+        }
+    }
 }

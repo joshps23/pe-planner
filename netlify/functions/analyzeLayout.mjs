@@ -28,6 +28,8 @@ export default async (request, context) => {
     });
   }
 
+  let modelToUse = null; // Track which model was actually used
+
   try {
     const { layoutData } = JSON.parse(event.body);
 
@@ -43,10 +45,25 @@ export default async (request, context) => {
     }
 
     const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
-    // Use Gemini 1.5 Pro - powerful model with strong reasoning capabilities
-    // Can be overridden with GEMINI_MODEL environment variable
-    const geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
-    
+
+    // List of valid models in order of preference
+    const validModels = [
+      'gemini-2.5-flash',    // Latest flash model (if available)
+      'gemini-2.0-flash',    // Stable flash model
+      'gemini-1.5-flash',    // Older stable flash
+      'gemini-1.5-pro'       // Most capable stable model
+    ];
+
+    // Use configured model or fall back to default
+    let requestedModel = process.env.GEMINI_MODEL || 'gemini-1.5-pro';
+    let geminiModel = requestedModel;
+
+    // Validate model name
+    if (!validModels.includes(requestedModel)) {
+      console.warn(`Requested model '${requestedModel}' not in valid list. Falling back to gemini-1.5-pro`);
+      geminiModel = 'gemini-1.5-pro';
+    }
+
     if (!geminiApiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
         status: 500,
@@ -175,43 +192,122 @@ IMPORTANT: You MUST provide exactly 3 layouts. Each layout must:
 3. Keep ALL elements within 25-70% range for both X and Y coordinates
 4. Include ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.balls} balls`;
 
-    // Add timeout for the API request - use most of the 26s Netlify allows
-    const controller = new AbortController();
-    // Set timeout to 25 seconds (Netlify Pro allows 26s max for synchronous functions)
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout for API call
+    // Function to make API call with timeout
+    async function callGeminiAPI(model, promptText) {
+      const controller = new AbortController();
+      // Set timeout to 25 seconds to avoid Netlify dev's 30-second limit
+      const timeoutId = setTimeout(() => {
+        console.error(`API call timeout after 25 seconds for model: ${model}`);
+        controller.abort();
+      }, 25000); // 25 second timeout for API call
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.2,  // Low but allowing some creativity
-          topK: 5,           // Minimal variety for better suggestions
-          topP: 0.7,         // Focused but not too restrictive
-          maxOutputTokens: 65000,  // Increased limit for more comprehensive responses
-          candidateCount: 1
+      console.log(`Starting API call to Gemini with model: ${model} at ${new Date().toISOString()}`);
+
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+      console.log(`Calling API URL: ${apiUrl.replace(geminiApiKey, 'REDACTED')}`);
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: promptText
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.2,  // Low but allowing some creativity
+              topK: 5,           // Minimal variety for better suggestions
+              topP: 0.7,         // Focused but not too restrictive
+              maxOutputTokens: 25000,  // Reduced for faster responses in dev environment
+              candidateCount: 1
+            }
+          })
+        });
+
+        // Clear timeout if request succeeds
+        clearTimeout(timeoutId);
+        console.log(`API response received at ${new Date().toISOString()} - Status: ${response.status}`);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    }
+
+    // Try API call with fallback to different models
+    let response = null;
+    modelToUse = geminiModel;
+    const modelFallbackChain = [geminiModel];
+
+    // Add fallback models if the requested model fails
+    // Prioritize gemini-1.5-pro as fallback since it's more reliable
+    if (geminiModel === 'gemini-2.5-flash') {
+      modelFallbackChain.push('gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash');
+    } else if (geminiModel === 'gemini-2.0-flash') {
+      modelFallbackChain.push('gemini-1.5-pro', 'gemini-1.5-flash');
+    } else if (geminiModel === 'gemini-1.5-flash') {
+      modelFallbackChain.push('gemini-1.5-pro');
+    }
+
+    console.log(`Model fallback chain: ${modelFallbackChain.join(' -> ')}`);
+    let lastError = null;
+
+    for (let i = 0; i < modelFallbackChain.length; i++) {
+      const model = modelFallbackChain[i];
+      const isLastModel = i === modelFallbackChain.length - 1;
+
+      try {
+        console.log(`[${i + 1}/${modelFallbackChain.length}] Attempting API call with model: ${model}`);
+        response = await callGeminiAPI(model, prompt);
+        modelToUse = model;
+
+        // If we got a successful response, break out of the loop
+        if (response && response.ok) {
+          console.log(`✅ Successfully used model: ${model}`);
+          break;
+        } else if (response) {
+          console.warn(`❌ Model ${model} returned status ${response.status}, trying next model...`);
+          lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
+          response = null; // Clear response for next attempt
         }
-      })
-    });
+      } catch (error) {
+        console.error(`❌ Failed to call API with model ${model}: ${error.message}`);
+        lastError = error;
+        response = null; // Clear response for next attempt
 
-    // Clear timeout if request succeeds
-    clearTimeout(timeoutId);
+        // If it's a timeout, log it clearly and try fallback
+        if (error.name === 'AbortError') {
+          console.log(`⏱️ Model ${model} timed out after 25 seconds`);
+          if (!isLastModel) {
+            console.log(`🔄 Trying fallback model: ${modelFallbackChain[i + 1]}...`);
+          }
+        }
 
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+        if (isLastModel) {
+          // This was the last model in the chain, throw the stored error
+          console.error(`❌ All models in the fallback chain failed`);
+          throw lastError || error;
+        }
+        // Otherwise, continue to next model
+      }
+    }
+
+    if (!response || !response.ok) {
+      let errorMessage = 'Failed to get response from any model';
+
+      if (response) {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+
       // Handle 504 Gateway Timeout specifically
-      if (response.status === 504) {
-        errorMessage = `Request timed out (504). The ${geminiModel} model took too long to respond. Try again or use a different model.`;
-      } else {
+      if (response && response.status === 504) {
+        errorMessage = `Request timed out (504). The ${modelToUse} model took too long to respond. Try again or use a different model.`;
+      } else if (response) {
         try {
           const errorData = await response.json();
           errorMessage = errorData.error?.message || errorMessage;
@@ -375,7 +471,15 @@ IMPORTANT: You MUST provide exactly 3 layouts. Each layout must:
         }
       }
       
-      return new Response(JSON.stringify({ suggestions, layoutJson }), {
+      // Add info about which model was used if fallback occurred
+      const response_data = { suggestions, layoutJson };
+      if (modelToUse !== geminiModel) {
+        response_data.modelUsed = modelToUse;
+        response_data.modelFallback = true;
+        console.log(`🔄 Fallback occurred: Originally requested ${geminiModel}, but successfully used ${modelToUse}`);
+      }
+
+      return new Response(JSON.stringify(response_data), {
         status: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
@@ -390,7 +494,7 @@ IMPORTANT: You MUST provide exactly 3 layouts. Each layout must:
     
   } catch (error) {
     console.error('Error calling Gemini API:', error);
-    console.error('Model used:', process.env.GEMINI_MODEL || 'gemini-1.5-pro');
+    console.error('Model attempted:', modelToUse || process.env.GEMINI_MODEL || 'gemini-1.5-pro');
     
     let errorMessage = 'Failed to analyze layout. ';
     let statusCode = 500;
@@ -417,9 +521,9 @@ IMPORTANT: You MUST provide exactly 3 layouts. Each layout must:
       errorMessage += `Error: ${error.message}`;
     }
     
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: errorMessage,
-      model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
+      model: modelToUse || process.env.GEMINI_MODEL || 'gemini-1.5-pro',
       suggestion: statusCode === 504 ? 'Try using gemini-1.5-flash or gemini-1.5-pro model instead' : undefined
     }), {
       status: statusCode,
