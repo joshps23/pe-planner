@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coordinate System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #test-court {
+            width: 600px;
+            height: 400px;
+            background: #f0f0f0;
+            border: 2px solid #333;
+            position: relative;
+            margin: 20px 0;
+        }
+        .test-element {
+            position: absolute;
+            background: #3498db;
+            border: 2px solid #2980b9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        .test-results {
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .test-pass {
+            color: green;
+        }
+        .test-fail {
+            color: red;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Coordinate System Test Suite</h1>
+
+    <div id="test-court"></div>
+
+    <div>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="testBoundaryValidation()">Test Boundary Validation</button>
+        <button onclick="testPercentageConversion()">Test Percentage Conversion</button>
+        <button onclick="testElementSizes()">Test Element Sizes</button>
+        <button onclick="testDragConstraints()">Test Drag Constraints</button>
+        <button onclick="window.debugMode = !window.debugMode; updateDebugMode()">Toggle Debug Mode</button>
+    </div>
+
+    <div id="test-results"></div>
+
+    <script src="js/coordinates.js"></script>
+    <script>
+        const testCourt = document.getElementById('test-court');
+        const resultsDiv = document.getElementById('test-results');
+
+        function log(message, isPass = true) {
+            const div = document.createElement('div');
+            div.className = 'test-results ' + (isPass ? 'test-pass' : 'test-fail');
+            div.textContent = (isPass ? '✓ ' : '✗ ') + message;
+            resultsDiv.appendChild(div);
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+            testCourt.innerHTML = '';
+        }
+
+        function testBoundaryValidation() {
+            clearResults();
+            log('Testing Boundary Validation...');
+
+            // Test 1: Element at origin
+            const pos1 = CoordinateSystem.validateElementPosition('cone', 0, 0, testCourt);
+            log(`Origin position: (${pos1.x}, ${pos1.y}), clamped: ${pos1.clamped}`, !pos1.clamped);
+
+            // Test 2: Element beyond boundaries
+            const pos2 = CoordinateSystem.validateElementPosition('cone', 1000, 1000, testCourt);
+            log(`Out of bounds: (${pos2.x}, ${pos2.y}), clamped: ${pos2.clamped}`, pos2.clamped);
+
+            // Test 3: Large element at edge
+            const pos3 = CoordinateSystem.validateElementPosition('attacker', 550, 350, testCourt);
+            log(`Large element at edge: (${pos3.x}, ${pos3.y}), clamped: ${pos3.clamped}`, pos3.clamped);
+
+            // Visual test
+            addTestElement(pos1.x, pos1.y, 30, 30, 'Cone');
+            addTestElement(pos2.x, pos2.y, 30, 30, 'Clamped');
+            addTestElement(pos3.x, pos3.y, 80, 80, 'Player');
+        }
+
+        function testPercentageConversion() {
+            clearResults();
+            log('Testing Percentage Conversion...');
+
+            const boundaries = CoordinateSystem.getCourtBoundaries(testCourt);
+
+            // Test center position (50%, 50%)
+            const element = { type: 'cone', position: { xPercent: 50, yPercent: 50 } };
+            const pos = CoordinateSystem.percentPositionToPixels(element, testCourt);
+            const expectedX = (boundaries.width / 2) - 15; // 30px cone width / 2
+            const expectedY = (boundaries.height / 2) - 15;
+
+            const centerCorrect = Math.abs(pos.x - expectedX) < 1 && Math.abs(pos.y - expectedY) < 1;
+            log(`Center (50%, 50%): (${pos.x}, ${pos.y}) expected (${expectedX}, ${expectedY})`, centerCorrect);
+
+            // Test corner positions
+            const corners = [
+                { xPercent: 10, yPercent: 10, label: 'TL' },
+                { xPercent: 90, yPercent: 10, label: 'TR' },
+                { xPercent: 10, yPercent: 90, label: 'BL' },
+                { xPercent: 90, yPercent: 90, label: 'BR' }
+            ];
+
+            corners.forEach(corner => {
+                const el = { type: 'ball', position: corner };
+                const p = CoordinateSystem.percentPositionToPixels(el, testCourt);
+                log(`${corner.label} (${corner.xPercent}%, ${corner.yPercent}%): (${p.x}, ${p.y})`);
+                addTestElement(p.x, p.y, 25, 25, corner.label);
+            });
+        }
+
+        function testElementSizes() {
+            clearResults();
+            log('Testing Element Sizes...');
+
+            const types = ['attacker', 'defender', 'cone', 'ball', 'hoop', 'bench', 'annotation'];
+            types.forEach(type => {
+                const size = CoordinateSystem.getElementSize({ type });
+                log(`${type}: ${size.width}x${size.height}px`);
+            });
+
+            // Test DOM element
+            const div = document.createElement('div');
+            div.className = 'draggable-item cone';
+            const domSize = CoordinateSystem.getElementSize(div);
+            log(`DOM element with cone class: ${domSize.width}x${domSize.height}px`);
+        }
+
+        function testDragConstraints() {
+            clearResults();
+            log('Testing Drag Constraints...');
+
+            // Create draggable element
+            const element = document.createElement('div');
+            element.className = 'test-element';
+            element.style.width = '50px';
+            element.style.height = '50px';
+            element.textContent = 'Drag me';
+
+            // Test various positions
+            const testPositions = [
+                { x: -50, y: -50, expected: 'Should clamp to (0, 0)' },
+                { x: 300, y: 200, expected: 'Should stay at (300, 200)' },
+                { x: 600, y: 400, expected: 'Should clamp to max position' }
+            ];
+
+            testPositions.forEach((test, index) => {
+                const validated = CoordinateSystem.validateElementPosition(
+                    { type: 'cone' },
+                    test.x,
+                    test.y,
+                    testCourt
+                );
+                log(`Position ${index + 1}: (${test.x}, ${test.y}) → (${validated.x}, ${validated.y}) - ${test.expected}`);
+
+                // Visual representation
+                setTimeout(() => {
+                    addTestElement(validated.x, validated.y, 30, 30, `P${index + 1}`);
+                }, index * 100);
+            });
+        }
+
+        function addTestElement(x, y, width, height, label) {
+            const el = document.createElement('div');
+            el.className = 'test-element';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.width = width + 'px';
+            el.style.height = height + 'px';
+            el.textContent = label;
+            testCourt.appendChild(el);
+        }
+
+        function runAllTests() {
+            clearResults();
+            log('Running all tests...');
+            setTimeout(() => testBoundaryValidation(), 100);
+            setTimeout(() => testPercentageConversion(), 500);
+            setTimeout(() => testElementSizes(), 900);
+            setTimeout(() => testDragConstraints(), 1300);
+        }
+
+        function updateDebugMode() {
+            log(`Debug mode: ${window.debugMode ? 'ON' : 'OFF'}`);
+        }
+    </script>
+</body>
+</html>

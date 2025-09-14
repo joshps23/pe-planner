@@ -1,107 +1,354 @@
-Standard Workflow
-1. First think through the problem, read the codebase for relevant files, and write a plan to todo.md.
-2. The plan should have a list of todo items that you can check off as you complete them
-3. Before you begin working, check in with me and I will verify the plan.
-4. Then, begin working on the todo items, marking them as complete as you go.
-5. Please every step of the way just give me a high level explanation of what changes you made
-6. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
-7. Finally, add a review section to the todo.md file with a summary of the changes you made and any other relevant information.
-
 
 # PE Activity Consultant
 
-A web application for planning and analyzing Physical Education activities with AI assistance.
+A comprehensive web application for Physical Education teachers to plan, visualize, and analyze PE activities with AI-powered assistance using Google Gemini API.
 
-## Features
+## Standard Workflow for Claude Code
 
-- **Custom Activity Spaces**: Create layouts with user-defined dimensions for any activity space
-- **Interactive Elements**: Add and position equipment (cones, balls, nets, etc.) and participants
-- **AI Analysis**: Get intelligent feedback on activity layouts using Google Gemini API
-- **Multiple Layout Suggestions**: AI provides 3 layout variations (Beginner-Friendly, Skill-Focused, High-Engagement)
-- **Activity Details Display**: Instructions, rules, and teaching points shown below court after applying layouts
-- **Visual Annotations**: Add notes and movement paths to layouts
-- **Multi-Phase Planning**: Plan warmup, main activity, and cool-down phases
-- **Analysis Persistence**: View last AI analysis without re-running
+When working with Claude Code on this project, please follow these guidelines:
 
-## Development
+1. **Start each session** by:
+   - **FIRST: Read todo.md** to understand previous work and pending tasks
+   - Review relevant files and understand the current state
+   - Check what was completed in the last session
+   - Identify any unfinished tasks or issues
+2. **Create/Update todo.md** with a plan of tasks to complete
+3. **Check in with user** before proceeding with implementation
+4. **Work through tasks** marking them complete as you go
+5. **Provide high-level explanations** of changes made at each step
+6. **Implement thoughtful solutions** - make comprehensive changes when they improve the codebase
+7. **End each session** by updating todo.md with:
+   - A summary of what was completed
+   - Any remaining tasks for next session
+   - Notes about important changes or decisions made
 
-### Local Development
-Run the development server with Netlify Functions:
+### Session Documentation
+**CRITICAL AT SESSION START**: Always begin by reading todo.md to:
+- Understand what was done in previous sessions
+- Check for any unresolved issues or bugs
+- Review pending tasks and priorities
+- Maintain continuity with past work
+
+**IMPORTANT AT SESSION END**: Always update todo.md at the end of each working session to maintain a clear record of:
+- Tasks completed during the session
+- Changes made to the codebase
+- Any issues encountered and how they were resolved
+- Next steps for future sessions
+
+This ensures continuity between sessions and helps track the project's progress over time.
+
+## Overview
+
+PE Activity Consultant is a full-featured lesson planning tool designed specifically for PE teachers. It provides an interactive drag-and-drop interface for creating activity layouts, combined with AI analysis to suggest improvements and generate multiple layout variations. The application runs entirely in the browser with serverless backend functions for secure API integration.
+
+## Core Features
+
+### 🏫 Activity Planning
+- **Custom Activity Spaces**: Define any playing area dimensions (meters) with automatic aspect ratio calculation
+- **Visual Court Layout**: Clean white playing area with optional green border for outdoor spaces
+- **Drag-and-Drop Interface**: Intuitive positioning of all elements with visual feedback
+- **Multi-Phase Lessons**: Separate planning for warmup, main activity, and cool-down phases
+- **Activity Timers**: Built-in countdown timers for each phase with visual display
+
+### 🎯 Equipment & Participants
+- **Students/Players**:
+  - Attackers (red) and Defenders (blue) with custom names
+  - 80px player icons for better visibility
+  - Automatic name labels below players
+- **Equipment Types**:
+  - Traffic Cones - for boundaries and markers
+  - Balls - various sports balls
+  - Rackets & Shuttlecocks - for racquet sports
+  - Practice Nets - portable dividers
+  - Field Markers - position indicators
+  - Target Hoops - for accuracy drills
+  - Benches - for seating/obstacles
+  - Floorball Sticks - for floor hockey
+  - Frisbees - for disc sports
+
+### 🤖 AI Analysis (Google Gemini)
+- **Intelligent Feedback**: Analyzes current layout and provides improvement suggestions
+- **Multiple Layout Options**: Generates 3 different layout variations:
+  - Beginner-Friendly
+  - Skill-Focused
+  - High-Engagement
+- **Complete Activity Details**: Each AI suggestion includes:
+  - Activity name and description
+  - Step-by-step instructions
+  - Game rules
+  - Teaching points
+  - Equipment positioning
+- **Analysis Persistence**: View last analysis without re-running API calls
+- **Smart Positioning**: AI respects court boundaries and keeps elements within playing area
+
+### ✏️ Annotations & Drawing
+- **Movement Paths**: Draw arrows to show player movements and ball trajectories
+- **Text Annotations**: Add yellow sticky notes with instructions anywhere on court
+- **Auto-resize Notes**: Text areas automatically adjust to content
+- **Phase-specific**: Annotations and paths can be tied to specific lesson phases
+
+### 👥 Advanced Selection Tools
+- **Group Selection**: Select multiple elements with lasso tool
+- **Multi-select**: Ctrl/Cmd+click for individual selection
+- **Group Operations**: Move grouped elements together
+- **Keyboard Shortcuts**:
+  - Ctrl/Cmd+G: Group selected
+  - Ctrl/Cmd+Shift+G: Ungroup
+  - Delete: Remove selected
+  - Escape: Clear selection
+
+### 📑 Layer Management
+- **Z-index Control**: Right-click context menu for layer ordering
+- **Layer Operations**:
+  - Bring to Front
+  - Send to Back
+  - Bring Forward
+  - Send Backward
+- **Element Duplication**: Quick duplicate via context menu
+- **Visual Stacking**: Proper overlap handling for complex layouts
+
+### 💾 Save & Export
+- **Local Storage**: Save unlimited lesson plans locally
+- **Plan Management**: Load, delete, and organize saved plans
+- **Auto-populate**: Lesson titles auto-fill when loading plans
+- **Court Dimensions**: Saved with plans for consistency
+- **Export to PDF**: (Planned feature) Generate printable lesson plans
+
+## Technical Architecture
+
+### Frontend Structure
+```
+/
+├── badminton-planner.html  # Main application (single-page app)
+├── js/
+│   ├── main.js             # Core logic, drag-drop, element management
+│   ├── api.js              # AI integration, layout capture, analysis
+│   └── ui.js               # Modals, tooltips, UI interactions
+├── css/
+│   └── styles.css          # All styling, responsive design
+├── images/
+│   ├── attacker.png        # Player graphics
+│   └── defender.png
+└── test files/
+    ├── test.html           # Basic functionality tests
+    └── debug.html          # Debug interface
+```
+
+### Backend (Serverless)
+```
+netlify/functions/
+└── analyzeLayout.mjs       # ES module for AI analysis
+                            # Handles Gemini API calls
+                            # 26-second timeout (Netlify Pro)
+```
+
+### Key Technologies
+- **Frontend**: Vanilla JavaScript, HTML5, CSS3
+- **Backend**: Netlify Functions (AWS Lambda)
+- **AI Model**: Google Gemini 1.5 Pro (configurable)
+- **Deployment**: Netlify with serverless functions
+- **Storage**: Browser LocalStorage for plans
+
+## Development Setup
+
+### Prerequisites
+- Node.js 14+ and npm
+- Netlify CLI (`npm install -g netlify-cli`)
+- Google Gemini API key
+
+### Installation
 ```bash
+# Clone repository
+git clone [repository-url]
+cd pe-planner
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+echo "GOOGLE_GEMINI_API_KEY=your-api-key" > .env
+
+# Run development server
 netlify dev
 ```
 
-### API Configuration
-The app uses Netlify Functions for secure API integration with Google Gemini API. No client-side API key configuration needed.
+### Environment Variables
+- `GOOGLE_GEMINI_API_KEY`: Required for AI analysis
+- `GEMINI_MODEL`: Optional, defaults to 'gemini-1.5-pro'
+  - Options: 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'
 
-### Project Structure
-- `badminton-planner.html` - Main application interface
-- `js/main.js` - Core application logic and UI interactions
-- `js/api.js` - AI analysis and layout capture functionality
-- `js/ui.js` - UI helper functions and modal management
-- `css/styles.css` - Application styles
-- `netlify/functions/` - Serverless functions for API integration
+## Code Organization
 
-### Testing
-- `test.html` - Basic element addition testing
-- `debug.html` - Function debugging interface
+### main.js - Core Application Logic
+- **Drag & Drop System**: Complete implementation with boundary checking
+- **Element Management**: Creation, positioning, removal of all elements
+- **Phase Management**: Switching between lesson phases
+- **Save/Load System**: LocalStorage integration for plans
+- **Group Selection**: Lasso tool and multi-select logic
+- **Context Menus**: Right-click layer management
+- **Custom Prompts**: Modal system for user input
 
-## Recent Updates (2025-09-13)
+### api.js - AI Integration
+- **Layout Capture**: Converts visual layout to structured data
+- **Spatial Analysis**: Calculates distances and relationships
+- **AI Communication**: Handles Gemini API requests
+- **Response Parsing**: Processes AI suggestions and layouts
+- **Coordinate Validation**: Ensures elements stay in bounds
+- **Error Handling**: Comprehensive error messages
 
-### UI/UX Enhancements
-- **Enhanced Drag Visibility**: Golden glow effect with drop-shadow filters for dragged elements
-- **Group Selection**: Multi-element selection with lasso tool and synchronized dragging
-- **Layer Management**: Right-click context menu with z-index controls (Send to Back/Front, Bring Forward/Backward)
-- **New Equipment**: Added floorball stick and frisbee options
-- **Modern Modal**: Custom prompt dialog replacing browser defaults with gradient design
-- **Auto-fill Title**: Lesson plan title auto-populates when loading saved plans
+### ui.js - User Interface
+- **Modal Management**: AI suggestions and prompts
+- **Layout Cards**: Visual preview of AI suggestions
+- **Tooltips**: Interactive help system
+- **Onboarding**: First-time user tour
+- **Success Messages**: User feedback
+- **Section Collapsing**: Organized control panels
 
-### API & Performance Improvements
-- **Gemini 2.5 Flash**: Updated from 1.5 Pro with configurable model support via environment variables
-- **Extended Timeouts**: Background functions with 15-minute timeout for complex analysis
-- **Better Error Handling**: Improved 504 timeout handling with specific error messages
-- **JSON Parsing**: Fixed parsing for markdown-wrapped JSON responses from newer models
+### styles.css - Visual Design
+- **Responsive Layout**: Mobile-first design approach
+- **Equipment Graphics**: Pure CSS visual representations
+- **Animations**: Smooth transitions and effects
+- **Drag Feedback**: Golden glow for dragged elements
+- **Theme**: Purple gradient with modern design
+- **Court Styling**: Configurable playing area appearance
 
-### Court Boundary Fixes
-- **White Court Detection**: Properly detects custom space (white court) vs standard courts
-- **8% Border Calculation**: Accounts for green border area in custom spaces
-- **Triple-layer Protection**: Prompt instructions + server validation + client validation
-- **Consistent Positioning**: Both elements and annotations use same boundary logic
+## AI Integration Details
 
-## Recent Updates (2025-09-12)
+### Gemini API Configuration
+- **Model Selection**: Configurable via environment variable
+- **Temperature**: 0.2 for consistent, focused responses
+- **Token Limit**: 30,000 tokens for complete responses
+- **Timeout**: 25 seconds for API calls
+- **Retry Logic**: Automatic fallback on timeouts
 
-### Latest Session Fixes (Evening)
-- **Background Functions**: Extended timeout from 30 seconds to 15 minutes for AI analysis
-- **Rules Display Fix**: Fixed ID conflict that prevented activity rules from showing
-- **Coordinate System**: Fixed elements rendering outside court boundaries in AI suggestions
-- **Larger Players**: Increased player size from 60px to 80px for better visibility
-- **Save/Load Enhancement**: Added court dimensions to saved plans
-- **Backward Compatibility**: Fixed loading of old saved plans with larger player sizes
+### Prompt Engineering
+- **Boundary Constraints**: Explicit coordinate ranges (20-80%)
+- **Format Enforcement**: Structured JSON response format
+- **Equipment Matching**: Maintains user's equipment count
+- **Safety Validation**: Triple-layer coordinate checking
+- **Activity Context**: Incorporates user's lesson objectives
 
-### Major Enhancements
-- **Multiple Layout Suggestions**: AI now generates 3 different layout variations with complete activity details
-- **Activity Details Display**: Instructions, rules, and teaching points display below court after applying layouts
-- **Analysis Persistence**: Added "View Last Analysis" button to retrieve previous AI suggestions
-- **Improved Layout Accuracy**: Fixed coordinate system to ensure elements stay within court boundaries
-- **Extended Timeout**: Netlify Functions now run as background functions (15-minute timeout)
+### Response Processing
+- **Format Flexibility**: Handles various JSON structures
+- **Coordinate Clamping**: Auto-corrects out-of-bounds positions
+- **Field Conversion**: Arrays to strings for consistency
+- **Fallback Defaults**: Generates elements if AI fails
 
-### Bug Fixes
-- **Rules Display**: Fixed duplicate ID conflict between input field and display element
-- **Element Positioning**: Fixed AI-generated layouts rendering outside court boundaries
-- **Saved Plan Loading**: Added boundary validation for backward compatibility with larger players
-- **Coordinate Mapping**: Unified coordinate system between elements and annotations
-- Fixed element addition issue caused by CSS inheritance (`.playing-area > *` selector)
-- Fixed attacker/defender image loading (corrected CSS path references)
-- Removed circular backgrounds from player images for cleaner UI
-- Fixed cone shadow positioning to stay within element bounds
+## Recent Updates & Fixes
+
+### 2025-09-13 Enhancements
+- **Visual Improvements**: Enhanced drag visibility with golden glow
+- **New Equipment**: Added floorball stick and frisbee
+- **Modal Redesign**: Custom prompt dialogs with gradient styling
+- **Model Update**: Switched to Gemini 2.5 Flash as default
+- **Boundary Detection**: Improved white court vs green border logic
+
+### 2025-09-12 Major Release
+- **Multiple Layouts**: AI generates 3 layout variations
+- **Activity Display**: Full details shown below court
+- **Analysis Cache**: "View Last Analysis" functionality
+- **Player Sizing**: Increased to 80px for visibility
+- **Coordinate Fixes**: Resolved boundary calculation issues
 
 ### Technical Improvements
-- **ES Module Functions**: Converted analyzeLayout to modern ES module format (.mjs)
-- **Player Size Scaling**: Updated all size-dependent calculations for 80px players
-- **Safety Margins**: Proportionally scaled margins and boundaries for larger elements
-- **Layout Previews**: Updated suggestion modal previews to match actual element sizes
-- Added layout validation function to auto-correct invalid coordinates
-- Strengthened AI prompt constraints (20-80% coordinate range)
-- Implemented safe default positions for newly added elements
-- Added comprehensive boundary validation for loaded plans
-- Always ensure that elements generated by the AI Suggested Layout feature are positions accurately within the White Court on user's screen
+- **ES Modules**: Modern JavaScript module system
+- **Background Functions**: Extended timeouts for complex analysis
+- **Error Handling**: Specific messages for different failure modes
+- **Backward Compatibility**: Handles old saved plan formats
+
+## Usage Workflow
+
+### Creating a Lesson Plan
+1. **Set Dimensions**: Define your activity space size in meters
+2. **Add Equipment**: Click equipment buttons to add to court
+3. **Add Students**: Name students and position them
+4. **Set Rules**: Enter activity details and objectives
+5. **Draw Paths**: Show movement patterns with arrows
+6. **Add Notes**: Place instructional annotations
+7. **Save Plan**: Store for future use
+
+### Using AI Analysis
+1. **Setup Layout**: Create initial activity arrangement
+2. **Analyze**: Click "Analyze Layout" for AI feedback
+3. **Review Options**: Browse 3 suggested variations
+4. **Preview**: See mini court preview for each option
+5. **Apply**: Select and apply preferred layout
+6. **View Details**: Activity instructions appear below court
+
+### Managing Phases
+1. **Switch Phase**: Click Warm-up/Main/Cool-down buttons
+2. **Phase-specific**: Elements are tied to current phase
+3. **Set Timers**: Enter duration for each phase
+4. **Start Timer**: Countdown displays prominently
+5. **Phase Visibility**: Only current phase elements show
+
+## Browser Compatibility
+- **Chrome**: Full support (recommended)
+- **Firefox**: Full support
+- **Safari**: Full support
+- **Edge**: Full support
+- **Mobile**: Responsive design for tablets/phones
+
+## Performance Optimization
+- **Lazy Loading**: Images load on demand
+- **Efficient Rendering**: Minimal DOM manipulation
+- **LocalStorage**: Fast plan saving/loading
+- **Debounced Inputs**: Reduced API calls
+- **Caching**: Analysis results stored temporarily
+
+## Security Considerations
+- **API Keys**: Server-side only via Netlify Functions
+- **Input Validation**: All user inputs sanitized
+- **CORS**: Properly configured headers
+- **Content Security**: No inline scripts
+- **Data Privacy**: All data stored locally
+
+## Future Enhancements (Planned)
+- **PDF Export**: Generate printable lesson plans
+- **Video Integration**: Add instructional videos
+- **Template Library**: Pre-made activity templates
+- **Collaboration**: Share plans with other teachers
+- **Analytics**: Track lesson effectiveness
+- **Mobile App**: Native mobile applications
+- **3D Visualization**: Three-dimensional court view
+- **Voice Commands**: Hands-free element placement
+
+## Troubleshooting
+
+### Common Issues
+- **Elements Not Appearing**: Check browser console for errors
+- **AI Analysis Fails**: Verify API key and network connection
+- **Slow Performance**: Clear browser cache and reload
+- **Layout Issues**: Ensure modern browser version
+- **Save Problems**: Check LocalStorage availability
+
+### Debug Mode
+Enable debug mode in console:
+```javascript
+window.debugMode = true
+```
+This shows court boundary markers and detailed logs.
+
+## Contributing Guidelines
+1. **Simplicity First**: Keep changes minimal and focused
+2. **Test Thoroughly**: Use test.html and debug.html
+3. **Document Changes**: Update CLAUDE.md for major updates
+4. **Preserve Compatibility**: Don't break existing saved plans
+5. **Follow Patterns**: Match existing code style
+
+## Support & Resources
+- **Documentation**: This CLAUDE.md file
+- **Test Files**: test.html for basic testing
+- **Debug Interface**: debug.html for troubleshooting
+- **Console Logs**: Extensive logging for debugging
+
+## License & Credits
+- **Framework**: Built with vanilla JavaScript
+- **AI Model**: Google Gemini API
+- **Hosting**: Netlify serverless platform
+- **Icons**: CSS-based equipment representations
+
+---
+
+*Always ensure that elements generated by the AI Suggested Layout feature are positioned accurately within the White Court on user's screen*
+- always use context7 for refering to latest documentation with third party libraries or packages

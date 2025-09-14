@@ -48,6 +48,53 @@ function isLandscapeMode() {
     return window.matchMedia("(orientation: landscape)").matches;
 }
 
+// Debug visualization helper
+function addDebugVisualization(court) {
+    // Remove any existing debug markers
+    court.querySelectorAll('.debug-boundary, .debug-corner').forEach(m => m.remove());
+
+    const boundaries = CoordinateSystem.getCourtBoundaries(court);
+
+    // Draw debug rectangle showing the actual court boundaries
+    const debugMarker = document.createElement('div');
+    debugMarker.style.position = 'absolute';
+    debugMarker.style.left = '0px';
+    debugMarker.style.top = '0px';
+    debugMarker.style.width = '100%';
+    debugMarker.style.height = '100%';
+    debugMarker.style.border = '2px dashed red';
+    debugMarker.style.pointerEvents = 'none';
+    debugMarker.style.zIndex = '9999';
+    debugMarker.className = 'debug-boundary';
+    court.appendChild(debugMarker);
+
+    // Add corner markers
+    const corners = [
+        {x: 0, y: 0, label: '0,0'},
+        {x: boundaries.width - 20, y: 0, label: 'TR'},
+        {x: 0, y: boundaries.height - 20, label: 'BL'},
+        {x: boundaries.width - 20, y: boundaries.height - 20, label: 'BR'}
+    ];
+
+    corners.forEach(corner => {
+        const marker = document.createElement('div');
+        marker.style.position = 'absolute';
+        marker.style.left = corner.x + 'px';
+        marker.style.top = corner.y + 'px';
+        marker.style.width = '20px';
+        marker.style.height = '20px';
+        marker.style.background = 'red';
+        marker.style.color = 'white';
+        marker.style.fontSize = '10px';
+        marker.style.display = 'flex';
+        marker.style.alignItems = 'center';
+        marker.style.justifyContent = 'center';
+        marker.textContent = corner.label;
+        marker.className = 'debug-corner';
+        court.appendChild(marker);
+    });
+}
+
 // Helper function to get mouse position relative to court
 function getMousePosition(e, court) {
     const courtRect = court.getBoundingClientRect();
@@ -75,32 +122,19 @@ function addEquipment(type) {
         console.error('Court element not found!');
         return;
     }
-    
+
     console.log('Adding equipment:', type);
-    
+
     const item = document.createElement('div');
     item.className = `draggable-item ${type}`;
     item.id = 'item-' + (++itemCounter);
     item.dataset.phase = currentPhase;
-    
-    // Use safe default position (40% from edges)
-    const safeXPercent = 40; 
-    const safeYPercent = 40;
-    const safetyMargin = 20;
-    
-    const elementWidth = 30; // Default element size
-    const elementHeight = 30;
-    
-    const courtWidth = court.clientWidth;
-    const courtHeight = court.clientHeight;
-    const availableWidth = courtWidth - elementWidth - (2 * safetyMargin);
-    const availableHeight = courtHeight - elementHeight - (2 * safetyMargin);
-    
-    const safeX = safetyMargin + (safeXPercent / 100) * availableWidth;
-    const safeY = safetyMargin + (safeYPercent / 100) * availableHeight;
-    
-    item.style.left = safeX + 'px';
-    item.style.top = safeY + 'px';
+
+    // Use the new coordinate system for safe initial position
+    const position = CoordinateSystem.getSafeInitialPosition(type, court);
+
+    item.style.left = position.x + 'px';
+    item.style.top = position.y + 'px';
     item.style.position = 'absolute';
     item.style.zIndex = currentZIndex++; // Set initial z-index
     
@@ -165,24 +199,11 @@ async function addStudent(type) {
         item.appendChild(nameLabel);
     }
     
-    // Use safe default position for students (45% from edges for variation)
-    const safeXPercent = 45; 
-    const safeYPercent = 45;
-    const safetyMargin = 20;
-    
-    const elementWidth = 80; // Student size
-    const elementHeight = 80;
-    
-    const courtWidth = court.clientWidth;
-    const courtHeight = court.clientHeight;
-    const availableWidth = courtWidth - elementWidth - (2 * safetyMargin);
-    const availableHeight = courtHeight - elementHeight - (2 * safetyMargin);
-    
-    const safeX = safetyMargin + (safeXPercent / 100) * availableWidth;
-    const safeY = safetyMargin + (safeYPercent / 100) * availableHeight;
-    
-    item.style.left = safeX + 'px';
-    item.style.top = safeY + 'px';
+    // Use the new coordinate system for safe initial position
+    const position = CoordinateSystem.getSafeInitialPosition(type, court);
+
+    item.style.left = position.x + 'px';
+    item.style.top = position.y + 'px';
     item.style.position = 'absolute';
     item.style.zIndex = currentZIndex++; // Set initial z-index
     
@@ -206,6 +227,20 @@ function makeDraggable(element) {
     element.addEventListener('mousedown', startDrag);
     element.addEventListener('touchstart', startDrag);
     attachContextMenu(element);
+
+    // Ensure element is within bounds when first made draggable
+    const court = document.getElementById('court');
+    if (court && element.style.left && element.style.top) {
+        const x = parseInt(element.style.left) || 0;
+        const y = parseInt(element.style.top) || 0;
+        const validated = CoordinateSystem.validateElementPosition(element, x, y, court);
+
+        if (validated.clamped) {
+            element.style.left = validated.x + 'px';
+            element.style.top = validated.y + 'px';
+            console.log(`Element ${element.id} position adjusted on makeDraggable`);
+        }
+    }
 }
 
 function startDrag(e) {
@@ -228,14 +263,78 @@ function startDrag(e) {
     draggedElement = element;
     const court = document.getElementById('court');
     const mousePos = getMousePosition(e, court);
-    
-    // Get current element position
-    const currentLeft = parseInt(draggedElement.style.left) || 0;
-    const currentTop = parseInt(draggedElement.style.top) || 0;
-    
+
+    // Get current element position - but verify it's correct
+    let currentLeft = parseInt(draggedElement.style.left) || 0;
+    let currentTop = parseInt(draggedElement.style.top) || 0;
+
+    // IMPORTANT: Get the element's actual position relative to the court
+    // This handles cases where the element's style position doesn't match reality
+    const courtRect = court.getBoundingClientRect();
+    const elementRect = draggedElement.getBoundingClientRect();
+
+    // Calculate the actual position relative to court
+    const actualLeft = elementRect.left - courtRect.left;
+    const actualTop = elementRect.top - courtRect.top;
+
+    // If there's a significant discrepancy, use the actual position
+    if (Math.abs(actualLeft - currentLeft) > 2 || Math.abs(actualTop - currentTop) > 2) {
+        console.warn('Position mismatch detected! Using actual position instead of style position');
+        console.warn('Style position:', { left: currentLeft, top: currentTop });
+        console.warn('Actual position:', { left: actualLeft, top: actualTop });
+
+        // Update the element's style to match reality
+        draggedElement.style.left = actualLeft + 'px';
+        draggedElement.style.top = actualTop + 'px';
+
+        currentLeft = actualLeft;
+        currentTop = actualTop;
+    }
+
     // Calculate offset between mouse position and element position
     dragOffset.x = mousePos.x - currentLeft;
     dragOffset.y = mousePos.y - currentTop;
+
+    if (window.debugMode) {
+        const courtRect = court.getBoundingClientRect();
+        const elementRect = draggedElement.getBoundingClientRect();
+        console.log('=== DRAG START ===');
+        console.log('Element position (style):', { left: currentLeft, top: currentTop });
+        console.log('Element rect (actual):', {
+            top: elementRect.top,
+            left: elementRect.left,
+            relativeToCourtTop: elementRect.top - courtRect.top,
+            relativeToCourtLeft: elementRect.left - courtRect.left
+        });
+        console.log('Mouse position in court:', mousePos);
+        console.log('Calculated drag offset:', dragOffset);
+        console.log('Element size:', CoordinateSystem.getElementSize(draggedElement));
+        console.log('Court bounds:', {
+            width: court.clientWidth,
+            height: court.clientHeight,
+            rect: courtRect
+        });
+
+        // Check for offset mismatch
+        const expectedOffsetY = mousePos.y - currentTop;
+        const actualOffsetY = dragOffset.y;
+        if (Math.abs(expectedOffsetY - actualOffsetY) > 1) {
+            console.error('⚠️ OFFSET MISMATCH!', {
+                expected: expectedOffsetY,
+                actual: actualOffsetY,
+                difference: actualOffsetY - expectedOffsetY
+            });
+        }
+
+        // Check if the element is already at the edge
+        const elementSize = CoordinateSystem.getElementSize(draggedElement);
+        if (currentTop <= 0) {
+            console.warn('⚠️ Element is at/near top edge! Top:', currentTop);
+        }
+        if (currentTop + elementSize.height >= court.clientHeight) {
+            console.warn('⚠️ Element is at bottom edge!');
+        }
+    }
     
     // Store original z-index before temporarily boosting it
     // If element doesn't have z-index, assign one now
@@ -274,41 +373,70 @@ function startDrag(e) {
 
 function drag(e) {
     if (!draggedElement) return;
-    
+
     e.preventDefault();
     const court = document.getElementById('court');
     const courtContainer = court.parentElement;
     const mousePos = getMousePosition(e, court);
-    
+
     // Calculate new position based on mouse position minus offset
     let newX = mousePos.x - dragOffset.x;
     let newY = mousePos.y - dragOffset.y;
-    
+
+    // Debug logging for boundary issues
+    if (window.debugMode && draggedElement.classList.contains('cone')) {
+        const courtRect = court.getBoundingClientRect();
+        console.log('Court dimensions:', court.clientWidth, 'x', court.clientHeight);
+        console.log('Court rect:', {
+            top: courtRect.top,
+            left: courtRect.left,
+            width: courtRect.width,
+            height: courtRect.height
+        });
+        console.log('Mouse position in court:', mousePos);
+        console.log('Proposed element position:', newX, newY);
+
+        // Check if mouse is actually within court bounds
+        if (mousePos.y < 0 || mousePos.y > court.clientHeight) {
+            console.warn('⚠️ Mouse Y is outside court bounds!', {
+                mouseY: mousePos.y,
+                courtHeight: court.clientHeight
+            });
+        }
+    }
+
     // For annotations/notes, allow dragging outside court boundaries
     // but constrain to the court container area
     if (draggedElement.classList.contains('annotation')) {
-        const elementRect = draggedElement.getBoundingClientRect();
-        const containerRect = courtContainer.getBoundingClientRect();
-        const courtRect = court.getBoundingClientRect();
-        
+        const elementSize = CoordinateSystem.getElementSize(draggedElement);
+
         // Calculate relative position within the court container
-        const containerMaxX = courtContainer.clientWidth - elementRect.width;
-        const containerMaxY = courtContainer.clientHeight - elementRect.height;
-        
-        // Allow movement within the entire court container
+        const containerMaxX = courtContainer.clientWidth - elementSize.width;
+        const containerMaxY = courtContainer.clientHeight - elementSize.height;
+
+        // Allow movement within the entire court container with slight negative margin
         newX = Math.max(-20, Math.min(newX, containerMaxX));
         newY = Math.max(-20, Math.min(newY, containerMaxY));
     } else {
-        // For equipment and students, constrain to court boundaries
-        const elementRect = draggedElement.getBoundingClientRect();
+        // For equipment and students, use coordinate system validation
+        const validated = CoordinateSystem.validateElementPosition(
+            draggedElement,
+            newX,
+            newY,
+            court
+        );
 
-        // Calculate maximum positions based on element size
-        const maxX = court.clientWidth - elementRect.width;
-        const maxY = court.clientHeight - elementRect.height;
+        if (window.debugMode && validated.clamped) {
+            console.log('Position was clamped!');
+            console.log('Original:', newX, newY);
+            console.log('Clamped to:', validated.x, validated.y);
+            const elementSize = CoordinateSystem.getElementSize(draggedElement);
+            console.log('Element size:', elementSize);
+            console.log('Max allowed:', court.clientWidth - elementSize.width, court.clientHeight - elementSize.height);
+        }
 
-        // Allow dragging anywhere within court boundaries (0 to max)
-        newX = Math.max(0, Math.min(newX, maxX));
-        newY = Math.max(0, Math.min(newY, maxY));
+        newX = validated.x;
+        newY = validated.y;
     }
     
     draggedElement.style.left = newX + 'px';
@@ -412,26 +540,74 @@ function applyCustomDimensions() {
     const height = parseFloat(document.getElementById('customHeight').value) || 10;
     const court = document.getElementById('court');
     const layoutType = 'custom'; // Always custom now
-    
+
     // Apply custom aspect ratio
     const customRatio = width / height;
     court.style.aspectRatio = `${customRatio} / 1`;
-    
+
     // Update the courtSpecs for the custom layout
     if (courtSpecs.custom) {
         courtSpecs.custom.realDimensions = { width: width, height: height };
         courtSpecs.custom.aspectRatio = customRatio;
     }
-    
+
     // Update the aspect ratio display
     updateAspectRatioDisplay(customRatio);
-    
+
     // Update court lines (will be simplified to remove sport-specific lines)
     updateCourtLines(layoutType);
-    
-    // Don't clear court items - let users keep their placements with new dimensions
+
+    // After changing dimensions, revalidate all element positions
+    setTimeout(() => {
+        revalidateAllElements();
+    }, 100); // Small delay to ensure CSS has been applied
 }
 
+
+function revalidateAllElements() {
+    const court = document.getElementById('court');
+    if (!court) return;
+
+    // Revalidate all draggable items and annotations
+    const elements = court.querySelectorAll('.draggable-item, .annotation');
+    let adjustedCount = 0;
+
+    elements.forEach(element => {
+        const x = parseInt(element.style.left) || 0;
+        const y = parseInt(element.style.top) || 0;
+
+        // For annotations, allow slight overflow
+        if (element.classList.contains('annotation')) {
+            const elementSize = CoordinateSystem.getElementSize(element);
+            const boundaries = CoordinateSystem.getCourtBoundaries(court);
+            const safetyMargin = 10;
+            const maxX = boundaries.width - elementSize.width + safetyMargin;
+            const maxY = boundaries.height - elementSize.height + safetyMargin;
+
+            const newX = Math.max(-safetyMargin, Math.min(maxX, x));
+            const newY = Math.max(-safetyMargin, Math.min(maxY, y));
+
+            if (newX !== x || newY !== y) {
+                element.style.left = newX + 'px';
+                element.style.top = newY + 'px';
+                adjustedCount++;
+            }
+        } else {
+            // For other elements, use strict validation
+            const validated = CoordinateSystem.validateElementPosition(element, x, y, court);
+
+            if (validated.clamped) {
+                element.style.left = validated.x + 'px';
+                element.style.top = validated.y + 'px';
+                adjustedCount++;
+            }
+        }
+    });
+
+    if (adjustedCount > 0) {
+        console.log(`Adjusted ${adjustedCount} elements to fit new court dimensions`);
+    }
+}
 
 function updateAspectRatioDisplay(ratio) {
     const display = document.getElementById('aspectRatioDisplay');
@@ -550,40 +726,22 @@ function loadPlan() {
         item.className = itemData.className;
         item.id = itemData.id;
         item.dataset.phase = itemData.phase || 'warmup';
-        
-        // Validate and adjust coordinates for larger player sizes
-        const courtWidth = court.clientWidth;
-        const courtHeight = court.clientHeight;
-        
-        // Determine element size based on type
-        let elementWidth, elementHeight;
-        if (item.classList.contains('student') || item.classList.contains('attacker') || item.classList.contains('defender')) {
-            elementWidth = elementHeight = 80; // Current player size
-        } else if (item.classList.contains('cone')) {
-            elementWidth = elementHeight = 30;
-        } else if (item.classList.contains('ball')) {
-            elementWidth = elementHeight = 25;
-        } else if (item.classList.contains('hoop')) {
-            elementWidth = elementHeight = 35;
-        } else {
-            elementWidth = elementHeight = 30; // Default
-        }
-        
+
         // Parse saved coordinates
         let x = parseInt(itemData.left) || 0;
         let y = parseInt(itemData.top) || 0;
-        
-        // Apply boundary validation - allow elements to reach edges
-        const maxX = courtWidth - elementWidth;
-        const maxY = courtHeight - elementHeight;
 
-        // Clamp coordinates to court boundaries (no artificial margin)
-        x = Math.max(0, Math.min(maxX, x));
-        y = Math.max(0, Math.min(maxY, y));
-        
+        // Use the new coordinate system for validation
+        const validated = CoordinateSystem.validateElementPosition(item, x, y, court);
+
+        if (validated.clamped) {
+            console.log(`Element ${itemData.id} position adjusted from (${x}, ${y}) to (${validated.x}, ${validated.y})`);
+        }
+
         // Apply validated coordinates
-        item.style.left = x + 'px';
-        item.style.top = y + 'px';
+        item.style.position = 'absolute';  // CRITICAL: Elements must be absolutely positioned
+        item.style.left = validated.x + 'px';
+        item.style.top = validated.y + 'px';
         
         if (itemData.text && item.classList.contains('student')) {
             const nameLabel = document.createElement('div');
@@ -616,29 +774,26 @@ function loadPlan() {
         const ann = document.createElement('div');
         ann.className = 'annotation';
         ann.dataset.phase = annData.phase || 'warmup';
-        
-        // Validate and adjust annotation coordinates
-        const courtWidth = court.clientWidth;
-        const courtHeight = court.clientHeight;
-        
-        // Annotation dimensions
-        const annotationWidth = 120;
-        const annotationHeight = 60;
-        
+
         // Parse saved coordinates
         let x = parseInt(annData.left) || 0;
         let y = parseInt(annData.top) || 0;
-        
-        // Apply boundary validation with safety margin
-        const safetyMargin = 13;
-        const maxX = courtWidth - annotationWidth - safetyMargin;
-        const maxY = courtHeight - annotationHeight - safetyMargin;
-        
-        // Clamp coordinates to safe boundaries
-        x = Math.max(safetyMargin, Math.min(maxX, x));
-        y = Math.max(safetyMargin, Math.min(maxY, y));
-        
+
+        // Use the new coordinate system for validation (annotations can go slightly outside)
+        const elementSize = CoordinateSystem.getElementSize(ann);
+        const boundaries = CoordinateSystem.getCourtBoundaries(court);
+
+        // Allow annotations to extend slightly outside court (for notes on edges)
+        const safetyMargin = 10;
+        const maxX = boundaries.width - elementSize.width + safetyMargin;
+        const maxY = boundaries.height - elementSize.height + safetyMargin;
+
+        // Clamp with slight negative allowed
+        x = Math.max(-safetyMargin, Math.min(maxX, x));
+        y = Math.max(-safetyMargin, Math.min(maxY, y));
+
         // Apply validated coordinates
+        ann.style.position = 'absolute';  // CRITICAL: Annotations must be absolutely positioned
         ann.style.left = x + 'px';
         ann.style.top = y + 'px';
         
@@ -680,9 +835,14 @@ function loadPlan() {
     
     itemCounter = Math.max(...plan.items.map(item => parseInt(item.id.split('-')[1]))) || 0;
     switchPhase(currentPhase);
-    
+
     // Initialize z-indexes for loaded elements
     initializeZIndexes();
+
+    // Revalidate all positions after loading
+    setTimeout(() => {
+        revalidateAllElements();
+    }, 100); // Small delay to ensure DOM is updated
 }
 
 function deletePlan() {
@@ -1091,165 +1251,21 @@ function applySelectedLayout() {
 function createElementFromJson(element, court) {
     console.log(`\n=== CREATING ELEMENT: ${element.type} ===`);
     console.log(`Input coordinates: (${element.position?.xPercent}%, ${element.position?.yPercent}%)`);
-
-    // Detect if we're using a custom space (white court) or standard court
-    const isCustomSpace = court.classList.contains('custom-space');
-    console.log(`Is custom space: ${isCustomSpace}`);
     console.log(`Court dimensions: ${court.clientWidth}x${court.clientHeight}px`);
-    console.log(`Court offset from page: left=${court.offsetLeft}, top=${court.offsetTop}`);
+    
+    // Use the new coordinate system to convert percentage to pixels with validation
+    const position = CoordinateSystem.percentPositionToPixels(element, court);
 
-    // Additional debug info
-    const courtRect = court.getBoundingClientRect();
-    console.log(`Court getBoundingClientRect: width=${courtRect.width}, height=${courtRect.height}`);
-    console.log(`Court offsetWidth=${court.offsetWidth}, offsetHeight=${court.offsetHeight}`);
-
-    // For custom spaces, the white area IS the entire court element
-    // The green border is from the parent container, not part of the court
-    let courtInsetX = 0;
-    let courtInsetY = 0;
-
-    if (!isCustomSpace) {
-        // For standard courts, check for actual padding
-        const computedStyle = window.getComputedStyle(court);
-        courtInsetX = parseFloat(computedStyle.paddingLeft) || 0;
-        courtInsetY = parseFloat(computedStyle.paddingTop) || 0;
+    if (position.clamped) {
+        console.warn(`Element ${element.type} position was adjusted to stay within court boundaries`);
     }
-    // For custom spaces, insets remain 0 as the white area is the full court
-    console.log(`Court insets: X=${courtInsetX}, Y=${courtInsetY}`);
 
-    // Calculate the actual playing area dimensions
-    // Use offsetWidth/offsetHeight for custom spaces to include the border in the white area
-    // Use clientWidth/clientHeight for standard courts (no border)
-    const playingAreaWidth = isCustomSpace ? court.offsetWidth - (2 * courtInsetX) : court.clientWidth - (2 * courtInsetX);
-    const playingAreaHeight = isCustomSpace ? court.offsetHeight - (2 * courtInsetY) : court.clientHeight - (2 * courtInsetY);
-    console.log(`Playing area: ${playingAreaWidth}x${playingAreaHeight}px (using ${isCustomSpace ? 'offset' : 'client'} dimensions)`);
-    
-    // Validate and clamp coordinates to safe range (15-85%)
-    let xPercent = element.position.xPercent || 50;
-    let yPercent = element.position.yPercent || 50;
+    console.log(`Final position: (${position.x}, ${position.y})`);
 
-    // Pre-validate coordinates with strict safe bounds
-    const originalX = xPercent;
-    const originalY = yPercent;
-
-    // Clamp to safe range (20-80%) to ensure elements stay within white court area
-    xPercent = Math.max(20, Math.min(80, xPercent));
-    yPercent = Math.max(20, Math.min(80, yPercent));
-    
-    // Log warning if coordinates were adjusted
-    if (xPercent !== originalX || yPercent !== originalY) {
-        console.warn(`Pre-validated coordinates for ${element.type}: (${originalX}, ${originalY}) -> (${xPercent}, ${yPercent}) - clamped to safe range`);
-    }
-    
-    // Calculate element size for boundary checking based on type
-    let elementWidth, elementHeight;
-    
-    switch (element.type) {
-        case 'attacker':
-        case 'defender':
-            elementWidth = elementHeight = 80;
-            break;
-        case 'cone':
-            elementWidth = elementHeight = 30;
-            break;
-        case 'ball':
-            elementWidth = elementHeight = 25;
-            break;
-        case 'equipment-net':
-        case 'net':
-            elementWidth = 80;
-            elementHeight = 20;
-            break;
-        case 'bench':
-            elementWidth = 80;
-            elementHeight = 20;
-            break;
-        case 'hoop':
-            elementWidth = elementHeight = 40;
-            break;
-        default:
-            // Default size for other equipment
-            elementWidth = elementHeight = 30;
-    }
-    
-    // Calculate pixel positions within the actual white playing area
-    // The percentages represent positions on the court, where:
-    // 0% = left/top edge of white court
-    // 100% = right/bottom edge of white court
-    // Elements are centered at the specified percentage position
-
-    // Calculate the center position based on percentage of the full court
-    let centerX = courtInsetX + (xPercent / 100) * playingAreaWidth;
-    let centerY = courtInsetY + (yPercent / 100) * playingAreaHeight;
-    console.log(`Center position: (${centerX}, ${centerY})`);
-
-    // Calculate top-left position (elements are positioned by top-left corner)
-    let x = centerX - (elementWidth / 2);
-    let y = centerY - (elementHeight / 2);
-    console.log(`Initial position (top-left): (${x}, ${y})`);
-
-    // Ensure elements stay within the white playing area boundaries
-    const minX = courtInsetX;
-    const maxX = courtInsetX + playingAreaWidth - elementWidth;
-    const minY = courtInsetY;
-    const maxY = courtInsetY + playingAreaHeight - elementHeight;
-    console.log(`Boundaries: X=[${minX}, ${maxX}], Y=[${minY}, ${maxY}]`);
-
-    const oldX = x, oldY = y;
-    x = Math.max(minX, Math.min(maxX, x));
-    y = Math.max(minY, Math.min(maxY, y));
-
-    if (oldX !== x || oldY !== y) {
-        console.warn(`Position clamped: (${oldX}, ${oldY}) -> (${x}, ${y})`);
-    }
-    console.log(`Final position: (${x}, ${y})`);
-
-    // Debug: Add visual marker at court boundaries
+    // Debug mode visualization
     if (window.debugMode) {
-        // Draw debug rectangle showing the actual court boundaries
-        const debugMarker = document.createElement('div');
-        debugMarker.style.position = 'absolute';
-        debugMarker.style.left = '0px';
-        debugMarker.style.top = '0px';
-        debugMarker.style.width = '100%';
-        debugMarker.style.height = '100%';
-        debugMarker.style.border = '2px dashed red';
-        debugMarker.style.pointerEvents = 'none';
-        debugMarker.style.zIndex = '9999';
-        debugMarker.className = 'debug-boundary';
-
-        // Remove any existing debug markers
-        court.querySelectorAll('.debug-boundary').forEach(m => m.remove());
-        court.appendChild(debugMarker);
-
-        // Add corner markers
-        const corners = [
-            {x: 0, y: 0, label: '0,0'},
-            {x: playingAreaWidth - 20, y: 0, label: 'TR'},
-            {x: 0, y: playingAreaHeight - 20, label: 'BL'},
-            {x: playingAreaWidth - 20, y: playingAreaHeight - 20, label: 'BR'}
-        ];
-
-        corners.forEach(corner => {
-            const marker = document.createElement('div');
-            marker.style.position = 'absolute';
-            marker.style.left = corner.x + 'px';
-            marker.style.top = corner.y + 'px';
-            marker.style.width = '20px';
-            marker.style.height = '20px';
-            marker.style.background = 'red';
-            marker.style.color = 'white';
-            marker.style.fontSize = '10px';
-            marker.style.display = 'flex';
-            marker.style.alignItems = 'center';
-            marker.style.justifyContent = 'center';
-            marker.textContent = corner.label;
-            marker.className = 'debug-corner';
-            court.appendChild(marker);
-        });
+        addDebugVisualization(court);
     }
-
-    console.log(`=================================`);
     
     
     if (element.type === 'attacker' || element.type === 'defender') {
@@ -1274,22 +1290,9 @@ function createElementFromJson(element, court) {
             item.appendChild(nameLabel);
         }
         
-        // Position element - ensure it's within court boundaries
-        // Use actual element size for clamping
-        const elementSize = (element.type === 'attacker' || element.type === 'defender') ? 80 :
-                           (element.type === 'cone') ? 30 :
-                           (element.type === 'ball') ? 25 :
-                           (element.type === 'hoop') ? 35 : 30;
-
-        const clampedX = Math.max(0, Math.min(x, court.clientWidth - elementSize));
-        const clampedY = Math.max(0, Math.min(y, court.clientHeight - elementSize));
-
-        if (x !== clampedX || y !== clampedY) {
-            console.warn(`Element position adjusted from (${x}, ${y}) to (${clampedX}, ${clampedY}) to keep within court`);
-        }
-
-        item.style.left = clampedX + 'px';
-        item.style.top = clampedY + 'px';
+        // Apply the validated position
+        item.style.left = position.x + 'px';
+        item.style.top = position.y + 'px';
 
         // Add remove button
         const removeBtn = document.createElement('button');
@@ -1311,22 +1314,9 @@ function createElementFromJson(element, court) {
         item.id = 'item-' + (++itemCounter);
         item.dataset.phase = currentPhase;
         
-        // Position element - ensure it's within court boundaries
-        // Use actual element size for clamping
-        const elementSize = (element.type === 'attacker' || element.type === 'defender') ? 80 :
-                           (element.type === 'cone') ? 30 :
-                           (element.type === 'ball') ? 25 :
-                           (element.type === 'hoop') ? 35 : 30;
-
-        const clampedX = Math.max(0, Math.min(x, court.clientWidth - elementSize));
-        const clampedY = Math.max(0, Math.min(y, court.clientHeight - elementSize));
-
-        if (x !== clampedX || y !== clampedY) {
-            console.warn(`Element position adjusted from (${x}, ${y}) to (${clampedX}, ${clampedY}) to keep within court`);
-        }
-
-        item.style.left = clampedX + 'px';
-        item.style.top = clampedY + 'px';
+        // Apply the validated position
+        item.style.left = position.x + 'px';
+        item.style.top = position.y + 'px';
 
         // Add remove button
         const removeBtn = document.createElement('button');
@@ -1344,72 +1334,18 @@ function createElementFromJson(element, court) {
 }
 
 function createAnnotationFromJson(annotation, court) {
-    // Use the same logic as createElementFromJson to detect the white court area
-    const isCustomSpace = court.classList.contains('custom-space');
-    
-    // Calculate court insets
-    let courtInsetX = 0;
-    let courtInsetY = 0;
+    // Use the new coordinate system to convert percentage to pixels with validation
+    const position = CoordinateSystem.percentPositionToPixels(annotation, court);
 
-    if (!isCustomSpace) {
-        // For standard courts, check for actual padding
-        const computedStyle = window.getComputedStyle(court);
-        courtInsetX = parseFloat(computedStyle.paddingLeft) || 0;
-        courtInsetY = parseFloat(computedStyle.paddingTop) || 0;
+    if (position.clamped) {
+        console.warn(`Annotation position was adjusted to stay within court boundaries`);
     }
-    // For custom spaces, insets remain 0 as the white area is the full court
-
-    // Calculate the actual playing area dimensions
-    // Use offsetWidth/offsetHeight for custom spaces to include the border in the white area
-    const playingAreaWidth = isCustomSpace ? court.offsetWidth - (2 * courtInsetX) : court.clientWidth - (2 * courtInsetX);
-    const playingAreaHeight = isCustomSpace ? court.offsetHeight - (2 * courtInsetY) : court.clientHeight - (2 * courtInsetY);
-    
-    // Validate and clamp coordinates to safe range (20-80%)
-    let xPercent = annotation.position.xPercent || 50;
-    let yPercent = annotation.position.yPercent || 50;
-
-    // Pre-validate coordinates
-    const originalX = xPercent;
-    const originalY = yPercent;
-
-    // Clamp to safe range to stay within white court area
-    xPercent = Math.max(20, Math.min(80, xPercent));
-    yPercent = Math.max(20, Math.min(80, yPercent));
-    
-    // Log warning if coordinates were adjusted
-    if (xPercent !== originalX || yPercent !== originalY) {
-        console.warn(`Pre-validated annotation coordinates: (${originalX}, ${originalY}) -> (${xPercent}, ${yPercent}) - clamped to safe range`);
-    }
-    
-    // Annotations dimensions
-    const annotationWidth = 120; // Approximate width of annotation
-    const annotationHeight = 60;  // Approximate height of annotation
-
-    // Calculate the center position based on percentage of the full court
-    // The percentages represent positions on the court, where:
-    // 0% = left/top edge of white court
-    // 100% = right/bottom edge of white court
-    let centerX = courtInsetX + (xPercent / 100) * playingAreaWidth;
-    let centerY = courtInsetY + (yPercent / 100) * playingAreaHeight;
-
-    // Calculate top-left position (annotations are positioned by top-left corner)
-    let x = centerX - (annotationWidth / 2);
-    let y = centerY - (annotationHeight / 2);
-    
-    // Ensure annotations stay within the white playing area boundaries
-    const minX = courtInsetX;
-    const maxX = courtInsetX + playingAreaWidth - annotationWidth;
-    const minY = courtInsetY;
-    const maxY = courtInsetY + playingAreaHeight - annotationHeight;
-
-    x = Math.max(minX, Math.min(maxX, x));
-    y = Math.max(minY, Math.min(maxY, y));
     
     const annotationDiv = document.createElement('div');
     annotationDiv.className = 'annotation';
     annotationDiv.dataset.phase = currentPhase;
-    annotationDiv.style.left = x + 'px';
-    annotationDiv.style.top = y + 'px';
+    annotationDiv.style.left = position.x + 'px';
+    annotationDiv.style.top = position.y + 'px';
     
     const textarea = document.createElement('textarea');
     textarea.value = annotation.text;

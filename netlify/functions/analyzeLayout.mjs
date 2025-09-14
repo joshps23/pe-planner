@@ -63,10 +63,25 @@ export default async (request, context) => {
     // Extract key info from layout data to keep prompt short but informative
     const lines = layoutData.split('\n');
     let activityInfo = '';
+    let lessonObjective = '';
+    let skillsFocus = '';
+    let rules = '';
     let equipmentCount = { cones: 0, balls: 0, attackers: 0, defenders: 0 };
 
     for (const line of lines) {
-      if (line.includes('Activity Name:') || line.includes('Playing area:')) {
+      if (line.includes('Activity Name:')) {
+        activityInfo += line + '\n';
+      }
+      if (line.includes('Lesson Objective:')) {
+        lessonObjective = line.replace('- Lesson Objective:', '').trim();
+      }
+      if (line.includes('Skills Focus:')) {
+        skillsFocus = line.replace('- Skills Focus:', '').trim();
+      }
+      if (line.includes('Rules & Instructions:')) {
+        rules = line.replace('- Rules & Instructions:', '').trim();
+      }
+      if (line.includes('Playing area:')) {
         activityInfo += line + '\n';
       }
       if (line.includes('CONE')) equipmentCount.cones++;
@@ -74,6 +89,14 @@ export default async (request, context) => {
       if (line.includes('ATTACKER')) equipmentCount.attackers++;
       if (line.includes('DEFENDER')) equipmentCount.defenders++;
     }
+
+    // Log extracted details for debugging
+    console.log('Activity details extracted:', {
+      lessonObjective,
+      skillsFocus,
+      rules,
+      activityInfo: activityInfo.trim()
+    });
 
     // Use dynamic boundaries if provided, otherwise use defaults
     const boundaries = courtBoundaries || {
@@ -87,8 +110,17 @@ export default async (request, context) => {
     const centerY = Math.round((boundaries.topLeftY + boundaries.bottomRightY) / 2);
 
     // STRICT FORMAT PROMPT WITH CLEAR BOUNDARIES
-    let prompt = `PE Layout: ${activityInfo}
-Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
+    let prompt = `PE ACTIVITY ANALYSIS REQUEST
+
+LESSON DETAILS:
+${activityInfo}${lessonObjective ? `Lesson Objective: ${lessonObjective}\n` : ''}${skillsFocus ? `Skills Focus: ${skillsFocus}\n` : ''}${rules ? `Rules: ${rules}\n` : ''}
+Equipment Count: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
+
+IMPORTANT: Your analysis and layout suggestions MUST be directly related to the lesson objective above.
+- If the objective is about "dribbling with hands", suggest basketball/handball drills
+- If the objective is about "passing", suggest passing drills
+- If the objective is about "shooting", suggest shooting drills
+- DO NOT mention unrelated sports or skills
 
 COURT BOUNDARIES:
 - The WHITE COURT area spans from coordinates (${boundaries.topLeftX}%, ${boundaries.topLeftY}%) to (${boundaries.bottomRightX}%, ${boundaries.bottomRightY}%)
@@ -110,9 +142,11 @@ CRITICAL POSITIONING RULES:
 - Use yPercent values between ${boundaries.topLeftY} and ${boundaries.bottomRightY} ONLY
 - Any values outside these ranges will place elements in the green border (FORBIDDEN)
 
+Based on the lesson objective "${lessonObjective || 'general PE activity'}", provide analysis and layout suggestions that directly support this objective.
+
 Return response in EXACTLY this format:
 ===SUGGESTIONS===
-Write one sentence improvement suggestion here as plain text
+Write one sentence improvement suggestion specifically related to the lesson objective
 ===LAYOUT_OPTIONS===
 {"layouts":[{"name":"Activity Name","description":"Brief description","instructions":"How to play instructions","rules":"List game rules here","teachingPoints":"Key teaching points as a single string","elements":[{"type":"cone","position":{"xPercent":${boundaries.topLeftX + 10},"yPercent":${boundaries.topLeftY + 10}}},{"type":"cone","position":{"xPercent":${boundaries.bottomRightX - 10},"yPercent":${boundaries.topLeftY + 10}}},{"type":"cone","position":{"xPercent":${boundaries.topLeftX + 10},"yPercent":${boundaries.bottomRightY - 10}}},{"type":"cone","position":{"xPercent":${boundaries.bottomRightX - 10},"yPercent":${boundaries.bottomRightY - 10}}},{"type":"attacker","position":{"xPercent":${boundaries.topLeftX + 20},"yPercent":${boundaries.topLeftY + 20}}},{"type":"attacker","position":{"xPercent":${boundaries.bottomRightX - 20},"yPercent":${boundaries.topLeftY + 20}}},{"type":"attacker","position":{"xPercent":${centerX},"yPercent":${boundaries.bottomRightY - 20}}},{"type":"defender","position":{"xPercent":${centerX},"yPercent":${centerY}}},{"type":"ball","position":{"xPercent":${centerX},"yPercent":${centerY - 5}}}]}]}
 ===END===

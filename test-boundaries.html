@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Boundary Test</title>
+    <style>
+        .court-container {
+            width: 800px;
+            height: 500px;
+            background: #16a34a;
+            padding: 30px;
+            margin: 20px;
+            position: relative;
+        }
+
+        .playing-area {
+            width: 100%;
+            height: 100%;
+            background: white;
+            position: relative;
+            border: 2px solid #ccc;
+        }
+
+        .custom-space {
+            aspect-ratio: 2.2 / 1;
+        }
+
+        .test-element {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: red;
+            cursor: move;
+        }
+
+        #info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <div id="court-info"></div>
+        <div id="mouse-info"></div>
+        <div id="element-info"></div>
+    </div>
+
+    <div class="court-container">
+        <div id="court" class="playing-area custom-space">
+            <div id="test-el" class="test-element" style="left: 100px; top: 50px;">
+                Test
+            </div>
+        </div>
+    </div>
+
+    <script src="js/coordinates.js"></script>
+    <script>
+        const court = document.getElementById('court');
+        const testEl = document.getElementById('test-el');
+        const courtInfo = document.getElementById('court-info');
+        const mouseInfo = document.getElementById('mouse-info');
+        const elementInfo = document.getElementById('element-info');
+
+        function updateInfo() {
+            const courtRect = court.getBoundingClientRect();
+            const boundaries = CoordinateSystem.getCourtBoundaries(court);
+
+            courtInfo.innerHTML = `
+                Court clientWidth: ${court.clientWidth}px<br>
+                Court clientHeight: ${court.clientHeight}px<br>
+                Court offsetWidth: ${court.offsetWidth}px<br>
+                Court offsetHeight: ${court.offsetHeight}px<br>
+                Boundaries: ${boundaries.width} x ${boundaries.height}<br>
+                Aspect Ratio: ${(boundaries.width / boundaries.height).toFixed(2)}
+            `;
+
+            const elLeft = parseInt(testEl.style.left) || 0;
+            const elTop = parseInt(testEl.style.top) || 0;
+
+            elementInfo.innerHTML = `
+                Element pos: (${elLeft}, ${elTop})<br>
+                Max X: ${boundaries.width - 80}<br>
+                Max Y: ${boundaries.height - 80}
+            `;
+        }
+
+        updateInfo();
+
+        // Simple drag implementation
+        let isDragging = false;
+        let dragOffset = {x: 0, y: 0};
+
+        testEl.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = testEl.getBoundingClientRect();
+            const courtRect = court.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const courtRect = court.getBoundingClientRect();
+            let x = e.clientX - courtRect.left - dragOffset.x;
+            let y = e.clientY - courtRect.top - dragOffset.y;
+
+            // Test our validation
+            const validated = CoordinateSystem.validateElementPosition(
+                {type: 'attacker'},
+                x,
+                y,
+                court
+            );
+
+            testEl.style.left = validated.x + 'px';
+            testEl.style.top = validated.y + 'px';
+
+            mouseInfo.innerHTML = `
+                Mouse in court: (${x.toFixed(0)}, ${y.toFixed(0)})<br>
+                Validated: (${validated.x.toFixed(0)}, ${validated.y.toFixed(0)})<br>
+                Clamped: ${validated.clamped}
+            `;
+
+            updateInfo();
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Test resize behavior
+        window.addEventListener('resize', updateInfo);
+    </script>
+</body>
+</html>

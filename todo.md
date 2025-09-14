@@ -1,5 +1,57 @@
 # PE Activity Consultant - Development Todo
 
+## Session: 2025-01-14 - Comprehensive Bug Fixes
+
+### Completed Tasks ✅
+
+#### Fixed Drag Constraints and Element Positioning
+- **Problem**: Elements couldn't be dragged properly, appeared restricted even when within white court
+- **Solutions**:
+  - Created `js/coordinates.js` centralized coordinate system
+  - Fixed position mismatch between style and actual element position
+  - Added `position: absolute` to loaded elements (critical fix!)
+  - Implemented border compensation for -2px positioning
+  - Auto-correction of positions on drag start
+
+#### Fixed AI Analysis Not Using Lesson Objectives
+- **Problem**: AI suggested unrelated activities (badminton when objective was basketball dribbling)
+- **Solution**:
+  - Updated `analyzeLayout.mjs` to extract lesson objective, skills focus, rules
+  - Modified AI prompt to prominently include lesson details
+  - Added explicit instructions to match suggestions to objectives
+
+### Key Code Changes
+- Created `js/coordinates.js` - Unified coordinate system with:
+  - `ELEMENT_SIZES` object for all element dimensions
+  - `getCourtBoundaries()` with border width support
+  - `validateElementPosition()` for universal validation
+  - Helper functions for conversions and safe positioning
+
+- Updated `js/main.js`:
+  - Position mismatch detection in `startDrag()`
+  - Added `position: absolute` to loaded elements (lines 742, 796)
+  - Enhanced debug logging
+  - `revalidateAllElements()` function
+
+- Updated `netlify/functions/analyzeLayout.mjs`:
+  - Extracts lesson objective, skills focus, rules
+  - Includes these prominently in AI prompt
+  - Sport-specific guidance
+
+### Testing & Debug Features
+- `window.debugMode = true` enables detailed logging
+- Created test files: `test-coordinates.html`, `test-boundaries.html`
+- Court boundary visualization in debug mode
+- Position mismatch auto-correction with warnings
+
+### Issues Resolved
+- ✅ Elements stuck at top edge - Fixed with border compensation
+- ✅ Can't drag to court edges - Fixed boundary calculations
+- ✅ AI suggests wrong sport - Fixed with objective extraction
+- ✅ Position jumps on drag start - Fixed with mismatch detection
+
+---
+
 ## Completed Features (2025-09-12)
 
 ### ✅ Multiple Layout Suggestions
