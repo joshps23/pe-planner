@@ -1022,8 +1022,14 @@ function applyLayoutFromJson() {
 
     // STEP 3: Apply new layout after delay
     setTimeout(() => {
-        // Reset background to white
+        // Ensure court has white background (remove any gradient)
+        court.style.background = 'white';
         court.style.backgroundColor = 'white';
+
+        // Make sure court has custom-space class for white appearance
+        if (!court.classList.contains('custom-space')) {
+            court.classList.add('custom-space');
+        }
 
         console.log('✨ Applying fresh layout from current suggestion');
 
@@ -1073,6 +1079,8 @@ function applyLayoutFromJson() {
             console.error('Error applying layout:', error);
             alert('Error applying layout. Please check the console for details.');
             // Reset court background on error
+            court.style.background = 'white';
+            court.style.background = 'white';
             court.style.backgroundColor = 'white';
         }
     }, 300); // Wait 300ms to show empty court
@@ -1233,6 +1241,16 @@ function previewSelectedLayout() {
         width: previewCourt.clientWidth,
         height: previewCourt.clientHeight
     };
+
+    // Debug: Log preview court dimensions
+    console.log('🔍 Preview Court Dimensions:', fixedCourtDimensions);
+    console.log('🔍 Preview Border Style:', window.getComputedStyle(previewCourt).borderWidth);
+    if (layoutToPreview.elements && layoutToPreview.elements.length > 0) {
+        console.log('🔍 Preview elements:');
+        layoutToPreview.elements.slice(0, 3).forEach(el => {
+            console.log(`  - ${el.type} at (${el.position?.xPercent}%, ${el.position?.yPercent}%)`);
+        });
+    }
 
     // Apply layout to preview court
     if (layoutToPreview.elements) {
@@ -1521,18 +1539,56 @@ function applyLayoutToMainCourt(layoutToApply) {
 
     // Apply new layout with fixed dimensions
     setTimeout(() => {
+        // Ensure court has white background (remove any gradient)
+        court.style.background = 'white';
         court.style.backgroundColor = 'white';
 
+        // Make sure court has custom-space class for white appearance
+        if (!court.classList.contains('custom-space')) {
+            court.classList.add('custom-space');
+        }
+
+        // Get the actual inner dimensions of the court (white area only)
+        const computedStyle = window.getComputedStyle(court);
+        const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
+        const borderBottom = parseFloat(computedStyle.borderBottomWidth) || 0;
+        const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
+        const borderRight = parseFloat(computedStyle.borderRightWidth) || 0;
+        const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+        const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+        const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+        const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+
+        // Use the inner dimensions (excluding borders but including padding area for positioning)
         const fixedCourtDimensions = {
-            width: court.clientWidth,
-            height: court.clientHeight
+            width: court.clientWidth,  // clientWidth excludes border but includes padding
+            height: court.clientHeight // clientHeight excludes border but includes padding
         };
+
+        // Debug: Check for any padding that might affect positioning
+        if (paddingTop || paddingBottom || paddingLeft || paddingRight) {
+            console.warn('⚠️ Court has padding which may affect element positioning!');
+            console.warn(`  Padding (T/R/B/L): ${paddingTop}, ${paddingRight}, ${paddingBottom}, ${paddingLeft}`);
+        }
+
+        // Debug: Log court dimensions and first few elements
+        console.log('📐 Main Court Dimensions (inner):', fixedCourtDimensions);
+        console.log('📐 Court Total Size (outer):', court.offsetWidth, 'x', court.offsetHeight);
+        console.log('📐 Court Borders (T/R/B/L):', borderTop, borderRight, borderBottom, borderLeft);
+        if (layoutToApply.elements && layoutToApply.elements.length > 0) {
+            console.log('📍 First few elements to apply:');
+            layoutToApply.elements.slice(0, 3).forEach(el => {
+                console.log(`  - ${el.type} at (${el.position?.xPercent}%, ${el.position?.yPercent}%)`);
+            });
+        }
 
         try {
             if (layoutToApply.elements) {
                 layoutToApply.elements.forEach((element, index) => {
                     setTimeout(() => {
-                        createElementFromJson(element, court, fixedCourtDimensions);
+                        // Get fresh court reference to ensure consistency
+                        const currentCourt = document.getElementById('court');
+                        createElementFromJson(element, currentCourt, fixedCourtDimensions);
                     }, index * 50);
                 });
             }
@@ -1555,6 +1611,7 @@ function applyLayoutToMainCourt(layoutToApply) {
         } catch (error) {
             console.error('Error applying layout:', error);
             alert('Error applying layout. Please check the console for details.');
+            court.style.background = 'white';
             court.style.backgroundColor = 'white';
         }
     }, 300);
@@ -1624,8 +1681,14 @@ function applySelectedLayout() {
 
     // STEP 3: Add delay to make reset visible, then apply new layout
     setTimeout(() => {
-        // Reset background to white
+        // Ensure court has white background (remove any gradient)
+        court.style.background = 'white';
         court.style.backgroundColor = 'white';
+
+        // Make sure court has custom-space class for white appearance
+        if (!court.classList.contains('custom-space')) {
+            court.classList.add('custom-space');
+        }
 
         console.log('✨ Applying fresh layout:', layoutToApply.name);
 
@@ -1684,12 +1747,20 @@ function applySelectedLayout() {
             console.error('Error applying layout:', error);
             alert('Error applying layout. Please check the console for details.');
             // Reset court background on error
+            court.style.background = 'white';
+            court.style.background = 'white';
             court.style.backgroundColor = 'white';
         }
     }, 300); // Wait 300ms to show empty court
 }
 
 function createElementFromJson(element, court, fixedDimensions) {
+    // Ensure court has the correct positioning context
+    if (court.style.position !== 'relative' && court.style.position !== 'absolute') {
+        console.warn('⚠️ Court element does not have position:relative or absolute!');
+        court.style.position = 'relative';
+    }
+
     // Use fixed dimensions if provided (for AI layouts), otherwise use current court dimensions
     const courtDimensions = fixedDimensions || { width: court.clientWidth, height: court.clientHeight };
 
@@ -1725,9 +1796,14 @@ function createElementFromJson(element, court, fixedDimensions) {
         console.warn(`Element ${element.type} position was adjusted to stay within court boundaries`);
     }
 
-    if (window.debugMode) {
-        console.log(`Final position: (${position.x}, ${position.y})`);
-    }
+    // DEBUG: Log every element's position conversion
+    console.log(`📍 ${element.type} position:`, {
+        input: `(${element.position?.xPercent}%, ${element.position?.yPercent}%)`,
+        output: `(${position.x.toFixed(2)}px, ${position.y.toFixed(2)}px)`,
+        courtDims: `${courtDimensions.width}x${courtDimensions.height}`,
+        courtElement: court.id,
+        courtClasses: court.className
+    });
 
     // ALWAYS check for Y-axis consistency (not just in debug mode)
     if (element.type === 'cone') {
@@ -1807,7 +1883,8 @@ function createElementFromJson(element, court, fixedDimensions) {
 
         item.appendChild(removeBtn);
 
-        // Set position directly
+        // Set position directly - ensure absolute positioning
+        item.style.position = 'absolute';
         item.style.left = position.x + 'px';
         item.style.top = position.y + 'px';
 
@@ -1851,7 +1928,8 @@ function createElementFromJson(element, court, fixedDimensions) {
 
         item.appendChild(removeBtn);
 
-        // Set position directly
+        // Set position directly - ensure absolute positioning
+        item.style.position = 'absolute';
         item.style.left = position.x + 'px';
         item.style.top = position.y + 'px';
 
