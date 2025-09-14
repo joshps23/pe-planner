@@ -1,5 +1,334 @@
 # PE Activity Consultant - Development Todo
 
+## Session: 2025-09-14 - Part 12 - Preview Modal Redesign for Better Readability
+
+### ✅ Completely Redesigned Preview Modal for Maximum Readability
+
+#### User Request:
+- "In the preview panel, the instructions rules teaching points only have a small screen estate space for the user to read"
+
+#### Problem Identified:
+- Activity details panel was too narrow (only 400px)
+- Text was cramped and difficult to read
+- Court took up too much space relative to important text content
+- Users couldn't properly review activity instructions before applying
+
+#### Implementation:
+1. **Vertical Layout Design**:
+   - Changed from side-by-side to vertical stacking (court on top, details below)
+   - Reduced modal width from 1400px to 1000px for better focus
+   - Made activity details full-width for maximum readability
+
+2. **Court Size Optimization**:
+   - Reduced court preview max-width from 600px to 500px
+   - Limited court container height to max 300px
+   - Maintained aspect ratio while prioritizing text space
+
+3. **Enhanced Activity Details Section**:
+   - Full-width layout for activity details
+   - Increased font sizes: h3 (24px), h4 (18px), body text (15px)
+   - Better line spacing (1.9) for improved readability
+   - Increased padding and margins for breathing room
+   - Minimum height of 300px ensures adequate space
+
+4. **Tabbed Interface for Mobile**:
+   - Added tab navigation for screens ≤768px
+   - Users can switch between "Court Layout" and "Activity Details"
+   - Full-screen view for each tab on mobile
+   - Activity details get full viewport height when selected
+
+5. **Typography Improvements**:
+   - Larger, more readable font sizes
+   - Better color contrast for text elements
+   - Increased spacing between list items
+   - Clear visual hierarchy with proper heading sizes
+
+#### Files Modified:
+- `css/styles.css`: Complete layout restructure, vertical stacking, tab styles
+- `badminton-planner.html`: Added tab navigation structure
+- `js/main.js`: Added switchPreviewTab function for mobile
+
+#### Result:
+The preview modal now prioritizes readability with activity details getting maximum screen space. On desktop, the vertical layout ensures instructions, rules, and teaching points are fully visible below a compact court preview. On mobile, tabs allow users to focus on either the court or the full activity details, providing an optimal reading experience on all devices.
+
+## Session: 2025-09-14 - Part 11 - Preview Modal Activity Details Fix
+
+### ✅ Fixed Preview Modal to Display Complete Activity Information
+
+#### User Request:
+- "The user won't be able to see the full suggested layout in the preview nor the instructions, rules, teaching points"
+
+#### Problem Identified:
+- Preview modal only showed the court area
+- Activity details panel was not visible or properly styled
+- Users couldn't see instructions, rules, or teaching points
+- Layout was not responsive for different screen sizes
+
+#### Implementation:
+1. **Enhanced Preview Modal Layout**:
+   - Increased modal width to 1400px for better content display
+   - Set modal height to 90vh with proper overflow handling
+   - Implemented flexbox layout with 60/40 split (court/details)
+   - Fixed height calculation accounting for header and footer
+
+2. **Activity Details Panel Improvements**:
+   - Increased panel width from 350px to 400px
+   - Added gradient background and shadow for better visibility
+   - Forced display with `!important` to ensure visibility
+   - Made panel scrollable with overflow-y: auto
+
+3. **Enhanced Content Display**:
+   - Added skill level indicator with color coding
+   - Improved typography with better spacing and readability
+   - Added inline styles for better list formatting
+   - Included fallback message when no details available
+
+4. **Responsive Design**:
+   - Tablet view (≤1024px): Vertical layout with court on top
+   - Mobile view (≤768px): Full-screen modal with stacked layout
+   - Adjusted font sizes and padding for mobile screens
+   - Maintained scrollability on all screen sizes
+
+5. **Visual Improvements**:
+   - Purple accent color for headings matching app theme
+   - Better contrast for text elements
+   - Loading state indicator for empty panels
+   - Disabled interaction on preview court elements
+
+#### Files Modified:
+- `css/styles.css`: Complete redesign of preview modal styles
+- `js/main.js`: Enhanced displayPreviewActivityDetails function
+
+#### Result:
+The preview modal now properly displays both the court layout and complete activity details side-by-side on desktop and stacked on mobile. Users can see instructions, rules, and teaching points clearly before applying the layout.
+
+## Session: 2025-09-14 - Part 10 - Mobile UI/UX Optimization
+
+### ✅ Comprehensive Mobile Interface Redesign
+
+#### User Request:
+- "The current mobile UI is not friendly, act as a UX designer and optimise the mobile interface without creating any bugs for the desktop interface"
+
+#### UX Analysis Findings:
+- Poor navigation requiring excessive scrolling
+- Touch targets below 44px minimum size
+- Difficult drag-drop on touchscreens
+- Cluttered interface on small screens
+- Modal overflow issues
+- Limited court visibility
+
+#### Implementation:
+1. **Mobile Navigation System**:
+   - Added hamburger menu (top-left) with slide-out drawer
+   - Implemented bottom navigation bar with 5 quick-access items
+   - Added swipe gestures (right to open, left to close menu)
+   - Menu overlay with backdrop blur effect
+
+2. **Touch-Optimized Controls**:
+   - Increased all buttons to minimum 48×48px touch targets
+   - Added visual feedback (scale & opacity) on touch
+   - Enhanced drag handles for court elements
+   - Improved input field sizing (16px font to prevent iOS zoom)
+
+3. **Court Interaction Improvements**:
+   - Added zoom controls (+/- buttons) for mobile
+   - Implemented pinch-to-zoom gesture support
+   - Pan support when zoomed in
+   - Touch-friendly element selection with visual feedback
+
+4. **Floating Action Button (FAB)**:
+   - Quick access to common tools
+   - Expandable menu with 3 options
+   - Positioned bottom-right for thumb reach
+   - Smooth rotation animation
+
+5. **Space Optimization**:
+   - Controls hidden in slide-out drawer
+   - Full-screen modals on mobile
+   - Sticky headers for important controls
+   - Removed subtitle on mobile to save space
+   - Landscape mode optimizations
+
+6. **Files Created/Modified**:
+   - Created `js/mobile.js` with all mobile functionality
+   - Updated CSS with comprehensive mobile media queries
+   - Added mobile navigation HTML elements
+   - Created `test-mobile-ui.html` for testing
+
+#### Key Features:
+- **Responsive breakpoints**: 768px, 480px, landscape modes
+- **Gesture support**: Swipe, pinch, pan, tap
+- **Progressive enhancement**: Desktop unchanged, mobile enhanced
+- **Accessibility**: Large touch targets, clear visual feedback
+
+#### Result:
+The PE Activity Consultant now provides an optimized mobile experience with intuitive navigation, touch-friendly controls, and efficient space usage while maintaining full desktop functionality. The interface adapts seamlessly across all device sizes.
+
+## Session: 2025-09-14 - Part 9 - CRAFT Framework Non-Linear Pedagogy Implementation
+
+### ✅ Implemented CRAFT Framework for Non-Linear Pedagogy
+
+#### User Request:
+- "Can the instructions, rules be infused with non linear pedagogy using the CRAFT framework"
+
+#### Implementation:
+1. **CRAFT Framework Integration** (`analyzeLayout.mjs`):
+   - Replaced traditional differentiated instruction with CRAFT principles
+   - Added comprehensive CRAFT framework explanation in AI prompt
+   - Implemented all five CRAFT components:
+     - **C**onstraints: Task, environmental, and individual constraints
+     - **R**epresentative: Game-like scenarios with decision-making
+     - **A**daptation: Self-organization and multiple solutions
+     - **F**unctional Variability: Movement diversity and creativity
+     - **T**ask Simplification: Progressive complexity through constraints
+
+2. **Instruction Language Changes**:
+   - Shifted from prescriptive to exploratory language
+   - Examples of changes:
+     - OLD: "Use crossover dribble at cone 2"
+     - NEW: "Explore different ways to change direction at each cone"
+   - Focus on problem-solving rather than technique replication
+
+3. **Layout Themes Updated**:
+   - Layout 1: "Constraint-Based Discovery" - Environmental constraints guide learning
+   - Layout 2: "Game-Based Learning" - Representative scenarios with decisions
+   - Layout 3: "Adaptive Challenge" - Self-organizing tasks with variability
+
+4. **Skill Level Applications**:
+   - **Beginner**: Larger spaces, modified rules, exploration focus
+   - **Intermediate**: Balanced constraints, discovery emphasis
+   - **Advanced**: Complex constraints, creative problem-solving
+   - **Mixed**: Self-scaling tasks, choice-based challenges
+
+5. **Testing Framework** (`test-craft-framework.html`):
+   - Created comprehensive test suite for CRAFT implementation
+   - Includes scenario selection (dribbling, passing, agility, teamwork)
+   - Visual comparison of traditional vs CRAFT pedagogy
+   - Interactive demonstration of constraint-based learning
+
+#### Key CRAFT Principles Applied:
+- Instructions encourage exploration, not prescription
+- Rules act as constraints that shape behavior
+- Multiple solutions are valued over single "correct" technique
+- Game-like contexts promote transfer to real situations
+- Learners self-organize and adapt to challenges
+
+#### Result:
+The PE Activity Consultant now generates instructions using non-linear pedagogy principles. Activities promote exploration, creativity, and self-discovery rather than rigid technique replication. Teachers can create learning environments where students discover movement solutions through carefully designed constraints rather than explicit instruction.
+
+## Session: 2025-09-14 - Part 8 - Overlap Prevention for AI-Generated Layouts
+
+### ✅ Implemented Overlap Prevention for AI-Generated Elements
+
+#### User Request:
+- "Can you ensure that the AI suggested layouts does not have the defender generated on the same xy coordinate as attackers as they overlap each other making it hard to see"
+
+#### Implementation:
+1. **Enhanced AI Prompt Rules** (`analyzeLayout.mjs`):
+   - Added "CRITICAL NO-OVERLAP RULES" section requiring minimum 5% spacing between all elements
+   - Explicit instructions that no two elements can share the same coordinates
+   - Updated example layouts to demonstrate proper spacing between elements
+   - Added safety margins for different element types
+
+2. **Overlap Detection & Correction** (`analyzeLayout.mjs` lines 546-594):
+   - Implemented two-pass validation system
+   - First pass: Boundary clamping to ensure elements stay within court
+   - Second pass: Detect overlapping elements at same coordinates
+   - Automatic offset application when overlap detected:
+     - Defenders: Offset vertically (5% increments)
+     - Attackers: Offset horizontally (5% increments)
+     - Other elements: Diagonal offset pattern
+   - Map tracking of occupied positions to prevent duplicate placements
+
+3. **Testing & Verification**:
+   - Multiple test runs show coordinate adjustments working (e.g., 75% -> 70%)
+   - No overlap warnings in recent API responses
+   - Visual confirmation that elements no longer stack on top of each other
+
+#### Result:
+AI-generated layouts now maintain proper spacing between all elements, ensuring defenders and attackers are clearly visible and distinguishable. The system uses both preventive measures (AI prompt rules) and corrective measures (overlap detection) to guarantee non-overlapping layouts.
+
+## Session: 2025-09-14 - Part 7 - Differentiated Challenge Levels
+
+### ✅ Added Differentiated Instructions Based on Student Skill Levels
+
+#### User Request:
+- "Can the instructions, rules, and teaching points be fine-tuned to provide differentiated levels of challenge"
+
+#### Implementation:
+1. **Student Skill Level Selection** (`badminton-planner.html`):
+   - Added dropdown for skill level selection: Beginner, Intermediate, Advanced, Mixed Abilities
+   - Default set to Intermediate
+   - Positioned in Activity Details section
+
+2. **API Integration** (`api.js`):
+   - Capture skill level from dropdown
+   - Include in layout description sent to AI
+   - Store with activity details for analysis
+
+3. **Enhanced AI Prompt** (`analyzeLayout.mjs`):
+   - Extract and pass student skill level to AI
+   - Added differentiation requirements:
+     - Beginner: Simple steps, flexible rules, focus on fundamentals
+     - Intermediate: Moderate complexity, standard rules, technique refinement
+     - Advanced: Complex sequences, strict rules, tactical focus
+     - Mixed: Options for each skill level within same activity
+   - Examples provided for each level
+
+4. **UI Enhancements** (`ui.js`):
+   - Display skill level indicator with color coding:
+     - Beginner: Green (supportive)
+     - Intermediate: Yellow (balanced)
+     - Advanced: Red (challenging)
+     - Mixed: Purple (inclusive)
+   - Show skill level in layout details panel
+
+5. **Testing**:
+   - Verified skill level is captured and sent to API
+   - Confirmed AI receives skill level in prompt
+   - Visual indicators display correctly
+
+#### Result:
+Teachers can now select student skill levels, and the AI will generate appropriately differentiated instructions, rules, and teaching points. This allows the same activity layout to serve multiple skill levels with appropriate challenge and progression.
+
+## Session: 2025-09-14 - Part 6 - Enhanced AI Analysis with Layout Review
+
+### ✅ Added Comprehensive Layout Review Feature
+
+#### User Request:
+- "The AI analysis should include review of the user's activity and layout that he submitted"
+
+#### Implementation:
+1. **Enhanced AI Prompt** (`analyzeLayout.mjs`):
+   - Added comprehensive review requirements to analyze user's submitted layout
+   - AI now evaluates: alignment with objectives, safety, engagement, skill development, space utilization
+   - Response format includes ===REVIEW=== section before suggestions
+
+2. **Improved Layout Description** (`api.js`):
+   - Added element grouping analysis (detects station formations)
+   - Safety spacing calculations with collision warnings
+   - Quadrant utilization analysis to identify underused court areas
+   - More detailed spatial relationship data
+
+3. **Response Processing**:
+   - Extended response parsing to extract review section
+   - Review data stored with analysis results for later viewing
+   - Passed to UI for display
+
+4. **UI Enhancements** (`ui.js`):
+   - Dynamic review section creation in suggestions modal
+   - Color-coded review categories (✅ Strengths, ⚠️ Improvements, 🛡️ Safety, etc.)
+   - Professional styling with purple accent border
+   - Review appears prominently before improvement suggestions
+
+5. **Testing**:
+   - Created `test-review-feature.html` for verification
+   - Successfully tested with multiple layout scenarios
+   - Confirmed AI provides detailed reviews of submitted layouts
+
+#### Result:
+Teachers now receive comprehensive feedback on their current layout before seeing alternatives, making the tool more educational and helpful for improving PE lesson planning.
+
 ## Session: 2025-09-14 - Part 5 - Model Configuration and Timeout Issues Resolution
 
 ### ✅ Resolved Timeout Issues by Switching to gemini-1.5-pro

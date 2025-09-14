@@ -99,7 +99,8 @@ function captureCourtLayout() {
             objective: document.getElementById('lessonObjective').value.trim(),
             rules: document.getElementById('activityRules').value.trim(),
             winningConditions: document.getElementById('winningConditions').value.trim(),
-            skillFocus: document.getElementById('skillFocus').value.trim()
+            skillFocus: document.getElementById('skillFocus').value.trim(),
+            studentSkillLevel: document.getElementById('studentSkillLevel').value || 'intermediate'
         },
         elements: [],
         annotations: [],
@@ -270,6 +271,9 @@ function generateLayoutDescription(layout) {
         if (layout.activityDetails.skillFocus) {
             description += `- Skills Focus: ${layout.activityDetails.skillFocus}\n`;
         }
+        if (layout.activityDetails.studentSkillLevel) {
+            description += `- Student Skill Level: ${layout.activityDetails.studentSkillLevel}\n`;
+        }
         if (layout.activityDetails.rules) {
             description += `- Rules & Instructions: ${layout.activityDetails.rules}\n`;
         }
@@ -285,6 +289,18 @@ function generateLayoutDescription(layout) {
     
     if (layout.elements.length > 0) {
         description += `EQUIPMENT & PARTICIPANTS:\n`;
+
+        // Group elements by type for better analysis
+        const elementsByType = {};
+        layout.elements.forEach((element) => {
+            const type = element.type;
+            if (!elementsByType[type]) {
+                elementsByType[type] = [];
+            }
+            elementsByType[type].push(element);
+        });
+
+        // Describe each element with position
         layout.elements.forEach((element, index) => {
             description += `${index + 1}. ${element.type.toUpperCase()}`;
             if (element.name) {
@@ -293,8 +309,67 @@ function generateLayoutDescription(layout) {
             if (element.role) {
                 description += ` - Role: ${element.role}`;
             }
-            description += ` at position (${element.xPercent}%, ${element.yPercent}% from top-left)\n`;
+            description += ` at position (${element.position.xPercent}%, ${element.position.yPercent}% from top-left)\n`;
         });
+        description += `\n`;
+
+        // Add grouping analysis
+        description += `ELEMENT GROUPING ANALYSIS:\n`;
+        Object.entries(elementsByType).forEach(([type, elements]) => {
+            description += `- ${type}s: ${elements.length} total`;
+            if (type === 'cone' && elements.length >= 2) {
+                // Check if cones form stations or boundaries
+                const xPositions = elements.map(e => e.position.xPercent);
+                const uniqueX = [...new Set(xPositions)];
+                if (uniqueX.length > 1) {
+                    description += ` (potentially forming ${uniqueX.length} stations or zones)`;
+                }
+            }
+            description += `\n`;
+        });
+        description += `\n`;
+
+        // Add safety spacing analysis
+        description += `SAFETY ANALYSIS:\n`;
+        let minDistance = Infinity;
+        for (let i = 0; i < layout.elements.length; i++) {
+            for (let j = i + 1; j < layout.elements.length; j++) {
+                const elem1 = layout.elements[i];
+                const elem2 = layout.elements[j];
+                const distance = Math.sqrt(
+                    Math.pow(elem2.position.xPercent - elem1.position.xPercent, 2) +
+                    Math.pow(elem2.position.yPercent - elem1.position.yPercent, 2)
+                );
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+            }
+        }
+        if (minDistance < 10) {
+            description += `- WARNING: Some elements are very close together (minimum spacing ${minDistance.toFixed(1)}%)\n`;
+        } else {
+            description += `- Good spacing between elements (minimum ${minDistance.toFixed(1)}%)\n`;
+        }
+
+        // Check for underutilized areas
+        const quadrants = {
+            'top-left': false,
+            'top-right': false,
+            'bottom-left': false,
+            'bottom-right': false
+        };
+        layout.elements.forEach(elem => {
+            const x = elem.position.xPercent;
+            const y = elem.position.yPercent;
+            if (x < 50 && y < 50) quadrants['top-left'] = true;
+            if (x >= 50 && y < 50) quadrants['top-right'] = true;
+            if (x < 50 && y >= 50) quadrants['bottom-left'] = true;
+            if (x >= 50 && y >= 50) quadrants['bottom-right'] = true;
+        });
+        const unusedQuadrants = Object.entries(quadrants).filter(([k, v]) => !v).map(([k]) => k);
+        if (unusedQuadrants.length > 0) {
+            description += `- Underutilized areas: ${unusedQuadrants.join(', ')}\n`;
+        }
         description += `\n`;
     }
     
@@ -418,6 +493,9 @@ async function analyzeLayout() {
             // Log raw AI response for debugging
             console.log('=== RAW AI RESPONSE ===');
             console.log('Full response:', JSON.stringify(data, null, 2));
+            if (data.review) {
+                console.log('Review received:', data.review.substring(0, 200) + '...');
+            }
             if (data.layoutJson && data.layoutJson.layouts) {
                 console.log('Layouts received:', data.layoutJson.layouts.length);
                 data.layoutJson.layouts.forEach((layout, idx) => {
@@ -435,9 +513,10 @@ async function analyzeLayout() {
             if (data.layoutJson) {
                 validateLayout(data.layoutJson);
             }
-            
-            // Store the analysis results for later retrieval
+
+            // Store the analysis results for later retrieval (including review)
             lastAnalysisResults = {
+                review: data.review || '',  // Include the review
                 suggestions: data.suggestions,
                 layoutJson: data.layoutJson,
                 timestamp: new Date()
@@ -452,7 +531,7 @@ async function analyzeLayout() {
                 showAIStatus('Analysis complete!', true);
             }
 
-            showAISuggestions(data.suggestions, data.layoutJson);
+            showAISuggestions(data.suggestions, data.layoutJson, data.review);
             updateAnalyzeButton(); // Update button text
         } else {
             throw new Error('No suggestions received from AI');
@@ -493,7 +572,7 @@ function updateAnalyzeButton() {
 
 function viewLastAnalysis() {
     if (lastAnalysisResults) {
-        showAISuggestions(lastAnalysisResults.suggestions, lastAnalysisResults.layoutJson);
+        showAISuggestions(lastAnalysisResults.suggestions, lastAnalysisResults.layoutJson, lastAnalysisResults.review);
     } else {
         alert('No previous analysis found. Please run a new analysis first.');
     }

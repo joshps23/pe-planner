@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Overlap Prevention</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #6b46c1;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #6b46c1;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+        }
+        .court-container {
+            margin: 30px 0;
+            border: 3px solid #6b46c1;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .warning {
+            color: #f59e0b;
+            font-weight: bold;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .coordinate-info {
+            font-family: monospace;
+            background: #e5e7eb;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 Overlap Prevention Test Suite</h1>
+
+        <div class="test-section">
+            <h2>Test Scenario Setup</h2>
+            <p>This test creates a challenging scenario where attackers and defenders are initially placed at overlapping positions to verify the overlap prevention system works correctly.</p>
+
+            <div>
+                <label>Court Width (meters): <input type="number" id="courtWidth" value="20" min="5" max="50"></label>
+                <label style="margin-left: 20px;">Court Length (meters): <input type="number" id="courtLength" value="15" min="5" max="50"></label>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <label>Lesson Objective:
+                    <input type="text" id="lessonObjective" value="Practice defensive positioning and offensive movement" style="width: 400px;">
+                </label>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <label>Student Skill Level:
+                    <select id="studentSkillLevel">
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate" selected>Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="mixed">Mixed Abilities</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Controls</h2>
+            <button class="test-button" onclick="createOverlappingLayout()">
+                🔄 Create Overlapping Test Layout
+            </button>
+            <button class="test-button" onclick="runAIAnalysis()">
+                🤖 Run AI Analysis with Overlap Prevention
+            </button>
+            <button class="test-button" onclick="clearCourt()">
+                🗑️ Clear Court
+            </button>
+        </div>
+
+        <div class="court-container">
+            <h3>Test Court</h3>
+            <div id="court" class="badminton-court" style="width: 100%; aspect-ratio: 20/15; position: relative; background: white; border: 2px solid #ccc;">
+                <!-- Elements will be added here -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Results</h3>
+            <div id="results" class="results">
+                <p>Click "Create Overlapping Test Layout" to begin testing...</p>
+            </div>
+        </div>
+
+        <!-- Hidden elements for compatibility with main app -->
+        <div style="display: none;">
+            <input type="text" id="activityName" value="Overlap Prevention Test">
+            <textarea id="activityRules">Test rules for overlap prevention</textarea>
+            <input type="text" id="skillsFocus" value="Testing">
+            <div id="phase-buttons">
+                <button data-phase="main" class="active"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Suggestions Modal (simplified for testing) -->
+    <div id="aiSuggestionsModal" class="ai-suggestions-modal">
+        <div class="ai-modal-content">
+            <span class="ai-close-btn" onclick="closeAISuggestionsModal()">&times;</span>
+            <h2>AI Analysis Results</h2>
+            <div id="layoutReviewSection" style="display: none;"></div>
+            <div id="aiSuggestionsText"></div>
+            <div id="layoutOptionsContainer" style="display: none;">
+                <h3>Suggested Layouts</h3>
+                <div id="layoutCards"></div>
+            </div>
+            <div id="selectedLayoutDetails" style="display: none;">
+                <div id="layoutDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="loading-modal" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-message">Analyzing layout for overlaps...</div>
+        </div>
+    </div>
+
+    <script src="js/coordinates.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+
+    <script>
+        let currentPhase = 'main';
+        let testElements = [];
+
+        function createOverlappingLayout() {
+            clearCourt();
+            const court = document.getElementById('court');
+            const results = document.getElementById('results');
+
+            // Create intentionally overlapping elements to test prevention
+            const overlappingPositions = [
+                { type: 'attacker', x: 50, y: 50, name: 'Attacker 1' },
+                { type: 'defender', x: 50, y: 50, name: 'Defender 1' }, // Same position!
+                { type: 'attacker', x: 30, y: 30, name: 'Attacker 2' },
+                { type: 'defender', x: 30, y: 30, name: 'Defender 2' }, // Same position!
+                { type: 'cone', x: 50, y: 30 },
+                { type: 'cone', x: 50, y: 70 },
+                { type: 'ball', x: 50, y: 50 }, // Also at 50,50!
+            ];
+
+            let overlapCount = 0;
+            const positionMap = new Map();
+
+            overlappingPositions.forEach(pos => {
+                const element = document.createElement('div');
+                element.className = pos.type === 'attacker' ? 'student attacker' :
+                                   pos.type === 'defender' ? 'student defender' :
+                                   `equipment ${pos.type}`;
+                element.dataset.phase = 'main';
+
+                // Calculate pixel position
+                const courtRect = court.getBoundingClientRect();
+                const pixelX = (pos.x / 100) * courtRect.width;
+                const pixelY = (pos.y / 100) * courtRect.height;
+
+                element.style.position = 'absolute';
+                element.style.left = pixelX + 'px';
+                element.style.top = pixelY + 'px';
+
+                if (pos.name) {
+                    element.dataset.name = pos.name;
+                    const nameLabel = document.createElement('div');
+                    nameLabel.className = 'student-name';
+                    nameLabel.textContent = pos.name;
+                    element.appendChild(nameLabel);
+                }
+
+                court.appendChild(element);
+                makeDraggable(element);
+                testElements.push(element);
+
+                // Track overlaps
+                const posKey = `${pos.x},${pos.y}`;
+                if (positionMap.has(posKey)) {
+                    overlapCount++;
+                    console.warn(`OVERLAP DETECTED: ${pos.type} at ${posKey} overlaps with ${positionMap.get(posKey)}`);
+                }
+                positionMap.set(posKey, pos.type);
+            });
+
+            // Display results
+            results.innerHTML = `
+                <p class="${overlapCount > 0 ? 'warning' : 'success'}">
+                    Layout created with ${overlappingPositions.length} elements
+                </p>
+                <p class="${overlapCount > 0 ? 'error' : 'success'}">
+                    ${overlapCount > 0 ? `⚠️ ${overlapCount} overlaps detected!` : '✅ No overlaps detected'}
+                </p>
+                <div class="coordinate-info">
+                    <strong>Intentional Overlaps Created:</strong><br>
+                    • Attacker 1 & Defender 1 & Ball at (50%, 50%)<br>
+                    • Attacker 2 & Defender 2 at (30%, 30%)
+                </div>
+                <p>Now click "Run AI Analysis" to see how the system handles these overlaps.</p>
+            `;
+        }
+
+        function clearCourt() {
+            const court = document.getElementById('court');
+            testElements.forEach(el => {
+                if (el && el.parentNode) {
+                    el.parentNode.removeChild(el);
+                }
+            });
+            testElements = [];
+            court.innerHTML = '';
+        }
+
+        async function runAIAnalysis() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>🔄 Running AI analysis with overlap prevention...</p>';
+
+            try {
+                await getAISuggestions();
+
+                // Check the results after AI analysis
+                setTimeout(() => {
+                    const modal = document.getElementById('aiSuggestionsModal');
+                    if (modal.classList.contains('show')) {
+                        results.innerHTML = `
+                            <p class="success">✅ AI Analysis completed successfully!</p>
+                            <p>Check the suggested layouts in the modal - they should have no overlapping elements.</p>
+                            <p>The overlap prevention system should have:</p>
+                            <ul>
+                                <li>Enforced minimum 5% spacing between elements</li>
+                                <li>Automatically offset any overlapping positions</li>
+                                <li>Maintained court boundary constraints</li>
+                            </ul>
+                        `;
+
+                        // Log any overlap corrections from the server
+                        if (window.lastAnalysisResults) {
+                            console.log('AI Analysis Results:', window.lastAnalysisResults);
+                        }
+                    }
+                }, 1000);
+            } catch (error) {
+                results.innerHTML = `
+                    <p class="error">❌ Error during AI analysis:</p>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const court = document.getElementById('court');
+            const widthInput = document.getElementById('courtWidth');
+            const lengthInput = document.getElementById('courtLength');
+
+            // Update aspect ratio when dimensions change
+            function updateCourtAspectRatio() {
+                const width = parseFloat(widthInput.value) || 20;
+                const length = parseFloat(lengthInput.value) || 15;
+                court.style.aspectRatio = `${width}/${length}`;
+            }
+
+            widthInput.addEventListener('change', updateCourtAspectRatio);
+            lengthInput.addEventListener('change', updateCourtAspectRatio);
+
+            updateCourtAspectRatio();
+        });
+    </script>
+</body>
+</html>

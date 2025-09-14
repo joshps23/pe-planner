@@ -1353,9 +1353,31 @@ function displayPreviewActivityDetails(layout) {
         return;
     }
 
+    console.log('Displaying preview details for layout:', layout);
+
     let html = `
         <h3>${layout.name || 'Activity Layout'}</h3>
-        <p>${layout.description || ''}</p>
+        <p style="color: #64748b; margin-bottom: 20px;">${layout.description || ''}</p>
+    `;
+
+    // Add skill level indicator if available
+    const skillLevel = document.getElementById('studentSkillLevel')?.value || 'intermediate';
+    html += `
+        <div style="margin-bottom: 15px;">
+            <span style="padding: 4px 12px; display: inline-block; background: ${
+                skillLevel === 'beginner' ? '#dcfce7' :
+                skillLevel === 'intermediate' ? '#fef3c7' :
+                skillLevel === 'advanced' ? '#fee2e2' :
+                '#e0e7ff'
+            }; color: ${
+                skillLevel === 'beginner' ? '#166534' :
+                skillLevel === 'intermediate' ? '#92400e' :
+                skillLevel === 'advanced' ? '#991b1b' :
+                '#3730a3'
+            }; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                🎯 ${skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1)} Level
+            </span>
+        </div>
     `;
 
     // Handle instructions (array or string)
@@ -1364,8 +1386,8 @@ function displayPreviewActivityDetails(layout) {
         if (instructionsList.length > 0 && instructionsList[0]) {
             html += `
                 <h4>📋 Instructions:</h4>
-                <ol>
-                    ${instructionsList.map(inst => `<li>${inst}</li>`).join('')}
+                <ol style="padding-left: 20px; margin-bottom: 20px;">
+                    ${instructionsList.map(inst => `<li style="margin-bottom: 8px; line-height: 1.6;">${inst}</li>`).join('')}
                 </ol>
             `;
         }
@@ -1377,8 +1399,8 @@ function displayPreviewActivityDetails(layout) {
         if (rulesList.length > 0 && rulesList[0]) {
             html += `
                 <h4>📏 Rules:</h4>
-                <ul>
-                    ${rulesList.map(rule => `<li>${rule}</li>`).join('')}
+                <ul style="padding-left: 20px; margin-bottom: 20px;">
+                    ${rulesList.map(rule => `<li style="margin-bottom: 8px; line-height: 1.6;">${rule}</li>`).join('')}
                 </ul>
             `;
         }
@@ -1390,15 +1412,51 @@ function displayPreviewActivityDetails(layout) {
         if (pointsList.length > 0 && pointsList[0]) {
             html += `
                 <h4>🎯 Teaching Points:</h4>
-                <ul>
-                    ${pointsList.map(point => `<li>${point}</li>`).join('')}
+                <ul style="padding-left: 20px; margin-bottom: 20px;">
+                    ${pointsList.map(point => `<li style="margin-bottom: 8px; line-height: 1.6;">${point}</li>`).join('')}
                 </ul>
             `;
         }
     }
 
+    // Add note if no details available
+    if (!layout.instructions && !layout.rules && !layout.teachingPoints) {
+        html += `
+            <div style="padding: 20px; background: #f1f5f9; border-radius: 8px; text-align: center; color: #64748b;">
+                <p>💡 No additional activity details available for this layout.</p>
+                <p style="font-size: 12px; margin-top: 10px;">The AI-generated layout focuses on equipment positioning.</p>
+            </div>
+        `;
+    }
+
     detailsContainer.innerHTML = html;
     detailsContainer.style.display = 'block';
+    detailsContainer.style.visibility = 'visible';
+
+    // Ensure container is scrollable
+    detailsContainer.style.overflowY = 'auto';
+    detailsContainer.style.maxHeight = '100%';
+
+    console.log('Preview details displayed successfully');
+}
+
+function switchPreviewTab(tab) {
+    const courtContainer = document.getElementById('previewCourtContainer');
+    const detailsContainer = document.getElementById('previewActivityDetails');
+    const tabs = document.querySelectorAll('.preview-tab');
+
+    // Update tab active states
+    tabs.forEach(t => t.classList.remove('active'));
+    event.target.closest('.preview-tab').classList.add('active');
+
+    // Show/hide content based on selected tab
+    if (tab === 'court') {
+        courtContainer.classList.remove('tab-hidden');
+        detailsContainer.classList.add('tab-hidden');
+    } else {
+        courtContainer.classList.add('tab-hidden');
+        detailsContainer.classList.remove('tab-hidden');
+    }
 }
 
 function closeLayoutPreviewModal() {
@@ -1410,6 +1468,18 @@ function closeLayoutPreviewModal() {
     if (previewCourt) {
         previewCourt.innerHTML = '';
     }
+
+    // Reset tabs to default
+    const courtContainer = document.getElementById('previewCourtContainer');
+    const detailsContainer = document.getElementById('previewActivityDetails');
+    if (courtContainer) courtContainer.classList.remove('tab-hidden');
+    if (detailsContainer) detailsContainer.classList.remove('tab-hidden');
+
+    const tabs = document.querySelectorAll('.preview-tab');
+    tabs.forEach((t, i) => {
+        if (i === 0) t.classList.add('active');
+        else t.classList.remove('active');
+    });
 }
 
 function applyPreviewedLayout() {
@@ -2317,6 +2387,7 @@ window.applySelectedLayout = applySelectedLayout;
 window.previewSelectedLayout = previewSelectedLayout;
 window.closeLayoutPreviewModal = closeLayoutPreviewModal;
 window.applyPreviewedLayout = applyPreviewedLayout;
+window.switchPreviewTab = switchPreviewTab;
 window.viewLastAnalysis = viewLastAnalysis;
 window.runNewAnalysis = runNewAnalysis;
 window.updateAnalyzeButton = updateAnalyzeButton;

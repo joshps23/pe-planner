@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRAFT Framework Test - Non-Linear Pedagogy</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+        }
+        .test-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #6b46c1;
+            margin-bottom: 10px;
+        }
+        .craft-info {
+            background: linear-gradient(135deg, #f3e7fc, #e7f3fc);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #6b46c1;
+        }
+        .craft-principles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .principle {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .principle h3 {
+            color: #6b46c1;
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+        .principle p {
+            margin: 0;
+            font-size: 14px;
+            color: #555;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #6b46c1;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+        }
+        .scenario-select {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .scenario-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .scenario-card:hover {
+            border-color: #6b46c1;
+            transform: translateY(-2px);
+        }
+        .scenario-card.selected {
+            border-color: #6b46c1;
+            background: linear-gradient(135deg, #f3e7fc, #fff);
+        }
+        .scenario-card h4 {
+            color: #6b46c1;
+            margin: 0 0 8px 0;
+        }
+        .court-container {
+            margin: 30px 0;
+            border: 3px solid #6b46c1;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+        .craft-analysis {
+            background: #e7f3fc;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .craft-analysis h4 {
+            color: #3b82f6;
+            margin: 0 0 10px 0;
+        }
+        .highlight {
+            background: yellow;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 CRAFT Framework Test - Non-Linear Pedagogy</h1>
+
+        <div class="craft-info">
+            <h2>What is CRAFT Framework?</h2>
+            <p>CRAFT is a non-linear pedagogy approach that promotes exploration, discovery, and self-organization in learning motor skills.</p>
+
+            <div class="craft-principles">
+                <div class="principle">
+                    <h3>C - Constraints</h3>
+                    <p>Manipulate task, environment, or individual constraints to guide learning</p>
+                </div>
+                <div class="principle">
+                    <h3>R - Representative</h3>
+                    <p>Create game-like scenarios with real decision-making</p>
+                </div>
+                <div class="principle">
+                    <h3>A - Adaptation</h3>
+                    <p>Encourage learners to self-organize and find their own solutions</p>
+                </div>
+                <div class="principle">
+                    <h3>F - Functional Variability</h3>
+                    <p>Embrace different movement patterns and creative solutions</p>
+                </div>
+                <div class="principle">
+                    <h3>T - Task Simplification</h3>
+                    <p>Progressive complexity through constraint manipulation</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Scenarios</h2>
+            <p>Select a scenario to test CRAFT-based instruction generation:</p>
+
+            <div class="scenario-select">
+                <div class="scenario-card" onclick="selectScenario('dribbling')">
+                    <h4>🏀 Dribbling Challenge</h4>
+                    <p>Ball handling with defensive pressure</p>
+                </div>
+                <div class="scenario-card" onclick="selectScenario('passing')">
+                    <h4>⚽ Passing Patterns</h4>
+                    <p>Finding passing lanes under constraints</p>
+                </div>
+                <div class="scenario-card" onclick="selectScenario('agility')">
+                    <h4>🏃 Agility & Movement</h4>
+                    <p>Spatial awareness and quick decisions</p>
+                </div>
+                <div class="scenario-card" onclick="selectScenario('teamwork')">
+                    <h4>🤝 Team Coordination</h4>
+                    <p>Collaborative problem-solving</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <label>Student Skill Level:
+                    <select id="studentSkillLevel" style="margin-left: 10px;">
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate" selected>Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="mixed">Mixed Abilities</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Controls</h2>
+            <button class="test-button" onclick="setupCRAFTLayout()">
+                🎨 Create CRAFT-Based Layout
+            </button>
+            <button class="test-button" onclick="runCRAFTAnalysis()">
+                🤖 Generate CRAFT Instructions
+            </button>
+            <button class="test-button" onclick="comparePedagogies()">
+                📊 Compare Traditional vs CRAFT
+            </button>
+        </div>
+
+        <div class="court-container">
+            <h3>Activity Space</h3>
+            <div id="court" class="badminton-court" style="width: 100%; aspect-ratio: 20/15; position: relative; background: white; border: 2px solid #ccc;">
+                <!-- Elements will be added here -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>CRAFT Analysis Results</h3>
+            <div id="results" class="results">
+                <p>Select a scenario and click "Create CRAFT-Based Layout" to begin testing...</p>
+            </div>
+
+            <div id="craftAnalysis" class="craft-analysis" style="display: none;">
+                <h4>CRAFT Principles Applied:</h4>
+                <div id="craftDetails"></div>
+            </div>
+        </div>
+
+        <!-- Hidden elements for compatibility -->
+        <div style="display: none;">
+            <input type="text" id="lessonObjective" value="">
+            <input type="text" id="activityName" value="">
+            <textarea id="activityRules"></textarea>
+            <input type="text" id="skillsFocus" value="">
+            <input type="number" id="courtWidth" value="20">
+            <input type="number" id="courtLength" value="15">
+            <div id="phase-buttons">
+                <button data-phase="main" class="active"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Suggestions Modal -->
+    <div id="aiSuggestionsModal" class="ai-suggestions-modal">
+        <div class="ai-modal-content">
+            <span class="ai-close-btn" onclick="closeAISuggestionsModal()">&times;</span>
+            <h2>CRAFT-Based Activity Suggestions</h2>
+            <div id="layoutReviewSection" style="display: none;"></div>
+            <div id="aiSuggestionsText"></div>
+            <div id="layoutOptionsContainer" style="display: none;">
+                <h3>CRAFT-Informed Layouts</h3>
+                <div id="layoutCards"></div>
+            </div>
+            <div id="selectedLayoutDetails" style="display: none;">
+                <div id="layoutDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="loading-modal" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-message">Generating CRAFT-based instructions...</div>
+        </div>
+    </div>
+
+    <script src="js/coordinates.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+
+    <script>
+        let currentPhase = 'main';
+        let selectedScenario = null;
+
+        const scenarios = {
+            dribbling: {
+                objective: "Develop ball control through exploratory dribbling challenges",
+                rules: "Find multiple pathways through the space while maintaining control",
+                skills: "Ball handling, spatial awareness, decision-making",
+                equipment: { cones: 6, balls: 2, attackers: 2, defenders: 1 }
+            },
+            passing: {
+                objective: "Discover passing solutions under spatial constraints",
+                rules: "Create passing opportunities by manipulating space and timing",
+                skills: "Passing accuracy, communication, movement off the ball",
+                equipment: { cones: 4, balls: 1, attackers: 3, defenders: 1 }
+            },
+            agility: {
+                objective: "Explore movement variability in response to changing constraints",
+                rules: "Navigate space using different movement patterns each time",
+                skills: "Agility, coordination, creative movement",
+                equipment: { cones: 8, balls: 0, attackers: 2, defenders: 0 }
+            },
+            teamwork: {
+                objective: "Solve collaborative challenges through self-organization",
+                rules: "Work together to achieve goals without prescribed formations",
+                skills: "Communication, problem-solving, adaptation",
+                equipment: { cones: 5, balls: 2, attackers: 2, defenders: 2 }
+            }
+        };
+
+        function selectScenario(scenario) {
+            selectedScenario = scenario;
+            document.querySelectorAll('.scenario-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.target.closest('.scenario-card').classList.add('selected');
+
+            // Update hidden fields
+            const scenarioData = scenarios[scenario];
+            document.getElementById('lessonObjective').value = scenarioData.objective;
+            document.getElementById('activityRules').value = scenarioData.rules;
+            document.getElementById('skillsFocus').value = scenarioData.skills;
+            document.getElementById('activityName').value = `CRAFT ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Activity`;
+
+            document.getElementById('results').innerHTML = `
+                <p><strong>Selected:</strong> ${scenario.charAt(0).toUpperCase() + scenario.slice(1)} Challenge</p>
+                <p><strong>Objective:</strong> ${scenarioData.objective}</p>
+                <p>Click "Create CRAFT-Based Layout" to generate the activity setup.</p>
+            `;
+        }
+
+        function setupCRAFTLayout() {
+            if (!selectedScenario) {
+                alert('Please select a scenario first!');
+                return;
+            }
+
+            const court = document.getElementById('court');
+            court.innerHTML = '';
+
+            const scenario = scenarios[selectedScenario];
+            const positions = getCRAFTPositions(selectedScenario);
+
+            // Add cones
+            for (let i = 0; i < scenario.equipment.cones; i++) {
+                const cone = document.createElement('div');
+                cone.className = 'equipment cone';
+                cone.dataset.phase = 'main';
+                cone.style.position = 'absolute';
+                cone.style.left = positions.cones[i].x + '%';
+                cone.style.top = positions.cones[i].y + '%';
+                court.appendChild(cone);
+                makeDraggable(cone);
+            }
+
+            // Add attackers
+            for (let i = 0; i < scenario.equipment.attackers; i++) {
+                const attacker = document.createElement('div');
+                attacker.className = 'student attacker';
+                attacker.dataset.phase = 'main';
+                attacker.dataset.name = `Explorer ${i + 1}`;
+                attacker.style.position = 'absolute';
+                attacker.style.left = positions.attackers[i].x + '%';
+                attacker.style.top = positions.attackers[i].y + '%';
+
+                const nameLabel = document.createElement('div');
+                nameLabel.className = 'student-name';
+                nameLabel.textContent = `Explorer ${i + 1}`;
+                attacker.appendChild(nameLabel);
+
+                court.appendChild(attacker);
+                makeDraggable(attacker);
+            }
+
+            // Add defenders
+            for (let i = 0; i < scenario.equipment.defenders; i++) {
+                const defender = document.createElement('div');
+                defender.className = 'student defender';
+                defender.dataset.phase = 'main';
+                defender.dataset.name = `Constrainer ${i + 1}`;
+                defender.style.position = 'absolute';
+                defender.style.left = positions.defenders[i].x + '%';
+                defender.style.top = positions.defenders[i].y + '%';
+
+                const nameLabel = document.createElement('div');
+                nameLabel.className = 'student-name';
+                nameLabel.textContent = `Constrainer ${i + 1}`;
+                defender.appendChild(nameLabel);
+
+                court.appendChild(defender);
+                makeDraggable(defender);
+            }
+
+            // Add balls
+            for (let i = 0; i < scenario.equipment.balls; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'equipment ball';
+                ball.dataset.phase = 'main';
+                ball.style.position = 'absolute';
+                ball.style.left = positions.balls[i].x + '%';
+                ball.style.top = positions.balls[i].y + '%';
+                court.appendChild(ball);
+                makeDraggable(ball);
+            }
+
+            displayCRAFTAnalysis();
+        }
+
+        function getCRAFTPositions(scenario) {
+            // Return constraint-based positions for each scenario
+            const positions = {
+                dribbling: {
+                    cones: [
+                        {x: 25, y: 30}, {x: 25, y: 60}, // Left gate
+                        {x: 50, y: 25}, {x: 50, y: 65}, // Center gates
+                        {x: 70, y: 35}, {x: 70, y: 55}  // Right gate
+                    ],
+                    attackers: [{x: 30, y: 45}, {x: 60, y: 50}],
+                    defenders: [{x: 45, y: 45}],
+                    balls: [{x: 30, y: 40}, {x: 60, y: 45}]
+                },
+                passing: {
+                    cones: [
+                        {x: 30, y: 30}, {x: 65, y: 30},
+                        {x: 30, y: 65}, {x: 65, y: 65}
+                    ],
+                    attackers: [{x: 35, y: 40}, {x: 50, y: 50}, {x: 60, y: 40}],
+                    defenders: [{x: 47, y: 55}],
+                    balls: [{x: 35, y: 35}]
+                },
+                agility: {
+                    cones: [
+                        {x: 25, y: 25}, {x: 40, y: 30},
+                        {x: 55, y: 25}, {x: 70, y: 30},
+                        {x: 25, y: 60}, {x: 40, y: 65},
+                        {x: 55, y: 60}, {x: 70, y: 65}
+                    ],
+                    attackers: [{x: 30, y: 45}, {x: 65, y: 45}],
+                    defenders: [],
+                    balls: []
+                },
+                teamwork: {
+                    cones: [
+                        {x: 35, y: 30}, {x: 60, y: 30},
+                        {x: 47, y: 50},
+                        {x: 35, y: 65}, {x: 60, y: 65}
+                    ],
+                    attackers: [{x: 40, y: 40}, {x: 55, y: 40}],
+                    defenders: [{x: 40, y: 55}, {x: 55, y: 55}],
+                    balls: [{x: 47, y: 35}, {x: 47, y: 60}]
+                }
+            };
+
+            return positions[scenario] || positions.dribbling;
+        }
+
+        function displayCRAFTAnalysis() {
+            const analysis = document.getElementById('craftAnalysis');
+            const details = document.getElementById('craftDetails');
+
+            analysis.style.display = 'block';
+
+            let craftHTML = `
+                <p><strong>✅ Constraints Applied:</strong> Spatial zones created with cones, role-based constraints for players</p>
+                <p><strong>✅ Representative Design:</strong> Game-like scenario with real decision-making opportunities</p>
+                <p><strong>✅ Adaptation Encouraged:</strong> Multiple solution pathways available</p>
+                <p><strong>✅ Functional Variability:</strong> No prescribed technique - explore different approaches</p>
+                <p><strong>✅ Task Simplification:</strong> Progressive complexity based on ${document.getElementById('studentSkillLevel').value} level</p>
+            `;
+
+            details.innerHTML = craftHTML;
+
+            document.getElementById('results').innerHTML = `
+                <p class="highlight">✨ CRAFT-based layout created!</p>
+                <p>This layout uses <strong>constraints</strong> rather than instructions to guide learning.</p>
+                <p>Now click "Generate CRAFT Instructions" to see non-linear pedagogy in action.</p>
+            `;
+        }
+
+        async function runCRAFTAnalysis() {
+            if (!selectedScenario) {
+                alert('Please create a layout first!');
+                return;
+            }
+
+            document.getElementById('results').innerHTML = '<p>🔄 Generating CRAFT-based instructions...</p>';
+
+            try {
+                await getAISuggestions();
+
+                setTimeout(() => {
+                    document.getElementById('results').innerHTML = `
+                        <p class="highlight">✅ CRAFT instructions generated!</p>
+                        <p>Notice how the instructions:</p>
+                        <ul>
+                            <li>Use <strong>exploratory language</strong> ("discover", "find", "explore")</li>
+                            <li>Avoid <strong>prescriptive commands</strong> (no "must do X")</li>
+                            <li>Include <strong>constraints</strong> to shape behavior</li>
+                            <li>Encourage <strong>multiple solutions</strong></li>
+                            <li>Create <strong>game-like scenarios</strong></li>
+                        </ul>
+                    `;
+                }, 1000);
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <p style="color: red;">Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        function comparePedagogies() {
+            const results = document.getElementById('results');
+            results.innerHTML = `
+                <h4>Traditional vs CRAFT Pedagogy Comparison</h4>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <tr style="background: #f3e7fc;">
+                        <th style="padding: 10px; border: 1px solid #ddd;">Aspect</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Traditional (Linear)</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">CRAFT (Non-Linear)</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Instructions</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">"Dribble using right hand only"</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">"Explore ways to maintain control"</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Learning</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">One correct technique</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Multiple valid solutions</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Focus</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Skill replication</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Problem-solving</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Feedback</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Error correction</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Self-discovery</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Progression</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Pre-determined steps</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Emergent learning</td>
+                    </tr>
+                </table>
+            `;
+        }
+    </script>
+</body>
+</html>

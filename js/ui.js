@@ -52,16 +52,53 @@ function toggleSection(header) {
 
 // Global variables are declared in main.js
 
-function showAISuggestions(suggestions, layoutJson = null) {
+function showAISuggestions(suggestions, layoutJson = null, review = '') {
     const modalOverlay = document.getElementById('aiSuggestionsModal');
     const suggestionsTextDiv = document.getElementById('aiSuggestionsText');
     const layoutOptionsContainer = document.getElementById('layoutOptionsContainer');
     const layoutCardsDiv = document.getElementById('layoutCards');
-    
+
     // Store the suggested layouts JSON for later use
     currentSuggestedLayouts = layoutJson;
     selectedLayoutIndex = null;
-    
+
+    // Check if we have a review section (new feature)
+    let reviewSection = document.getElementById('layoutReviewSection');
+    if (!reviewSection && review) {
+        // Create review section if it doesn't exist and we have review content
+        const modalContent = modalOverlay.querySelector('.ai-modal-content');
+        reviewSection = document.createElement('div');
+        reviewSection.id = 'layoutReviewSection';
+        reviewSection.className = 'layout-review-section';
+        reviewSection.style.cssText = 'margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #6b46c1;';
+
+        // Insert before suggestions text (suggestionsTextDiv is a direct child of modalContent)
+        modalContent.insertBefore(reviewSection, suggestionsTextDiv);
+    }
+
+    // Display the review if we have one
+    if (reviewSection && review) {
+        let formattedReview = review
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            .replace(/- Strengths:/g, '<strong style="color: #10b981;">✅ Strengths:</strong>')
+            .replace(/- Areas for Improvement:/g, '<strong style="color: #f59e0b;">⚠️ Areas for Improvement:</strong>')
+            .replace(/- Safety Considerations:/g, '<strong style="color: #ef4444;">🛡️ Safety Considerations:</strong>')
+            .replace(/- Engagement Analysis:/g, '<strong style="color: #3b82f6;">👥 Engagement Analysis:</strong>')
+            .replace(/- Space Utilization:/g, '<strong style="color: #8b5cf6;">📐 Space Utilization:</strong>');
+
+        reviewSection.innerHTML = `
+            <h3 style="margin-top: 0; color: #6b46c1; font-size: 18px;">📋 Your Layout Review</h3>
+            <div style="color: #374151; line-height: 1.6;">
+                <p>${formattedReview}</p>
+            </div>
+        `;
+        reviewSection.style.display = 'block';
+    } else if (reviewSection) {
+        reviewSection.style.display = 'none';
+    }
+
     // Format the suggestions for better readability
     let formattedSuggestions = suggestions
         .replace(/\n\n/g, '<br><br>')
@@ -69,7 +106,7 @@ function showAISuggestions(suggestions, layoutJson = null) {
         .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
         .replace(/^\s*<br>/, '');
-    
+
     suggestionsTextDiv.innerHTML = formattedSuggestions;
     
     // Handle multiple layouts or single layout
@@ -184,10 +221,29 @@ function showLayoutDetails(layout) {
 
     console.log('Showing details for layout:', layout.name);
 
+    // Get the current skill level
+    const skillLevel = document.getElementById('studentSkillLevel')?.value || 'intermediate';
+    const skillLevelDisplay = skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1);
+
     // Build HTML for layout details
     let html = `
         <h4>${layout.name || 'Activity Layout'}</h4>
         <p>${layout.description || ''}</p>
+        <div style="margin: 10px 0;">
+            <span style="padding: 4px 12px; display: inline-block; background: ${
+                skillLevel === 'beginner' ? '#dcfce7' :
+                skillLevel === 'intermediate' ? '#fef3c7' :
+                skillLevel === 'advanced' ? '#fee2e2' :
+                '#e0e7ff'
+            }; color: ${
+                skillLevel === 'beginner' ? '#166534' :
+                skillLevel === 'intermediate' ? '#92400e' :
+                skillLevel === 'advanced' ? '#991b1b' :
+                '#3730a3'
+            }; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                🎯 ${skillLevelDisplay} Level
+            </span>
+        </div>
     `;
 
     // Check if instructions is an array or string and handle both

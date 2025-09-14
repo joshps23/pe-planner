@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AI Layout Review Feature</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #6b46c1;
+            margin-bottom: 20px;
+        }
+        .test-layout {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #6b46c1;
+        }
+        button {
+            background: #6b46c1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #553c9a;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        #status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        #status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+            display: block;
+        }
+        #status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+            display: block;
+        }
+        #status.loading {
+            background: #dbeafe;
+            color: #1e3a8a;
+            border: 1px solid #3b82f6;
+            display: block;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+            display: none;
+        }
+        .review-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #6b46c1;
+        }
+        .review-display h3 {
+            color: #6b46c1;
+            margin-top: 0;
+        }
+        .review-display strong {
+            display: block;
+            margin: 10px 0 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test AI Layout Review Feature</h1>
+        <p>This test page verifies that the AI now provides a comprehensive review of submitted layouts before suggesting alternatives.</p>
+
+        <div class="test-layout">
+            <h3>Sample Layout for Testing</h3>
+            <p><strong>Activity:</strong> Basketball Dribbling Drills</p>
+            <p><strong>Objective:</strong> Improve ball handling and dribbling skills</p>
+            <p><strong>Equipment:</strong> 4 cones, 2 attackers, 1 defender, 1 ball</p>
+            <p><strong>Setup:</strong> Cones at corners, players in center area</p>
+        </div>
+
+        <button id="testBasic" onclick="testBasicLayout()">Test Basic Layout</button>
+        <button id="testComplex" onclick="testComplexLayout()">Test Complex Layout</button>
+        <button id="testSafety" onclick="testSafetyIssue()">Test Layout with Safety Issues</button>
+
+        <div id="status"></div>
+        <div id="reviewDisplay" class="review-display" style="display: none;">
+            <h3>📋 Layout Review</h3>
+            <div id="reviewContent"></div>
+        </div>
+        <div id="response"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = type;
+            status.style.display = 'block';
+        }
+
+        function disableButtons(disabled) {
+            document.querySelectorAll('button').forEach(btn => btn.disabled = disabled);
+        }
+
+        async function testLayout(layoutData) {
+            showStatus('Analyzing layout with AI...', 'loading');
+            disableButtons(true);
+            document.getElementById('response').style.display = 'none';
+            document.getElementById('reviewDisplay').style.display = 'none';
+
+            try {
+                const response = await fetch('/.netlify/functions/analyzeLayout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ layoutData })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Display raw response for debugging
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('response').style.display = 'block';
+
+                // Display the review section if present
+                if (data.review) {
+                    const reviewDisplay = document.getElementById('reviewDisplay');
+                    const reviewContent = document.getElementById('reviewContent');
+
+                    // Format the review for display
+                    let formattedReview = data.review
+                        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>');
+
+                    reviewContent.innerHTML = formattedReview;
+                    reviewDisplay.style.display = 'block';
+
+                    showStatus('✅ Analysis complete! Review displayed below.', 'success');
+                } else {
+                    showStatus('⚠️ Analysis complete but no review section found.', 'error');
+                }
+
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                disableButtons(false);
+            }
+        }
+
+        function testBasicLayout() {
+            const layoutData = `This is a PE lesson layout for the warmup phase:
+
+ACTIVITY DETAILS:
+- Activity Name: Basketball Dribbling Fundamentals
+- Lesson Objective: Improve ball handling and dribbling skills
+- Skills Focus: Dribbling, ball control, hand-eye coordination
+- Rules & Instructions: Students dribble through cone course, maintain control at all times
+
+PLAYING AREA SETUP:
+- Playing area: 20m × 15m custom
+- Current phase: warmup
+
+EQUIPMENT & PARTICIPANTS:
+1. CONE at position (25%, 25% from top-left)
+2. CONE at position (75%, 25% from top-left)
+3. CONE at position (25%, 75% from top-left)
+4. CONE at position (75%, 75% from top-left)
+5. ATTACKER (Player 1) - Role: attacker at position (40%, 50% from top-left)
+6. ATTACKER (Player 2) - Role: attacker at position (60%, 50% from top-left)
+7. DEFENDER (Coach) - Role: defender at position (50%, 30% from top-left)
+8. BALL at position (40%, 50% from top-left)
+
+ELEMENT GROUPING ANALYSIS:
+- cones: 4 total (potentially forming 4 stations or zones)
+- attackers: 2 total
+- defenders: 1 total
+- balls: 1 total
+
+SAFETY ANALYSIS:
+- Good spacing between elements (minimum 14.1%)
+
+SPATIAL RELATIONSHIPS & DISTANCES:
+On this 20m × 15m custom:
+1. Player 1 is 4.0 meters right of Player 2
+2. Coach is 4.0 meters above Player 1
+3. Ball is 0.0 meters right of Player 1`;
+
+            testLayout(layoutData);
+        }
+
+        function testComplexLayout() {
+            const layoutData = `This is a PE lesson layout for the main phase:
+
+ACTIVITY DETAILS:
+- Activity Name: Advanced Basketball Drills
+- Lesson Objective: Master complex dribbling patterns and defensive movements
+- Skills Focus: Advanced dribbling, defensive positioning, quick transitions
+- Rules & Instructions: Complete all three stations, 2 minutes per station, rotate clockwise
+- Winning Conditions: Complete most successful dribbles without losing control
+
+PLAYING AREA SETUP:
+- Playing area: 25m × 20m custom
+- Current phase: main
+
+EQUIPMENT & PARTICIPANTS:
+1. CONE at position (20%, 30% from top-left)
+2. CONE at position (20%, 70% from top-left)
+3. CONE at position (50%, 30% from top-left)
+4. CONE at position (50%, 70% from top-left)
+5. CONE at position (80%, 30% from top-left)
+6. CONE at position (80%, 70% from top-left)
+7. ATTACKER (John) - Role: attacker at position (20%, 50% from top-left)
+8. ATTACKER (Sarah) - Role: attacker at position (50%, 50% from top-left)
+9. ATTACKER (Mike) - Role: attacker at position (80%, 50% from top-left)
+10. DEFENDER (Tom) - Role: defender at position (35%, 50% from top-left)
+11. DEFENDER (Lisa) - Role: defender at position (65%, 50% from top-left)
+12. BALL at position (20%, 45% from top-left)
+13. BALL at position (50%, 45% from top-left)
+14. BALL at position (80%, 45% from top-left)
+
+ELEMENT GROUPING ANALYSIS:
+- cones: 6 total (potentially forming 3 stations or zones)
+- attackers: 3 total
+- defenders: 2 total
+- balls: 3 total
+
+SAFETY ANALYSIS:
+- Good spacing between elements (minimum 15.0%)
+
+SPATIAL RELATIONSHIPS & DISTANCES:
+On this 25m × 20m custom:
+1. John is 7.5 meters left of Sarah
+2. Sarah is 7.5 meters left of Mike
+3. Defenders positioned between attackers for optimal coverage`;
+
+            testLayout(layoutData);
+        }
+
+        function testSafetyIssue() {
+            const layoutData = `This is a PE lesson layout for the warmup phase:
+
+ACTIVITY DETAILS:
+- Activity Name: Quick Reaction Drills
+- Lesson Objective: Improve reaction time and agility
+- Skills Focus: Quick movements, spatial awareness
+- Rules & Instructions: Sprint between cones on command
+
+PLAYING AREA SETUP:
+- Playing area: 15m × 10m custom
+- Current phase: warmup
+
+EQUIPMENT & PARTICIPANTS:
+1. CONE at position (45%, 45% from top-left)
+2. CONE at position (50%, 50% from top-left)
+3. CONE at position (55%, 45% from top-left)
+4. CONE at position (50%, 55% from top-left)
+5. ATTACKER (Student 1) - Role: attacker at position (48%, 48% from top-left)
+6. ATTACKER (Student 2) - Role: attacker at position (52%, 52% from top-left)
+7. DEFENDER (Student 3) - Role: defender at position (50%, 50% from top-left)
+
+ELEMENT GROUPING ANALYSIS:
+- cones: 4 total (potentially forming 1 stations or zones)
+- attackers: 2 total
+- defenders: 1 total
+
+SAFETY ANALYSIS:
+- WARNING: Some elements are very close together (minimum spacing 3.6%)
+
+SPATIAL RELATIONSHIPS & DISTANCES:
+On this 15m × 10m custom:
+1. All elements clustered in center area
+2. Potential collision risk due to close proximity
+3. Underutilized court space on all sides`;
+
+            testLayout(layoutData);
+        }
+    </script>
+</body>
+</html>
