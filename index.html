@@ -3,13 +3,477 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting to PE Activity Consultant</title>
-    <meta http-equiv="refresh" content="0; url=badminton-planner.html">
+    <title>PE Activity Consultant</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <p>Redirecting to PE Activity Consultant...</p>
-    <script>
-        window.location.href = 'badminton-planner.html';
-    </script>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav">
+        <div class="mobile-bottom-nav-items">
+            <div class="mobile-nav-item active" onclick="mobileNavSwitch('court')">
+                <span>🏐</span>
+                <label>Court</label>
+            </div>
+            <div class="mobile-nav-item" onclick="mobileNavSwitch('equipment')">
+                <span>⚽</span>
+                <label>Equipment</label>
+            </div>
+            <div class="mobile-nav-item" onclick="mobileNavSwitch('students')">
+                <span>👥</span>
+                <label>Students</label>
+            </div>
+            <div class="mobile-nav-item" onclick="mobileNavSwitch('rules')">
+                <span>📋</span>
+                <label>Rules</label>
+            </div>
+            <div class="mobile-nav-item" onclick="mobileNavSwitch('ai')">
+                <span>🤖</span>
+                <label>AI</label>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Quick Actions FAB -->
+    <div class="mobile-quick-actions">
+        <div class="mobile-fab-menu" id="mobileFabMenu">
+            <button class="mobile-fab-option" onclick="addAnnotation()" title="Add note">
+                <span>📝</span>
+            </button>
+            <button class="mobile-fab-option" onclick="toggleDrawMode()" title="Draw path">
+                <span>✏️</span>
+            </button>
+            <button class="mobile-fab-option" onclick="clearAll()" title="Clear all">
+                <span>🗑️</span>
+            </button>
+        </div>
+        <button class="mobile-fab" onclick="toggleFabMenu()">
+            <span id="fabIcon">+</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>PE Activity Consultant</h1>
+            <p>Complete lesson planning with multiple phases, timers, annotations, and save/load functionality</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="controls">
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>📏</span> Space Dimensions</h3>
+                    </div>
+                    <div class="control-content">
+                        <input type="hidden" id="layoutType" value="custom">
+                        <div id="customDimensions">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 13px;">Activity Space Dimensions (meters):</label>
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="display: block; margin-bottom: 3px; font-size: 12px; color: #64748b;">Width (m):</label>
+                                    <input type="number" id="customWidth" value="13.4" min="5" max="150" step="0.1" onchange="applyCustomDimensions()" oninput="applyCustomDimensions()" style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="display: block; margin-bottom: 3px; font-size: 12px; color: #64748b;">Height (m):</label>
+                                    <input type="number" id="customHeight" value="6.1" min="5" max="150" step="0.1" onchange="applyCustomDimensions()" oninput="applyCustomDimensions()" style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px;">
+                                </div>
+                            </div>
+                            <div style="text-align: center; font-size: 11px; color: #64748b; margin-top: 5px;">
+                                <span id="aspectRatioDisplay">Aspect Ratio: 2.2:1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>⚽</span> Equipment</h3>
+                    </div>
+                    <div class="control-content">
+                        <button class="control-btn equipment-btn" onclick="addEquipment('cone')" title="Add traffic cone for boundaries"><span>🚧</span> Cone</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('racket')" title="Add badminton racket"><span>🏸</span> Racket</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('shuttle')" title="Add shuttlecock"><span>🏸</span> Shuttlecock</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('equipment-net')" title="Add practice net"><span>🥅</span> Net</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('marker')" title="Add field marker"><span>🚩</span> Marker</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('hoop')" title="Add target hoop"><span>⭕</span> Hoop</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('ball')" title="Add ball"><span>🟡</span> Ball</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('floorball-stick')" title="Add floorball stick"><span>🏒</span> Floorball Stick</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('frisbee')" title="Add frisbee disc"><span>🥏</span> Frisbee</button>
+                        <button class="control-btn equipment-btn" onclick="addEquipment('bench')" title="Add bench for seating"><span>🪑</span> Bench</button>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>👥</span> Students</h3>
+                    </div>
+                    <div class="control-content">
+                        <button class="control-btn" onclick="addStudent('attacker')" title="Add attacking player"><span>🔴</span> Attacker</button>
+                        <button class="control-btn" onclick="addStudent('defender')" title="Add defending player"><span>🔵</span> Defender</button>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>📋</span> Activity Rules</h3>
+                    </div>
+                    <div class="control-content">
+                        <div style="margin-bottom: 15px;">
+                            <label for="activityName" style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155; font-size: 13px;">Activity Name:</label>
+                            <input type="text" id="activityName" placeholder="e.g., Doubles Rally Game" style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; outline: none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label for="lessonObjective" style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155; font-size: 13px;">Lesson Objective:</label>
+                            <textarea id="lessonObjective" placeholder="What should students learn or achieve by the end of this lesson?" rows="3" style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; resize: vertical; font-family: inherit; outline: none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label for="activityRules" style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155; font-size: 13px;">Rules & Instructions:</label>
+                            <textarea id="activityRules" placeholder="Describe the activity rules, objectives, and how students should play..." rows="4" style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; resize: vertical; font-family: inherit; outline: none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label for="winningConditions" style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155; font-size: 13px;">Winning Conditions:</label>
+                            <textarea id="winningConditions" placeholder="How do students win? What are the success criteria?" rows="3" style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; resize: vertical; font-family: inherit; outline: none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                        </div>
+                        <div>
+                            <label for="skillFocus" style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155; font-size: 13px;">Skills Being Practiced:</label>
+                            <input type="text" id="skillFocus" placeholder="e.g., Net play, Doubles positioning, Communication" style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; outline: none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        </div>
+                        <div>
+                            <label for="studentSkillLevel" style="display: block; margin-bottom: 5px; font-weight: 600; color: #334155; font-size: 13px;">Student Skill Level:</label>
+                            <select id="studentSkillLevel" style="width: 100%; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: white; cursor: pointer; outline: none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                                <option value="mixed">Mixed Abilities</option>
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate" selected>Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>📋</span> Lesson Plans</h3>
+                    </div>
+                    <div class="control-content">
+                        <input type="text" id="planName" placeholder="Enter lesson plan name..." style="width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; transition: border-color 0.2s; outline: none;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        <button class="control-btn success-btn" onclick="savePlan()" title="Save current lesson plan"><span>💾</span> Save Plan</button>
+                        <select id="savedPlans" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white;">
+                            <option value="">Select saved plan...</option>
+                        </select>
+                        <button class="control-btn" onclick="loadPlan()" title="Load selected lesson plan"><span>📂</span> Load Plan</button>
+                        <button class="control-btn danger-btn" onclick="deletePlan()" title="Delete selected lesson plan"><span>🗑️</span> Delete Plan</button>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>⏱️</span> Activity Phases</h3>
+                    </div>
+                    <div class="control-content">
+                        <div id="phaseButtons" style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 20px;">
+                            <button class="control-btn phase-btn active" onclick="switchPhase('warmup')" data-phase="warmup" title="Warm-up phase"><span>🔥</span> Warm-up</button>
+                            <button class="control-btn phase-btn" onclick="switchPhase('main')" data-phase="main" title="Main activity phase"><span>⚡</span> Main Activity</button>
+                            <button class="control-btn phase-btn" onclick="switchPhase('cooldown')" data-phase="cooldown" title="Cool-down phase"><span>❄️</span> Cool-down</button>
+                        </div>
+                        <div id="phaseTimer" style="text-align: center; font-weight: bold; font-size: 24px; color: #334155; margin-bottom: 15px; font-family: 'Courier New', monospace;">00:00</div>
+                        <div id="timerControls">
+                            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                                <input type="number" id="timerMinutes" placeholder="Min" min="0" max="60" style="flex: 1; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; text-align: center;">
+                                <input type="number" id="timerSeconds" placeholder="Sec" min="0" max="59" style="flex: 1; padding: 8px; border: 2px solid #e2e8f0; border-radius: 6px; text-align: center;">
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="control-btn success-btn" onclick="startTimer()" title="Start the timer" style="flex: 1;"><span>▶️</span> Start</button>
+                                <button class="control-btn danger-btn" onclick="stopTimer()" title="Stop the timer" style="flex: 1;"><span>⏹️</span> Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>👥</span> Group Tools</h3>
+                    </div>
+                    <div class="control-content">
+                        <button class="control-btn info-btn" onclick="toggleGroupMode()" id="groupModeBtn" title="Enable selection mode for grouping"><span>🔲</span> Selection Mode</button>
+                        <button class="control-btn success-btn" onclick="groupSelected()" id="groupBtn" title="Group selected elements" disabled><span>🔗</span> Group</button>
+                        <button class="control-btn warning-btn" onclick="ungroupSelected()" id="ungroupBtn" title="Ungroup selected elements" disabled><span>🔓</span> Ungroup</button>
+                        <button class="control-btn secondary-btn" onclick="clearSelection()" title="Clear selection"><span>❌</span> Clear Selection</button>
+                        <div id="selectionInfo" style="margin-top: 10px; font-size: 12px; color: #64748b; text-align: center;">
+                            <span id="selectionCount">No elements selected</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>✏️</span> Drawing Tools</h3>
+                    </div>
+                    <div class="control-content">
+                        <button class="control-btn purple-btn" onclick="toggleDrawing()" id="drawBtn" title="Draw movement paths and arrows"><span>✏️</span> Draw Paths</button>
+                        <button class="control-btn secondary-btn" onclick="clearPaths()" title="Clear all drawn paths"><span>🧹</span> Clear Paths</button>
+                        <button class="control-btn warning-btn" onclick="addAnnotation()" title="Add instruction note"><span>📝</span> Add Note</button>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>🤖</span> AI Assistant</h3>
+                    </div>
+                    <div class="control-content">
+                        <div id="apiKeyStatus" style="padding: 10px; margin-bottom: 15px; border-radius: 8px; font-size: 12px; text-align: center;">
+                            <span id="apiKeyStatusText">Loading API configuration...</span>
+                        </div>
+                        <button class="control-btn purple-btn" onclick="analyzeLayout()" id="analyzeBtn" title="Send court layout to AI for analysis and suggestions"><span>🧠</span> Analyze Layout</button>
+                        <div id="aiStatus" style="text-align: center; font-size: 12px; color: #6b7280; margin: 10px 0; display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <div class="control-header" onclick="toggleSection(this)">
+                        <h3><span>🔧</span> Actions</h3>
+                    </div>
+                    <div class="control-content">
+                        <button class="control-btn purple-btn" onclick="exportToPDF()" title="Export lesson plan to PDF"><span>📄</span> Export PDF</button>
+                        <button class="control-btn secondary-btn" onclick="clearCourt()" title="Clear everything from court"><span>🧽</span> Clear Court</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="court-container">
+                <!-- Mobile Zoom Controls -->
+                <div class="court-zoom-controls" style="display: none;">
+                    <button class="zoom-btn" onclick="zoomCourt('in')">+</button>
+                    <button class="zoom-btn" onclick="zoomCourt('out')">−</button>
+                </div>
+                <div class="playing-area badminton-court" id="court">
+                    <div class="court-lines" id="courtLines">
+                        <div class="court-line outer-boundary"></div>
+                        <div class="court-line center-line"></div>
+                        <div class="court-line service-lines front-service-line"></div>
+                        <div class="court-line service-lines back-service-line"></div>
+                    </div>
+                    <div class="net" id="courtNet"></div>
+                </div>
+                <!-- AI Analyze FAB (Desktop only) -->
+                <button class="ai-analyze-fab" onclick="analyzeLayout()" title="Analyze Layout (Ctrl+Shift+A)" id="analyzeFab">
+                    <span>🧠</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Activity Details Section (shown after applying layout) - Outside court container -->
+        <div id="activityDetailsSection" class="activity-details-section" style="display: none;">
+            <div class="activity-details-card">
+                <h3 id="activityTitle" class="activity-title"></h3>
+                <div class="activity-detail-grid">
+                    <div class="activity-detail-item">
+                        <strong>📋 Instructions:</strong>
+                        <p id="activityInstructions"></p>
+                    </div>
+                    <div class="activity-detail-item">
+                        <strong>⚖️ Rules:</strong>
+                        <p id="activityDisplayRules"></p>
+                    </div>
+                    <div class="activity-detail-item">
+                        <strong>🎯 Teaching Points:</strong>
+                        <p id="activityTeachingPoints"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom Input Modal -->
+    <div id="customPromptModal" class="custom-prompt-modal" style="display: none;">
+        <div class="custom-prompt-overlay"></div>
+        <div class="custom-prompt-dialog">
+            <div class="custom-prompt-header">
+                <h3 id="promptTitle">Enter Information</h3>
+                <button class="prompt-close-btn" onclick="closeCustomPrompt()">&times;</button>
+            </div>
+            <div class="custom-prompt-body">
+                <p id="promptMessage">Please enter a value:</p>
+                <input type="text" id="promptInput" class="prompt-input" autocomplete="off">
+                <div id="promptHint" class="prompt-hint"></div>
+            </div>
+            <div class="custom-prompt-footer">
+                <button class="prompt-btn prompt-btn-cancel" onclick="closeCustomPrompt()">Cancel</button>
+                <button class="prompt-btn prompt-btn-primary" onclick="submitCustomPrompt()">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Context Menu for Layer Adjustment -->
+    <div id="contextMenu" class="context-menu" style="display: none;">
+        <div class="context-menu-item" onclick="bringToFront()">
+            <span>⬆️</span> Bring to Front
+        </div>
+        <div class="context-menu-item" onclick="sendToBack()">
+            <span>⬇️</span> Send to Back
+        </div>
+        <div class="context-menu-item" onclick="bringForward()">
+            <span>↗️</span> Bring Forward
+        </div>
+        <div class="context-menu-item" onclick="sendBackward()">
+            <span>↙️</span> Send Backward
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" onclick="duplicateElement()">
+            <span>📋</span> Duplicate
+        </div>
+        <div class="context-menu-item danger" onclick="deleteElement()">
+            <span>🗑️</span> Delete
+        </div>
+    </div>
+    
+    <div id="onboardingOverlay" class="onboarding-overlay">
+        <div class="onboarding-modal">
+            <h2>Welcome to PE Activity Consultant! 🏸</h2>
+            <p>Plan amazing PE lessons with drag-and-drop simplicity. Here's what you can do:</p>
+            
+            <div class="onboarding-features">
+                <div class="feature-card">
+                    <h4>📋 Add Equipment & Students</h4>
+                    <p>Drag realistic equipment and named students onto the court</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⏱️ Plan Activity Phases</h4>
+                    <p>Organize warm-up, main activity, and cool-down with timers</p>
+                </div>
+                <div class="feature-card">
+                    <h4>✏️ Draw Movement Paths</h4>
+                    <p>Show student movement patterns with arrows and lines</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💾 Save & Share</h4>
+                    <p>Save lesson plans and export to PDF for sharing</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button class="control-btn secondary-btn" onclick="closeOnboarding()" style="margin: 0;">Skip Tour</button>
+                <button class="control-btn" onclick="startTour()" style="margin: 0;">Start Quick Tour</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    <div class="success-message" id="successMessage"></div>
+
+    <!-- AI Suggestions Modal -->
+    <div id="aiSuggestionsModal" class="ai-modal-overlay">
+        <div class="ai-modal">
+            <div class="ai-modal-header">
+                <h2><span>🤖</span> AI Analysis & Layout Suggestions</h2>
+                <button class="ai-modal-close" onclick="closeAISuggestionsModal()">×</button>
+            </div>
+            <div class="ai-modal-content">
+                <div id="aiSuggestionsText"></div>
+                <div id="layoutOptionsContainer" class="layout-options-container" style="display: none;">
+                    <h3>Choose a Layout Option:</h3>
+                    <div class="layout-selection-area">
+                        <div id="layoutCards" class="layout-cards"></div>
+                        <div id="selectedLayoutDetails" class="selected-layout-details">
+                            <h3>Activity Details</h3>
+                            <div id="layoutDetailsContent" class="layout-details-content">
+                                <!-- Activity details will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-modal-footer">
+                <div class="ai-modal-actions">
+                    <button id="previewLayoutBtn" class="control-btn apply-layout-btn" onclick="previewSelectedLayout()">
+                        <span>👁️</span> Preview Selected Layout
+                    </button>
+                    <button id="newAnalysisBtn" class="control-btn secondary-btn" onclick="runNewAnalysis(); closeAISuggestionsModal();" style="display: none;">
+                        <span>🔄</span> Run New Analysis
+                    </button>
+                </div>
+                <div class="ai-modal-close-section">
+                    <button class="control-btn" onclick="closeAISuggestionsModal()">Close</button>
+                    <div class="ai-modal-tip">
+                        💡 Tip: Select a layout that best fits your lesson objectives and student needs!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Preview Modal -->
+    <div id="layoutPreviewModal" class="ai-modal-overlay">
+        <div class="ai-modal layout-preview-modal">
+            <div class="ai-modal-header">
+                <h2><span>👁️</span> Layout Preview</h2>
+                <button class="ai-modal-close" onclick="closeLayoutPreviewModal()">×</button>
+            </div>
+            <div class="ai-modal-content preview-modal-content">
+                <!-- Tab Navigation for Mobile/Small Screens -->
+                <div class="preview-tabs" style="display: none;">
+                    <button class="preview-tab active" onclick="switchPreviewTab('court')">
+                        <span>🏐</span> Court Layout
+                    </button>
+                    <button class="preview-tab" onclick="switchPreviewTab('details')">
+                        <span>📋</span> Activity Details
+                    </button>
+                </div>
+
+                <div id="previewCourtContainer" class="preview-court-container">
+                    <!-- Preview court will be created here -->
+                </div>
+                <div id="previewActivityDetails" class="preview-activity-details">
+                    <!-- Activity details will be shown here -->
+                </div>
+            </div>
+            <div class="ai-modal-footer">
+                <div class="ai-modal-actions">
+                    <button class="control-btn apply-layout-btn" onclick="applyPreviewedLayout()">
+                        <span>✨</span> Apply This Layout
+                    </button>
+                    <button class="control-btn secondary-btn" onclick="closeLayoutPreviewModal()">
+                        <span>←</span> Back to Options
+                    </button>
+                </div>
+                <div class="ai-modal-tip">
+                    💡 This is a preview - your current layout remains unchanged until you click "Apply This Layout"
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal for AI Analysis -->
+    <div id="loadingModal" class="ai-modal-overlay" style="display: none;">
+        <div class="loading-modal-content">
+            <div class="loading-animation-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-brain">🧠</div>
+            </div>
+            <h3 class="loading-title">Analyzing Your Layout</h3>
+            <p class="loading-message">AI is reviewing your court setup and generating suggestions...</p>
+            <div class="loading-progress">
+                <div class="loading-progress-bar"></div>
+            </div>
+            <div class="loading-tips">
+                <span class="loading-tip">💡 Tip: AI will suggest 3 different layout variations</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript modules -->
+    <script src="js/coordinates.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/mobile.js"></script>
 </body>
 </html>
