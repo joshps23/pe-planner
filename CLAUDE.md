@@ -119,11 +119,15 @@ PE Activity Consultant is a full-featured lesson planning tool designed specific
 ### Frontend Structure
 ```
 /
-├── badminton-planner.html  # Main application (single-page app)
+├── index.html              # Main application (formerly badminton-planner.html)
+├── _redirects              # Netlify redirect rules
+├── favicon.png             # School logo favicon
 ├── js/
 │   ├── main.js             # Core logic, drag-drop, element management
 │   ├── api.js              # AI integration, layout capture, analysis
-│   └── ui.js               # Modals, tooltips, UI interactions
+│   ├── ui.js               # Modals, tooltips, UI interactions
+│   ├── mobile.js           # Mobile-specific functionality
+│   └── coordinates.js      # Coordinate system management
 ├── css/
 │   └── styles.css          # All styling, responsive design
 ├── images/
@@ -239,6 +243,21 @@ netlify dev
 - **Fallback Defaults**: Generates elements if AI fails
 
 ## Recent Updates & Fixes
+
+### 2025-09-15 UI/UX Improvements
+- **Floating Analyze Button**: Added accessible FAB for desktop users at bottom-right of court
+- **Keyboard Shortcut**: Added Ctrl+Shift+A (Cmd+Shift+A on Mac) for quick analysis
+- **Domain Migration**: Moved app from /badminton-planner.html to root domain (/)
+- **School Favicon**: Added school logo as favicon for branding
+- **Coordinate Fixes**: Fixed layout application mismatch between preview and main court
+- **Visual Polish**: Fixed cone background issue (now transparent)
+
+### 2025-09-14 Major Enhancements
+- **CRAFT Framework**: Integrated non-linear pedagogy principles
+- **Mobile Optimization**: Complete mobile UI overhaul with bottom nav and FAB
+- **Differentiated Instructions**: AI now provides skill-level appropriate content
+- **Overlap Prevention**: AI layouts prevent defender/attacker overlapping
+- **Preview Modal**: Redesigned for better readability on all devices
 
 ### 2025-09-13 Enhancements
 - **Visual Improvements**: Enhanced drag visibility with golden glow
