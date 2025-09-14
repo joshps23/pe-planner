@@ -523,6 +523,12 @@ async function analyzeLayout() {
             };
             lastAnalysisTimestamp = Date.now();
 
+            // Mark that analysis has been done
+            window.lastAnalysisTime = new Date();
+            if (typeof updateAnalyzeFabState === 'function') {
+                updateAnalyzeFabState();
+            }
+
             // Show a message if fallback occurred
             if (data.modelFallback && data.modelUsed) {
                 console.log(`Note: Analysis used ${data.modelUsed} model due to timeout`);

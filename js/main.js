@@ -145,14 +145,16 @@ function addEquipment(type) {
     removeBtn.onclick = (e) => {
         e.stopPropagation();
         court.removeChild(item);
+        updateAnalyzeFabState();
     };
     
     item.appendChild(removeBtn);
     court.appendChild(item);
-    
+
     console.log('Equipment added to court:', item);
-    
+
     makeDraggable(item);
+    updateAnalyzeFabState();
 }
 
 async function addStudent(type) {
@@ -214,14 +216,16 @@ async function addStudent(type) {
     removeBtn.onclick = (e) => {
         e.stopPropagation();
         court.removeChild(item);
+        updateAnalyzeFabState();
     };
     
     item.appendChild(removeBtn);
     court.appendChild(item);
-    
+
     console.log('Student added to court:', item);
-    
+
     makeDraggable(item);
+    updateAnalyzeFabState();
 }
 
 function makeDraggable(element) {
@@ -421,9 +425,13 @@ function clearCourt() {
     const items = court.querySelectorAll('.draggable-item, .path-line, .path-arrow, .annotation');
     items.forEach(item => court.removeChild(item));
     itemCounter = 0;
-    
+
     // Hide activity details when clearing court
     hideActivityDetails();
+
+    // Reset analysis state
+    window.lastAnalysisTime = null;
+    updateAnalyzeFabState();
 }
 
 function changeLayout() {
@@ -904,6 +912,21 @@ function exportToPDF() {
     alert('PDF export feature would integrate with a library like jsPDF or html2canvas. This is a demo showing where the feature would be implemented.');
 }
 
+// Function to update FAB pulse state
+function updateAnalyzeFabState() {
+    const fab = document.getElementById('analyzeFab');
+    if (!fab) return;
+
+    const court = document.getElementById('court');
+    const hasElements = court.querySelectorAll('.draggable-item, .annotation').length > 0;
+
+    if (hasElements && !window.lastAnalysisTime) {
+        fab.classList.add('pulse');
+    } else {
+        fab.classList.remove('pulse');
+    }
+}
+
 // Initialize
 window.addEventListener('load', () => {
     updatePlanSelect();
@@ -963,6 +986,12 @@ window.addEventListener('load', () => {
                 }
             });
             updateSelectionInfo();
+        }
+
+        // Analyze Layout shortcut
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'A') {
+            e.preventDefault();
+            analyzeLayout();
         }
         
         // Delete selected elements
