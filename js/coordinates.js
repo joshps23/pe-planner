@@ -74,7 +74,8 @@ function getElementSize(element) {
  * @returns {number} Pixel value
  */
 function percentToPixel(percent, dimension) {
-    return (percent / 100) * dimension;
+    // Ensure consistent calculation by rounding to 2 decimal places
+    return Math.round((percent / 100) * dimension * 100) / 100;
 }
 
 /**
@@ -94,23 +95,31 @@ function pixelToPercent(pixel, dimension) {
  */
 function getCourtBoundaries(court) {
     // Use clientWidth/clientHeight which gives us the content area (excluding border)
+    // This is the correct area for positioning absolute elements inside
     const width = court.clientWidth;
     const height = court.clientHeight;
 
-    // Check if this is a custom space with a border
+    // Get border widths for debugging
     const computedStyle = window.getComputedStyle(court);
-    const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
     const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
+    const borderRight = parseFloat(computedStyle.borderRightWidth) || 0;
+    const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
+    const borderBottom = parseFloat(computedStyle.borderBottomWidth) || 0;
+
+    // Debug: Check for border asymmetry
+    if (borderLeft !== borderRight || borderTop !== borderBottom) {
+        console.warn('⚠️ ASYMMETRIC BORDERS DETECTED!');
+        console.warn(`  Borders: top=${borderTop}, right=${borderRight}, bottom=${borderBottom}, left=${borderLeft}`);
+    }
 
     // For debugging: log if dimensions seem unusual
     if (window.debugMode && (width === 0 || height === 0)) {
         console.warn('Court has zero dimensions!', { width, height });
     }
 
-    // For custom spaces with borders, we need to allow negative positioning
-    // to account for the border width so elements can visually reach the edge
-    const minX = -borderLeft;
-    const minY = -borderTop;
+    // Keep elements within the court boundaries (no negative positioning)
+    const minX = 0;
+    const minY = 0;
 
     return {
         width: width,
@@ -120,6 +129,8 @@ function getCourtBoundaries(court) {
         minY: minY,
         maxY: height,
         borderTop: borderTop,
+        borderRight: borderRight,
+        borderBottom: borderBottom,
         borderLeft: borderLeft
     };
 }
@@ -135,28 +146,16 @@ function getCourtBoundaries(court) {
  */
 function validateElementPosition(elementType, x, y, court, isPercentage = false) {
     const boundaries = getCourtBoundaries(court);
-    const elementSize = getElementSize(elementType);
 
     // Convert percentages to pixels if needed
-    let pixelX = isPercentage ? percentToPixel(x, boundaries.width) : x;
-    let pixelY = isPercentage ? percentToPixel(y, boundaries.height) : y;
+    const pixelX = isPercentage ? percentToPixel(x, boundaries.width) : x;
+    const pixelY = isPercentage ? percentToPixel(y, boundaries.height) : y;
 
-    // Store original values to detect clamping
-    const originalX = pixelX;
-    const originalY = pixelY;
-
-    // Calculate max positions (element positioned by top-left corner)
-    const maxX = boundaries.width - elementSize.width;
-    const maxY = boundaries.height - elementSize.height;
-
-    // Clamp to boundaries (using minX and minY from boundaries which accounts for borders)
-    pixelX = Math.max(boundaries.minX, Math.min(maxX, pixelX));
-    pixelY = Math.max(boundaries.minY, Math.min(maxY, pixelY));
-
+    // No validation or clamping - return position as-is
     return {
         x: pixelX,
         y: pixelY,
-        clamped: (pixelX !== originalX || pixelY !== originalY)
+        clamped: false
     };
 }
 
@@ -164,26 +163,65 @@ function validateElementPosition(elementType, x, y, court, isPercentage = false)
  * Convert element position from percentage to pixel with validation
  * @param {Object} element - Element object with type and position
  * @param {HTMLElement} court - The court element
+ * @param {Object} fixedDimensions - Optional fixed dimensions to use instead of current court dimensions
  * @returns {{x: number, y: number}} Validated pixel position
  */
-function percentPositionToPixels(element, court) {
-    const boundaries = getCourtBoundaries(court);
+function percentPositionToPixels(element, court, fixedDimensions) {
+    // Use fixed dimensions if provided, otherwise get current court boundaries
+    const boundaries = fixedDimensions ? {
+        width: fixedDimensions.width,
+        height: fixedDimensions.height,
+        minX: 0,
+        maxX: fixedDimensions.width,
+        minY: 0,
+        maxY: fixedDimensions.height
+    } : getCourtBoundaries(court);
     const elementSize = getElementSize(element);
 
-    // Get percentage position (with defaults)
+    // Get percentage position (with defaults) - allow full 0-100% range
     const xPercent = element.position?.xPercent ?? 50;
     const yPercent = element.position?.yPercent ?? 50;
 
-    // Convert to pixels (center-based to top-left based)
+    // Debug: Log if Y coordinates are being modified
+    if (element.type === 'cone') {
+        console.log(`  CONE positioning: Input (${xPercent}%, ${yPercent}%)`);
+        console.log(`  Court dimensions: ${boundaries.width}x${boundaries.height}`);
+        console.log(`  Element size: ${elementSize.width}x${elementSize.height}`);
+    }
+
+    // Convert to pixels (center position)
+    // percentToPixel already rounds, so no need to round again
     const centerX = percentToPixel(xPercent, boundaries.width);
     const centerY = percentToPixel(yPercent, boundaries.height);
 
-    // Calculate top-left position
-    const x = centerX - (elementSize.width / 2);
-    const y = centerY - (elementSize.height / 2);
+    if (window.debugMode && element.type === 'cone') {
+        console.log(`  Center position: (${centerX.toFixed(2)}, ${centerY.toFixed(2)})`);
+    }
 
-    // Validate and return
-    return validateElementPosition(element, x, y, court);
+    // Calculate top-left position from center (no clamping)
+    // Round to ensure consistent positioning
+    const x = Math.round((centerX - (elementSize.width / 2)) * 100) / 100;
+    const y = Math.round((centerY - (elementSize.height / 2)) * 100) / 100;
+
+    if (element.type === 'cone') {
+        console.log(`  CONE pixel position: (${x.toFixed(2)}, ${y.toFixed(2)})`);
+
+        // Extra check: Are we getting consistent results?
+        const recalcCenterY = percentToPixel(yPercent, boundaries.height);
+        if (Math.abs(centerY - recalcCenterY) > 0.01) {
+            console.error(`  ⚠️ INCONSISTENT Y CALCULATION!`);
+            console.error(`    First calc: ${centerY}, Recalc: ${recalcCenterY}`);
+        }
+    }
+
+    // No clamping is performed - elements can be positioned anywhere
+    const wasClamped = false;
+
+    return {
+        x: x,
+        y: y,
+        clamped: wasClamped
+    };
 }
 
 /**

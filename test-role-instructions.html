@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Role-Specific Instructions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .layout-card {
+            margin: 10px 0;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .layout-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .highlight {
+            background: yellow;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Role-Specific Instructions</h1>
+        <p>This test verifies that AI generates specific instructions for both attackers and defenders.</p>
+
+        <button onclick="testWithDefenders()">Test Layout with Attackers & Defenders</button>
+        <button onclick="testWithDefendersOnly()">Test Layout with Defenders Only</button>
+
+        <div id="results" class="results" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function testWithDefenders() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = 'Testing layout with attackers and defenders...\n\n';
+
+            // Create test layout data with both attackers and defenders
+            const testData = {
+                courtImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                elements: [
+                    { type: 'attacker', position: { xPercent: 30, yPercent: 50 }, name: 'Player 1' },
+                    { type: 'attacker', position: { xPercent: 50, yPercent: 50 }, name: 'Player 2' },
+                    { type: 'defender', position: { xPercent: 70, yPercent: 50 }, name: 'Defender 1' },
+                    { type: 'cone', position: { xPercent: 40, yPercent: 30 } },
+                    { type: 'cone', position: { xPercent: 40, yPercent: 70 } },
+                    { type: 'ball', position: { xPercent: 30, yPercent: 50 } }
+                ],
+                annotations: [],
+                lessonObjective: 'Practice dribbling under defensive pressure',
+                rules: '1v1 with support player',
+                courtDimensions: { width: 600, height: 400 }
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/analyzeLayout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+
+                const result = await response.json();
+
+                if (result.layoutJson && result.layoutJson.layouts) {
+                    resultsDiv.innerHTML += '<strong>✅ AI Response Received</strong>\n\n';
+
+                    result.layoutJson.layouts.forEach((layout, index) => {
+                        resultsDiv.innerHTML += `<div class="layout-card">`;
+                        resultsDiv.innerHTML += `<div class="layout-name">Layout ${index + 1}: ${layout.name}</div>`;
+                        resultsDiv.innerHTML += `<div class="instructions"><strong>Instructions:</strong>\n${layout.instructions}</div>`;
+
+                        // Check for role-specific instructions
+                        const hasAttackerInstructions = layout.instructions.toLowerCase().includes('attacker');
+                        const hasDefenderInstructions = layout.instructions.toLowerCase().includes('defender');
+
+                        if (hasAttackerInstructions && hasDefenderInstructions) {
+                            resultsDiv.innerHTML += `<div style="color: green;">✅ Contains instructions for both attackers and defenders</div>`;
+                        } else {
+                            resultsDiv.innerHTML += `<div style="color: red;">❌ Missing instructions for: ${!hasAttackerInstructions ? 'attackers' : ''} ${!hasDefenderInstructions ? 'defenders' : ''}</div>`;
+                        }
+                        resultsDiv.innerHTML += `</div>`;
+                    });
+                } else {
+                    resultsDiv.innerHTML += `<strong>❌ Error:</strong> ${JSON.stringify(result, null, 2)}\n`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `<strong>❌ Error:</strong> ${error.message}\n`;
+            }
+        }
+
+        async function testWithDefendersOnly() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = 'Testing layout with defenders only...\n\n';
+
+            // Create test layout data with only defenders
+            const testData = {
+                courtImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                elements: [
+                    { type: 'defender', position: { xPercent: 30, yPercent: 50 }, name: 'Defender 1' },
+                    { type: 'defender', position: { xPercent: 50, yPercent: 50 }, name: 'Defender 2' },
+                    { type: 'defender', position: { xPercent: 70, yPercent: 50 }, name: 'Defender 3' },
+                    { type: 'cone', position: { xPercent: 40, yPercent: 30 } },
+                    { type: 'cone', position: { xPercent: 40, yPercent: 70 } },
+                    { type: 'ball', position: { xPercent: 50, yPercent: 50 } }
+                ],
+                annotations: [],
+                lessonObjective: 'Defensive positioning and communication drill',
+                rules: 'Rotate positions on whistle',
+                courtDimensions: { width: 600, height: 400 }
+            };
+
+            try {
+                const response = await fetch('/.netlify/functions/analyzeLayout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+
+                const result = await response.json();
+
+                if (result.layoutJson && result.layoutJson.layouts) {
+                    resultsDiv.innerHTML += '<strong>✅ AI Response Received</strong>\n\n';
+
+                    result.layoutJson.layouts.forEach((layout, index) => {
+                        resultsDiv.innerHTML += `<div class="layout-card">`;
+                        resultsDiv.innerHTML += `<div class="layout-name">Layout ${index + 1}: ${layout.name}</div>`;
+                        resultsDiv.innerHTML += `<div class="instructions"><strong>Instructions:</strong>\n${layout.instructions}</div>`;
+
+                        // Check for defender-specific instructions
+                        const hasDefenderInstructions = layout.instructions.toLowerCase().includes('defender');
+
+                        if (hasDefenderInstructions) {
+                            resultsDiv.innerHTML += `<div style="color: green;">✅ Contains specific instructions for defenders</div>`;
+                        } else {
+                            resultsDiv.innerHTML += `<div style="color: red;">❌ Missing specific instructions for defenders</div>`;
+                        }
+                        resultsDiv.innerHTML += `</div>`;
+                    });
+                } else {
+                    resultsDiv.innerHTML += `<strong>❌ Error:</strong> ${JSON.stringify(result, null, 2)}\n`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `<strong>❌ Error:</strong> ${error.message}\n`;
+            }
+        }
+    </script>
+</body>
+</html>

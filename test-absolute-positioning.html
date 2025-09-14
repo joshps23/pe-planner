@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absolute Positioning Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .court-with-border {
+            width: 800px;
+            height: 400px;
+            background: white;
+            position: relative;
+            margin: 20px auto;
+            border: 2px solid #e5e7eb;
+        }
+        .court-no-border {
+            width: 800px;
+            height: 400px;
+            background: white;
+            position: relative;
+            margin: 20px auto;
+        }
+        .test-element {
+            width: 30px;
+            height: 30px;
+            position: absolute;
+            background: red;
+            border-radius: 50%;
+        }
+        .info {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .debug-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(0,0,0,0.1) 49px, rgba(0,0,0,0.1) 50px),
+                repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(0,0,0,0.1) 49px, rgba(0,0,0,0.1) 50px);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Absolute Positioning Test</h1>
+
+        <div class="info">
+            <h3>Court WITH Border (2px solid)</h3>
+            <p>Elements positioned at (0,0), (100,0), (200,0)</p>
+        </div>
+        <div class="court-with-border" id="court1">
+            <div class="debug-grid"></div>
+        </div>
+
+        <div class="info">
+            <h3>Court WITHOUT Border</h3>
+            <p>Elements positioned at (0,0), (100,0), (200,0)</p>
+        </div>
+        <div class="court-no-border" id="court2">
+            <div class="debug-grid"></div>
+        </div>
+
+        <div class="info" id="results"></div>
+    </div>
+
+    <script>
+        function testPositioning() {
+            const courts = [
+                { id: 'court1', name: 'With Border' },
+                { id: 'court2', name: 'No Border' }
+            ];
+
+            const results = [];
+
+            courts.forEach(courtInfo => {
+                const court = document.getElementById(courtInfo.id);
+                const computedStyle = window.getComputedStyle(court);
+
+                // Get dimensions
+                const clientWidth = court.clientWidth;
+                const clientHeight = court.clientHeight;
+                const offsetWidth = court.offsetWidth;
+                const offsetHeight = court.offsetHeight;
+                const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
+                const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
+
+                results.push({
+                    name: courtInfo.name,
+                    clientWidth: clientWidth,
+                    clientHeight: clientHeight,
+                    offsetWidth: offsetWidth,
+                    offsetHeight: offsetHeight,
+                    borderLeft: borderLeft,
+                    borderTop: borderTop
+                });
+
+                // Create test elements at specific positions
+                const positions = [
+                    { x: 0, y: 0, color: 'red' },
+                    { x: 100, y: 0, color: 'green' },
+                    { x: 200, y: 0, color: 'blue' },
+                    { x: clientWidth - 30, y: 0, color: 'orange' },
+                    { x: 0, y: 100, color: 'purple' },
+                    { x: clientWidth - 30, y: 100, color: 'pink' }
+                ];
+
+                positions.forEach((pos, index) => {
+                    const element = document.createElement('div');
+                    element.className = 'test-element';
+                    element.style.left = pos.x + 'px';
+                    element.style.top = pos.y + 'px';
+                    element.style.background = pos.color;
+                    element.title = `(${pos.x}, ${pos.y})`;
+                    court.appendChild(element);
+
+                    // Measure actual position
+                    const rect = element.getBoundingClientRect();
+                    const courtRect = court.getBoundingClientRect();
+                    const actualX = rect.left - courtRect.left;
+                    const actualY = rect.top - courtRect.top;
+
+                    // Check if position matches expected
+                    if (Math.abs(actualX - pos.x) > 0.1 || Math.abs(actualY - pos.y) > 0.1) {
+                        console.warn(`Position mismatch in ${courtInfo.name}!`);
+                        console.warn(`  Expected: (${pos.x}, ${pos.y})`);
+                        console.warn(`  Actual: (${actualX}, ${actualY})`);
+                    }
+                });
+            });
+
+            // Display results
+            const resultsDiv = document.getElementById('results');
+            let html = '<h3>Measurement Results</h3><table border="1" cellpadding="5"><tr><th>Court</th><th>clientWidth</th><th>clientHeight</th><th>offsetWidth</th><th>offsetHeight</th><th>borderLeft</th><th>borderTop</th></tr>';
+
+            results.forEach(r => {
+                html += `<tr>
+                    <td>${r.name}</td>
+                    <td>${r.clientWidth}</td>
+                    <td>${r.clientHeight}</td>
+                    <td>${r.offsetWidth}</td>
+                    <td>${r.offsetHeight}</td>
+                    <td>${r.borderLeft}</td>
+                    <td>${r.borderTop}</td>
+                </tr>`;
+            });
+
+            html += '</table>';
+            html += '<p>Check console for any position mismatches.</p>';
+            resultsDiv.innerHTML = html;
+        }
+
+        // Run test on load
+        window.addEventListener('load', testPositioning);
+    </script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Layout Details Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .layout-selection-area {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .layout-cards {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            min-width: 300px;
+        }
+        .layout-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .layout-card:hover {
+            border-color: #6b46c1;
+            transform: translateY(-2px);
+        }
+        .layout-card.selected {
+            border-color: #6b46c1;
+            background: #f3f0ff;
+        }
+        .selected-layout-details {
+            flex: 0 0 380px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+        .selected-layout-details h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.2rem;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #6b46c1;
+            margin-bottom: 15px;
+        }
+        h2 {
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            background: #e0f2fe;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background: #6b46c1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #5a3ca5;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test Layout Details Panel</h1>
+
+        <div class="status" id="status">Click "Show Test Layouts" to begin</div>
+
+        <button onclick="showTestLayouts()">Show Test Layouts</button>
+        <button onclick="toggleDetails()">Toggle Details Panel</button>
+
+        <div id="layoutOptionsContainer" style="display: none;">
+            <h2>Choose a Layout Option:</h2>
+            <div class="layout-selection-area">
+                <div id="layoutCards" class="layout-cards"></div>
+                <div id="selectedLayoutDetails" class="selected-layout-details" style="display: none;">
+                    <h3>Activity Details</h3>
+                    <div id="layoutDetailsContent" class="layout-details-content">
+                        <!-- Activity details will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testLayouts = {
+            layouts: [
+                {
+                    name: "Beginner-Friendly Zone Practice",
+                    description: "Simple setup with clear zones for beginners",
+                    instructions: ["Station 1 - Dribble to the cone and back", "Station 2 - Dribble around the cone", "Station 3 - Dribble in a figure 8 around the cones"],
+                    rules: ["Complete each station before moving to next", "30 seconds per station", "Focus on maintaining control and speed"],
+                    teachingPoints: ["Focus on ball control", "Maintain proper dribbling path"]
+                },
+                {
+                    name: "Skill Development Stations",
+                    description: "Progressive skill stations with increasing difficulty",
+                    instructions: ["Station 1: Dribble around the cone using your right hand only", "Station 2: Dribble around the cone using your left hand only", "Station 3: Dribble through the cones using alternating hands"],
+                    rules: ["30 seconds per station, focus on maintaining control and speed"],
+                    teachingPoints: ["Emphasize proper hand positioning", "Body control", "Changing direction with the dribble"]
+                },
+                {
+                    name: "Dynamic Competition Game",
+                    description: "1v1 dribbling game with directional changes",
+                    instructions: ["Attacker attempts to dribble past the defender to the opposite end line", "Defender tries to steal the ball"],
+                    rules: ["Switch roles after each successful dribble or interception"],
+                    teachingPoints: ["Focus on quick changes in direction", "Protecting the ball", "Maintaining control while under pressure"]
+                }
+            ]
+        };
+
+        let selectedIndex = null;
+
+        function showTestLayouts() {
+            const container = document.getElementById('layoutOptionsContainer');
+            const cardsDiv = document.getElementById('layoutCards');
+
+            container.style.display = 'block';
+            cardsDiv.innerHTML = '';
+
+            testLayouts.layouts.forEach((layout, index) => {
+                const card = document.createElement('div');
+                card.className = 'layout-card';
+                card.onclick = () => selectLayout(index);
+
+                card.innerHTML = `
+                    <h4>${layout.name}</h4>
+                    <p>${layout.description}</p>
+                `;
+
+                cardsDiv.appendChild(card);
+            });
+
+            // Auto-select first layout
+            setTimeout(() => selectLayout(0), 100);
+
+            updateStatus('Layouts shown. Click on a card to see details in the side panel.');
+        }
+
+        function selectLayout(index) {
+            selectedIndex = index;
+
+            // Update card selection visual
+            document.querySelectorAll('.layout-card').forEach((card, i) => {
+                card.classList.toggle('selected', i === index);
+            });
+
+            // Show details panel
+            const detailsPanel = document.getElementById('selectedLayoutDetails');
+            const detailsContent = document.getElementById('layoutDetailsContent');
+            const layout = testLayouts.layouts[index];
+
+            let html = `
+                <h4>${layout.name}</h4>
+                <p>${layout.description}</p>
+            `;
+
+            if (layout.instructions && layout.instructions.length > 0) {
+                html += `
+                    <h4>📋 Instructions:</h4>
+                    <ol>
+                        ${layout.instructions.map(inst => `<li>${inst}</li>`).join('')}
+                    </ol>
+                `;
+            }
+
+            if (layout.rules && layout.rules.length > 0) {
+                html += `
+                    <h4>📏 Rules:</h4>
+                    <ul>
+                        ${layout.rules.map(rule => `<li>${rule}</li>`).join('')}
+                    </ul>
+                `;
+            }
+
+            if (layout.teachingPoints && layout.teachingPoints.length > 0) {
+                html += `
+                    <h4>🎯 Teaching Points:</h4>
+                    <ul>
+                        ${layout.teachingPoints.map(point => `<li>${point}</li>`).join('')}
+                    </ul>
+                `;
+            }
+
+            detailsContent.innerHTML = html;
+            detailsPanel.style.display = 'block';
+
+            updateStatus(`Selected: ${layout.name}. Details shown in side panel.`);
+        }
+
+        function toggleDetails() {
+            const detailsPanel = document.getElementById('selectedLayoutDetails');
+            const isVisible = detailsPanel.style.display !== 'none';
+            detailsPanel.style.display = isVisible ? 'none' : 'block';
+            updateStatus(`Details panel ${isVisible ? 'hidden' : 'shown'}`);
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+    </script>
+</body>
+</html>

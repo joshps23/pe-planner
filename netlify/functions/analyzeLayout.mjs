@@ -29,7 +29,7 @@ export default async (request, context) => {
   }
 
   try {
-    const { layoutData, courtBoundaries } = JSON.parse(event.body);
+    const { layoutData } = JSON.parse(event.body);
 
     if (!layoutData) {
       return new Response(JSON.stringify({ error: 'Layout data is required' }), {
@@ -98,18 +98,10 @@ export default async (request, context) => {
       activityInfo: activityInfo.trim()
     });
 
-    // Use dynamic boundaries if provided, otherwise use defaults
-    const boundaries = courtBoundaries || {
-      topLeftX: 20,
-      topLeftY: 20,
-      bottomRightX: 80,
-      bottomRightY: 80
-    };
+    // SIMPLIFIED COORDINATE SYSTEM - Always use 0-100% for the white court area
+    // This avoids confusion between container percentages and court percentages
 
-    const centerX = Math.round((boundaries.topLeftX + boundaries.bottomRightX) / 2);
-    const centerY = Math.round((boundaries.topLeftY + boundaries.bottomRightY) / 2);
-
-    // STRICT FORMAT PROMPT WITH CLEAR BOUNDARIES
+    // STRICT FORMAT PROMPT WITH SIMPLIFIED COORDINATES
     let prompt = `PE ACTIVITY ANALYSIS REQUEST
 
 LESSON DETAILS:
@@ -122,36 +114,66 @@ IMPORTANT: Your analysis and layout suggestions MUST be directly related to the 
 - If the objective is about "shooting", suggest shooting drills
 - DO NOT mention unrelated sports or skills
 
-COURT BOUNDARIES:
-- The WHITE COURT area spans from coordinates (${boundaries.topLeftX}%, ${boundaries.topLeftY}%) to (${boundaries.bottomRightX}%, ${boundaries.bottomRightY}%)
-- Top-left corner of white court: xPercent=${boundaries.topLeftX}, yPercent=${boundaries.topLeftY}
-- Bottom-right corner of white court: xPercent=${boundaries.bottomRightX}, yPercent=${boundaries.bottomRightY}
-- Center of white court: xPercent=${centerX}, yPercent=${centerY}
-- Anything outside ${boundaries.topLeftX}-${boundaries.bottomRightX}% (X) and ${boundaries.topLeftY}-${boundaries.bottomRightY}% (Y) range is in the GREEN BORDER (forbidden area)
+COORDINATE SYSTEM:
+- The playing area (white court) uses a 0-100% coordinate system
+- 0% is the left/top edge of the playing area
+- 100% is the right/bottom edge of the playing area
+- 50% is the center of the playing area
+- IMPORTANT: Positions are CENTER-BASED (the percentage represents where the CENTER of the element will be)
+- ALL positions must be between 5% and 95% to ensure elements stay fully within bounds
+- Safe zones: Left zone (10-30%), Center zone (40-60%), Right zone (70-90%)
 
 CRITICAL FORMAT RULES:
 1. Use ONLY the exact format shown between ===SUGGESTIONS=== and ===END===
 2. Do NOT create your own JSON structure
-3. Do NOT use "layoutOptions", "suggestions" as array, or any other format
+3. You MUST provide EXACTLY 3 different layout variations in the layouts array
 4. teachingPoints must be a STRING, not an array
+5. Each layout must have a unique name and different element positions
 
 CRITICAL POSITIONING RULES:
-- ALL elements MUST be within ${boundaries.topLeftX}-${boundaries.bottomRightX}% (X) and ${boundaries.topLeftY}-${boundaries.bottomRightY}% (Y) range to stay inside the white court area
-- The white court has a green border - elements must NOT be placed in the green border area
-- Use xPercent values between ${boundaries.topLeftX} and ${boundaries.bottomRightX} ONLY
-- Use yPercent values between ${boundaries.topLeftY} and ${boundaries.bottomRightY} ONLY
-- Any values outside these ranges will place elements in the green border (FORBIDDEN)
+- Use xPercent and yPercent values between 25 and 70 ONLY (to keep elements and their full size within white court)
+- This ensures elements are fully visible within the playing area accounting for their size
+- Center of court is at (50, 50)
+- Safe corners are at (30,30), (70,30), (30,70), (70,70)
+- For station layouts: Left station (x: 30-40%), Center station (x: 45-55%), Right station (x: 60-70%)
+- IMPORTANT: Never use Y values below 25 or above 70 to ensure elements don't extend outside white court
+- Remember that players are 80px tall and cones are 30px, so positions near edges need extra margin
+- Maximum Y for any element should be 70% to prevent overflow
 
-Based on the lesson objective "${lessonObjective || 'general PE activity'}", provide analysis and layout suggestions that directly support this objective.
+Based on the lesson objective "${lessonObjective || 'general PE activity'}", provide analysis and 3 DIFFERENT layout variations:
+
+LAYOUT 1: "Beginner-Friendly" - Simple movements, clear zones, easier to understand
+- If mentioning stations, create visible station zones with cones
+- Example: For 3 stations, place cone pairs at x=25%, x=50%, x=75%
+
+LAYOUT 2: "Skill-Focused" - Emphasizes technique development and skill practice
+- Create distinct practice areas that match the instructions
+- If describing "Station 1: dribble around cone", place that cone at a specific station position
+
+LAYOUT 3: "High-Engagement" - Maximum participation, dynamic movement, competitive elements
+- Set up clear game boundaries and player positions
+- Ensure layout visually supports the competitive format described
+
+IMPORTANT INSTRUCTION REQUIREMENTS:
+1. Your element positions MUST match your instructions. If you mention "3 stations", create 3 distinct zones with cones marking each station.
+2. Instructions MUST specify what EACH player type does:
+   - If layout has attackers: Specify their exact role (e.g., "Attackers: Dribble through cones using crossover technique")
+   - If layout has defenders: Specify their exact role (e.g., "Defenders: Shadow attackers without contact, attempt steal on whistle")
+   - If layout has both: Explain interaction (e.g., "Attackers try to dribble past defenders to opposite cone")
+3. Never leave any player role undefined - every player on the court needs clear instructions
 
 Return response in EXACTLY this format:
 ===SUGGESTIONS===
 Write one sentence improvement suggestion specifically related to the lesson objective
 ===LAYOUT_OPTIONS===
-{"layouts":[{"name":"Activity Name","description":"Brief description","instructions":"How to play instructions","rules":"List game rules here","teachingPoints":"Key teaching points as a single string","elements":[{"type":"cone","position":{"xPercent":${boundaries.topLeftX + 10},"yPercent":${boundaries.topLeftY + 10}}},{"type":"cone","position":{"xPercent":${boundaries.bottomRightX - 10},"yPercent":${boundaries.topLeftY + 10}}},{"type":"cone","position":{"xPercent":${boundaries.topLeftX + 10},"yPercent":${boundaries.bottomRightY - 10}}},{"type":"cone","position":{"xPercent":${boundaries.bottomRightX - 10},"yPercent":${boundaries.bottomRightY - 10}}},{"type":"attacker","position":{"xPercent":${boundaries.topLeftX + 20},"yPercent":${boundaries.topLeftY + 20}}},{"type":"attacker","position":{"xPercent":${boundaries.bottomRightX - 20},"yPercent":${boundaries.topLeftY + 20}}},{"type":"attacker","position":{"xPercent":${centerX},"yPercent":${boundaries.bottomRightY - 20}}},{"type":"defender","position":{"xPercent":${centerX},"yPercent":${centerY}}},{"type":"ball","position":{"xPercent":${centerX},"yPercent":${centerY - 5}}}]}]}
+{"layouts":[{"name":"Beginner-Friendly Zone Practice","description":"Simple setup with clear zones for beginners","instructions":"Attackers: Station 1 - dribble around cone and back, Station 2 - weave through cones, Station 3 - pass to defender and receive back. Defenders: Act as passive defenders at each station, provide light pressure without stealing","rules":"Complete each station before moving to next, 30 seconds per station","teachingPoints":"Focus on ball control and spatial awareness for attackers, proper defensive stance for defenders","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":30}},{"type":"cone","position":{"xPercent":25,"yPercent":65}},{"type":"cone","position":{"xPercent":50,"yPercent":30}},{"type":"cone","position":{"xPercent":50,"yPercent":65}},{"type":"cone","position":{"xPercent":75,"yPercent":30}},{"type":"cone","position":{"xPercent":75,"yPercent":65}},{"type":"attacker","position":{"xPercent":25,"yPercent":50}},{"type":"attacker","position":{"xPercent":50,"yPercent":50}},{"type":"attacker","position":{"xPercent":75,"yPercent":50}},{"type":"defender","position":{"xPercent":50,"yPercent":70}},{"type":"ball","position":{"xPercent":25,"yPercent":50}}]},{"name":"Skill Development Stations","description":"Progressive skill stations with increasing difficulty","instructions":"Attackers: Station 1 - crossover dribble around cone, Station 2 - behind-the-back dribble around cone, Station 3 - speed dribble through gate. Defenders: Rotate between stations providing progressive pressure - light at Station 1, moderate at Station 2, active defense at Station 3","rules":"30 seconds per station, switch roles after each round","teachingPoints":"Attackers focus on ball control under pressure, defenders work on footwork and positioning","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":30}},{"type":"cone","position":{"xPercent":25,"yPercent":65}},{"type":"cone","position":{"xPercent":50,"yPercent":30}},{"type":"cone","position":{"xPercent":50,"yPercent":65}},{"type":"cone","position":{"xPercent":75,"yPercent":30}},{"type":"cone","position":{"xPercent":75,"yPercent":65}},{"type":"attacker","position":{"xPercent":25,"yPercent":50}},{"type":"attacker","position":{"xPercent":50,"yPercent":50}},{"type":"attacker","position":{"xPercent":75,"yPercent":50}},{"type":"defender","position":{"xPercent":50,"yPercent":30}},{"type":"ball","position":{"xPercent":25,"yPercent":50}}]},{"name":"Dynamic Competition Game","description":"Fast-paced 3v1 keep-away drill","instructions":"Attackers maintain possession while defender tries to intercept","rules":"5 passes = 1 point, defender switches after interception","teachingPoints":"Quick decision making and communication","elements":[{"type":"cone","position":{"xPercent":30,"yPercent":30}},{"type":"cone","position":{"xPercent":70,"yPercent":30}},{"type":"cone","position":{"xPercent":30,"yPercent":65}},{"type":"cone","position":{"xPercent":70,"yPercent":65}},{"type":"attacker","position":{"xPercent":30,"yPercent":35}},{"type":"attacker","position":{"xPercent":70,"yPercent":35}},{"type":"attacker","position":{"xPercent":50,"yPercent":60}},{"type":"defender","position":{"xPercent":50,"yPercent":45}},{"type":"ball","position":{"xPercent":30,"yPercent":35}}]}]}
 ===END===
 
-IMPORTANT: Keep ALL elements within ${boundaries.topLeftX}-${boundaries.bottomRightX}% (X) and ${boundaries.topLeftY}-${boundaries.bottomRightY}% (Y) range. Include ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.balls} balls.`;
+IMPORTANT: You MUST provide exactly 3 layouts. Each layout must:
+1. Have different element positions (don't just copy the same positions)
+2. Match its theme (Beginner/Skill/Engagement)
+3. Keep ALL elements within 25-70% range for both X and Y coordinates
+4. Include ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.balls} balls`;
 
     // Add timeout for the API request - use most of the 26s Netlify allows
     const controller = new AbortController();
@@ -174,7 +196,7 @@ IMPORTANT: Keep ALL elements within ${boundaries.topLeftX}-${boundaries.bottomRi
           temperature: 0.2,  // Low but allowing some creativity
           topK: 5,           // Minimal variety for better suggestions
           topP: 0.7,         // Focused but not too restrictive
-          maxOutputTokens: 30000,  // High limit required for Gemini 2.5 Flash to avoid abortion
+          maxOutputTokens: 65000,  // Increased limit for more comprehensive responses
           candidateCount: 1
         }
       })
@@ -278,7 +300,7 @@ IMPORTANT: Keep ALL elements within ${boundaries.topLeftX}-${boundaries.bottomRi
               });
             }
             
-            // Validate and fix coordinates for all layouts
+            // Validate and fix coordinates for all layouts (using simplified 0-100% system)
             if (layoutJson && layoutJson.layouts) {
               layoutJson.layouts.forEach(layout => {
                 // Ensure elements array exists
@@ -287,22 +309,22 @@ IMPORTANT: Keep ALL elements within ${boundaries.topLeftX}-${boundaries.bottomRi
                   // Add default elements based on equipment count
                   layout.elements = [];
 
-                  // Add cones at corners (within dynamic boundaries)
+                  // Add cones at corners (using safe 30-70% coordinates)
                   if (equipmentCount.cones >= 4) {
                     layout.elements.push(
-                      {"type":"cone","position":{"xPercent":boundaries.topLeftX + 10,"yPercent":boundaries.topLeftY + 10}},
-                      {"type":"cone","position":{"xPercent":boundaries.bottomRightX - 10,"yPercent":boundaries.topLeftY + 10}},
-                      {"type":"cone","position":{"xPercent":boundaries.topLeftX + 10,"yPercent":boundaries.bottomRightY - 10}},
-                      {"type":"cone","position":{"xPercent":boundaries.bottomRightX - 10,"yPercent":boundaries.bottomRightY - 10}}
+                      {"type":"cone","position":{"xPercent":30,"yPercent":30}},
+                      {"type":"cone","position":{"xPercent":70,"yPercent":30}},
+                      {"type":"cone","position":{"xPercent":30,"yPercent":70}},
+                      {"type":"cone","position":{"xPercent":70,"yPercent":70}}
                     );
                   }
 
                   // Add attackers
                   for (let i = 0; i < equipmentCount.attackers; i++) {
                     const positions = [
-                      {"xPercent":boundaries.topLeftX + 20,"yPercent":boundaries.topLeftY + 20},
-                      {"xPercent":boundaries.bottomRightX - 20,"yPercent":boundaries.topLeftY + 20},
-                      {"xPercent":centerX,"yPercent":boundaries.bottomRightY - 20}
+                      {"xPercent":30,"yPercent":30},
+                      {"xPercent":70,"yPercent":30},
+                      {"xPercent":50,"yPercent":70}
                     ];
                     if (positions[i]) {
                       layout.elements.push({"type":"attacker","position":positions[i]});
@@ -311,24 +333,24 @@ IMPORTANT: Keep ALL elements within ${boundaries.topLeftX}-${boundaries.bottomRi
 
                   // Add defenders
                   for (let i = 0; i < equipmentCount.defenders; i++) {
-                    layout.elements.push({"type":"defender","position":{"xPercent":centerX,"yPercent":centerY}});
+                    layout.elements.push({"type":"defender","position":{"xPercent":50,"yPercent":50}});
                   }
 
                   // Add ball
                   if (equipmentCount.balls > 0) {
-                    layout.elements.push({"type":"ball","position":{"xPercent":centerX,"yPercent":centerY - 5}});
+                    layout.elements.push({"type":"ball","position":{"xPercent":50,"yPercent":45}});
                   }
                 }
 
                 if (layout.elements) {
                   layout.elements.forEach(element => {
                     if (element.position) {
-                      // Ensure coordinates are within the dynamic boundaries to stay in white court area
+                      // Ensure coordinates are within safe bounds (5-95% for center-based positioning)
                       const originalX = element.position.xPercent;
                       const originalY = element.position.yPercent;
 
-                      element.position.xPercent = Math.max(boundaries.topLeftX, Math.min(boundaries.bottomRightX, element.position.xPercent || centerX));
-                      element.position.yPercent = Math.max(boundaries.topLeftY, Math.min(boundaries.bottomRightY, element.position.yPercent || centerY));
+                      element.position.xPercent = Math.max(25, Math.min(70, element.position.xPercent || 50));
+                      element.position.yPercent = Math.max(25, Math.min(70, element.position.yPercent || 50));
 
                       if (originalX !== element.position.xPercent || originalY !== element.position.yPercent) {
                         console.log(`Adjusted coordinates for ${element.type}: (${originalX}, ${originalY}) -> (${element.position.xPercent}, ${element.position.yPercent})`);
@@ -339,8 +361,8 @@ IMPORTANT: Keep ALL elements within ${boundaries.topLeftX}-${boundaries.bottomRi
                 if (layout.annotations) {
                   layout.annotations.forEach(annotation => {
                     if (annotation.position) {
-                      annotation.position.xPercent = Math.max(boundaries.topLeftX, Math.min(boundaries.bottomRightX, annotation.position.xPercent || centerX));
-                      annotation.position.yPercent = Math.max(boundaries.topLeftY, Math.min(boundaries.bottomRightY, annotation.position.yPercent || centerY));
+                      annotation.position.xPercent = Math.max(25, Math.min(70, annotation.position.xPercent || 50));
+                      annotation.position.yPercent = Math.max(25, Math.min(70, annotation.position.yPercent || 50));
                     }
                   });
                 }
@@ -368,7 +390,7 @@ IMPORTANT: Keep ALL elements within ${boundaries.topLeftX}-${boundaries.bottomRi
     
   } catch (error) {
     console.error('Error calling Gemini API:', error);
-    console.error('Model used:', process.env.GEMINI_MODEL || 'gemini-1.5-flash');
+    console.error('Model used:', process.env.GEMINI_MODEL || 'gemini-1.5-pro');
     
     let errorMessage = 'Failed to analyze layout. ';
     let statusCode = 500;

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Y-Axis Asymmetry Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-results {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .debug-marker {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: red;
+            pointer-events: none;
+            z-index: 10000;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Y-Axis Asymmetry Investigation</h1>
+
+        <div class="test-info">
+            <h3>Test Setup</h3>
+            <p>This test creates cones at the same Y-coordinate but different X-coordinates to detect Y-axis asymmetry.</p>
+            <button onclick="runAsymmetryTest()">Run Asymmetry Test</button>
+            <button onclick="runAILayoutTest()">Test with AI Layout Data</button>
+            <button onclick="clearTest()">Clear</button>
+        </div>
+
+        <div class="court-container">
+            <div class="playing-area custom-space" id="court"></div>
+        </div>
+
+        <div id="results" class="test-results" style="display: none;"></div>
+    </div>
+
+    <!-- Include the coordinate system and main app files -->
+    <script src="js/coordinates.js"></script>
+
+    <script>
+        let itemCounter = 0;
+
+        function clearTest() {
+            const court = document.getElementById('court');
+            court.innerHTML = '';
+            document.getElementById('results').style.display = 'none';
+            itemCounter = 0;
+            window.conePositions = [];
+            window.lastCourtDimensions = null;
+        }
+
+        function runAsymmetryTest() {
+            clearTest();
+            const court = document.getElementById('court');
+            const results = [];
+
+            console.log('=== STARTING Y-AXIS ASYMMETRY TEST ===');
+            console.log('Court dimensions:', court.clientWidth, 'x', court.clientHeight);
+
+            // Test data: cones at same Y but different X positions
+            const testData = [
+                // Row 1: Y = 30%
+                { xPercent: 20, yPercent: 30, label: 'L1' },
+                { xPercent: 40, yPercent: 30, label: 'M1' },
+                { xPercent: 60, yPercent: 30, label: 'M2' },
+                { xPercent: 80, yPercent: 30, label: 'R1' },
+
+                // Row 2: Y = 50%
+                { xPercent: 20, yPercent: 50, label: 'L2' },
+                { xPercent: 40, yPercent: 50, label: 'M3' },
+                { xPercent: 60, yPercent: 50, label: 'M4' },
+                { xPercent: 80, yPercent: 50, label: 'R2' },
+
+                // Row 3: Y = 70%
+                { xPercent: 20, yPercent: 70, label: 'L3' },
+                { xPercent: 40, yPercent: 70, label: 'M5' },
+                { xPercent: 60, yPercent: 70, label: 'M6' },
+                { xPercent: 80, yPercent: 70, label: 'R3' }
+            ];
+
+            const yGroups = {};
+
+            testData.forEach(data => {
+                // Create element object
+                const element = {
+                    type: 'cone',
+                    position: {
+                        xPercent: data.xPercent,
+                        yPercent: data.yPercent
+                    }
+                };
+
+                console.log(`\nCreating ${data.label}: (${data.xPercent}%, ${data.yPercent}%)`);
+
+                // Use CoordinateSystem to calculate position
+                const position = window.CoordinateSystem.percentPositionToPixels(element, court);
+                console.log(`  Calculated position: (${position.x.toFixed(2)}, ${position.y.toFixed(2)})`);
+
+                // Create cone element
+                const cone = document.createElement('div');
+                cone.className = 'draggable-item cone';
+                cone.id = 'cone-' + data.label;
+                cone.style.position = 'absolute';
+                cone.style.left = position.x + 'px';
+                cone.style.top = position.y + 'px';
+
+                // Add label
+                const label = document.createElement('div');
+                label.textContent = data.label;
+                label.style.position = 'absolute';
+                label.style.bottom = '-15px';
+                label.style.left = '50%';
+                label.style.transform = 'translateX(-50%)';
+                label.style.fontSize = '10px';
+                label.style.fontWeight = 'bold';
+                cone.appendChild(label);
+
+                court.appendChild(cone);
+
+                // Measure actual position
+                const rect = cone.getBoundingClientRect();
+                const courtRect = court.getBoundingClientRect();
+                const actualY = rect.top - courtRect.top;
+
+                console.log(`  Actual DOM position Y: ${actualY.toFixed(2)}`);
+
+                // Group by Y percentage
+                if (!yGroups[data.yPercent]) {
+                    yGroups[data.yPercent] = [];
+                }
+                yGroups[data.yPercent].push({
+                    label: data.label,
+                    xPercent: data.xPercent,
+                    calculatedY: position.y,
+                    actualY: actualY
+                });
+            });
+
+            // Analyze results
+            console.log('\n=== ANALYZING RESULTS ===');
+            let hasAsymmetry = false;
+
+            Object.keys(yGroups).forEach(yPercent => {
+                const group = yGroups[yPercent];
+                const yValues = group.map(item => item.actualY);
+                const minY = Math.min(...yValues);
+                const maxY = Math.max(...yValues);
+                const difference = maxY - minY;
+
+                console.log(`\nY=${yPercent}% group:`);
+                group.forEach(item => {
+                    console.log(`  ${item.label} (X=${item.xPercent}%): Y=${item.actualY.toFixed(2)}px`);
+                });
+                console.log(`  Difference: ${difference.toFixed(2)}px`);
+
+                if (difference > 1) {
+                    hasAsymmetry = true;
+                    console.error(`  ⚠️ ASYMMETRY DETECTED!`);
+                }
+
+                results.push({
+                    yPercent: yPercent,
+                    items: group,
+                    minY: minY,
+                    maxY: maxY,
+                    difference: difference,
+                    hasAsymmetry: difference > 1
+                });
+            });
+
+            displayResults(results, hasAsymmetry);
+        }
+
+        function runAILayoutTest() {
+            clearTest();
+            const court = document.getElementById('court');
+
+            // Simulate AI layout data - same Y coordinates for left and right cones
+            const aiLayoutData = {
+                elements: [
+                    { type: 'cone', position: { xPercent: 25, yPercent: 35 } },
+                    { type: 'cone', position: { xPercent: 75, yPercent: 35 } },
+                    { type: 'cone', position: { xPercent: 25, yPercent: 65 } },
+                    { type: 'cone', position: { xPercent: 75, yPercent: 65 } },
+                    { type: 'attacker', position: { xPercent: 30, yPercent: 50 }, name: 'Player 1' },
+                    { type: 'defender', position: { xPercent: 70, yPercent: 50 }, name: 'Player 2' }
+                ]
+            };
+
+            console.log('=== TESTING WITH AI LAYOUT DATA ===');
+            const results = [];
+
+            aiLayoutData.elements.forEach((element, index) => {
+                console.log(`\nCreating ${element.type} #${index}: (${element.position.xPercent}%, ${element.position.yPercent}%)`);
+
+                // Use CoordinateSystem
+                const position = window.CoordinateSystem.percentPositionToPixels(element, court);
+
+                // Create element
+                const item = document.createElement('div');
+                item.className = `draggable-item ${element.type}`;
+                item.style.position = 'absolute';
+                item.style.left = position.x + 'px';
+                item.style.top = position.y + 'px';
+
+                if (element.name) {
+                    const label = document.createElement('div');
+                    label.textContent = element.name;
+                    label.style.position = 'absolute';
+                    label.style.bottom = '-20px';
+                    label.style.left = '50%';
+                    label.style.transform = 'translateX(-50%)';
+                    label.style.fontSize = '10px';
+                    item.appendChild(label);
+                }
+
+                court.appendChild(item);
+
+                // Measure
+                const rect = item.getBoundingClientRect();
+                const courtRect = court.getBoundingClientRect();
+
+                results.push({
+                    type: element.type,
+                    xPercent: element.position.xPercent,
+                    yPercent: element.position.yPercent,
+                    calculatedY: position.y,
+                    actualY: rect.top - courtRect.top
+                });
+            });
+
+            // Check for asymmetry in cones
+            const cones = results.filter(r => r.type === 'cone');
+            const conesByY = {};
+            cones.forEach(cone => {
+                if (!conesByY[cone.yPercent]) {
+                    conesByY[cone.yPercent] = [];
+                }
+                conesByY[cone.yPercent].push(cone);
+            });
+
+            console.log('\n=== CONE ASYMMETRY ANALYSIS ===');
+            let hasAsymmetry = false;
+
+            Object.keys(conesByY).forEach(yPercent => {
+                const group = conesByY[yPercent];
+                if (group.length > 1) {
+                    const yValues = group.map(c => c.actualY);
+                    const difference = Math.max(...yValues) - Math.min(...yValues);
+                    console.log(`Y=${yPercent}%: Difference = ${difference.toFixed(2)}px`);
+                    if (difference > 1) {
+                        hasAsymmetry = true;
+                        console.error('  ⚠️ ASYMMETRY DETECTED!');
+                    }
+                }
+            });
+
+            displayAIResults(results, hasAsymmetry);
+        }
+
+        function displayResults(results, hasAsymmetry) {
+            const resultsDiv = document.getElementById('results');
+            let html = '<h3>Test Results</h3>';
+
+            if (hasAsymmetry) {
+                html += '<p class="error">⚠️ Y-AXIS ASYMMETRY DETECTED!</p>';
+            } else {
+                html += '<p class="success">✅ No asymmetry detected</p>';
+            }
+
+            results.forEach(result => {
+                const status = result.hasAsymmetry ? '❌' : '✅';
+                html += `<div style="margin: 15px 0; padding: 10px; background: white; border-radius: 5px;">`;
+                html += `<strong>${status} Y=${result.yPercent}% Row</strong><br>`;
+                html += `<div style="margin-left: 20px;">`;
+
+                result.items.forEach(item => {
+                    html += `${item.label} (X=${item.xPercent}%): Y=${item.actualY.toFixed(2)}px<br>`;
+                });
+
+                html += `<strong>Difference: ${result.difference.toFixed(2)}px</strong>`;
+                if (result.hasAsymmetry) {
+                    html += ' <span class="error">ASYMMETRIC!</span>';
+                }
+                html += `</div></div>`;
+            });
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        function displayAIResults(results, hasAsymmetry) {
+            const resultsDiv = document.getElementById('results');
+            let html = '<h3>AI Layout Test Results</h3>';
+
+            if (hasAsymmetry) {
+                html += '<p class="error">⚠️ Y-AXIS ASYMMETRY DETECTED IN AI LAYOUT!</p>';
+            } else {
+                html += '<p class="success">✅ AI layout positioning is symmetric</p>';
+            }
+
+            html += '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr><th>Type</th><th>X%</th><th>Y%</th><th>Calculated Y</th><th>Actual Y</th></tr>';
+
+            results.forEach(r => {
+                html += `<tr style="border-bottom: 1px solid #ddd;">`;
+                html += `<td>${r.type}</td>`;
+                html += `<td>${r.xPercent}%</td>`;
+                html += `<td>${r.yPercent}%</td>`;
+                html += `<td>${r.calculatedY.toFixed(2)}px</td>`;
+                html += `<td>${r.actualY.toFixed(2)}px</td>`;
+                html += `</tr>`;
+            });
+
+            html += '</table>';
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -308,13 +308,21 @@
                 <div id="aiSuggestionsText"></div>
                 <div id="layoutOptionsContainer" class="layout-options-container" style="display: none;">
                     <h3>Choose a Layout Option:</h3>
-                    <div id="layoutCards" class="layout-cards"></div>
+                    <div class="layout-selection-area">
+                        <div id="layoutCards" class="layout-cards"></div>
+                        <div id="selectedLayoutDetails" class="selected-layout-details">
+                            <h3>Activity Details</h3>
+                            <div id="layoutDetailsContent" class="layout-details-content">
+                                <!-- Activity details will be populated here -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="ai-modal-footer">
                 <div class="ai-modal-actions">
-                    <button id="applyLayoutBtn" class="control-btn apply-layout-btn" onclick="applySelectedLayout()" style="display: none;">
-                        <span>✨</span> Apply Selected Layout
+                    <button id="previewLayoutBtn" class="control-btn apply-layout-btn" onclick="previewSelectedLayout()">
+                        <span>👁️</span> Preview Selected Layout
                     </button>
                     <button id="newAnalysisBtn" class="control-btn secondary-btn" onclick="runNewAnalysis(); closeAISuggestionsModal();" style="display: none;">
                         <span>🔄</span> Run New Analysis
@@ -325,6 +333,37 @@
                     <div class="ai-modal-tip">
                         💡 Tip: Select a layout that best fits your lesson objectives and student needs!
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Preview Modal -->
+    <div id="layoutPreviewModal" class="ai-modal-overlay">
+        <div class="ai-modal layout-preview-modal">
+            <div class="ai-modal-header">
+                <h2><span>👁️</span> Layout Preview</h2>
+                <button class="ai-modal-close" onclick="closeLayoutPreviewModal()">×</button>
+            </div>
+            <div class="ai-modal-content preview-modal-content">
+                <div id="previewCourtContainer" class="preview-court-container">
+                    <!-- Preview court will be created here -->
+                </div>
+                <div id="previewActivityDetails" class="preview-activity-details">
+                    <!-- Activity details will be shown here -->
+                </div>
+            </div>
+            <div class="ai-modal-footer">
+                <div class="ai-modal-actions">
+                    <button class="control-btn apply-layout-btn" onclick="applyPreviewedLayout()">
+                        <span>✨</span> Apply This Layout
+                    </button>
+                    <button class="control-btn secondary-btn" onclick="closeLayoutPreviewModal()">
+                        <span>←</span> Back to Options
+                    </button>
+                </div>
+                <div class="ai-modal-tip">
+                    💡 This is a preview - your current layout remains unchanged until you click "Apply This Layout"
                 </div>
             </div>
         </div>

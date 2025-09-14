@@ -1,5 +1,159 @@
 # PE Activity Consultant - Development Todo
 
+## Session: 2025-09-14 - Part 2 - Role-Specific Instructions Implementation
+
+### ✅ Added Role-Specific Instructions for All Player Types
+- **Problem**: AI-generated layouts were not providing specific instructions for defenders when present
+- **User Feedback**: "for the suggested activities, there should be instructions for what each player is supposed to do if they are added. in this example, no instruction was given for the defender."
+- **Solution**: Updated AI prompt in `analyzeLayout.mjs` with explicit requirements:
+  1. Added mandatory instruction requirements for each player type
+  2. Instructions MUST specify what attackers do (if present)
+  3. Instructions MUST specify what defenders do (if present)
+  4. Instructions MUST explain interaction between player types
+  5. Updated all example layouts in prompt to demonstrate proper role-specific instructions
+- **Implementation Details**:
+  - Modified prompt section "IMPORTANT INSTRUCTION REQUIREMENTS"
+  - Added examples showing defender-specific actions (e.g., "Defenders: Shadow attackers without contact")
+  - Ensured every layout variation includes role-specific guidance
+- **Files Modified**:
+  - `netlify/functions/analyzeLayout.mjs`: Updated prompt with role-specific requirements
+  - Created `test-role-instructions.html` for testing
+- **Result**: AI now consistently generates specific instructions for all player types, ensuring clear guidance for both attackers and defenders in every activity
+
+## Session: 2025-09-14 - Fixed Y-Axis Positioning Issues
+
+### Part 8: Fixed Preview Button and Details Panel Visibility
+- **Problem**: Preview button and activity details panel were not showing in AI suggestions modal
+- **Root Cause**: Both elements had `style="display: none;"` hardcoded in HTML
+- **Solutions**:
+  1. Removed inline `style="display: none;"` from preview button
+  2. Removed inline `style="display: none;"` from selectedLayoutDetails div
+  3. Updated showLayoutDetails() to handle both array and string formats for instructions/rules/teachingPoints
+  4. Made preview button visible when layouts are shown
+  5. Removed code that was hiding details panel unnecessarily
+- **Files Modified**:
+  - `badminton-planner.html`: Removed inline display:none styles
+  - `js/ui.js`: Updated showLayoutDetails(), removed hiding in closeAISuggestionsModal()
+  - `css/styles.css`: Set details panel to display:block by default
+- **Result**: Preview button and activity details panel now show properly when AI suggestions are displayed
+
+### Part 7: Added Activity Details Panel to AI Suggestions Modal
+- **Problem**: Users couldn't see instructions, rules, and teaching points until they previewed a layout
+- **Solution**: Added activity details panel directly in the AI suggestions modal
+  1. Added side panel next to layout cards showing full activity details
+  2. Details update automatically when user selects a layout card
+  3. First layout is auto-selected to show details immediately
+  4. Panel includes instructions, rules, and teaching points with icons
+- **Layout Changes**:
+  - Increased modal width to 1200px to accommodate both cards and details
+  - Side-by-side layout with cards on left, details on right
+  - Responsive design collapses to vertical stack on mobile
+- **Files Modified**:
+  - `badminton-planner.html`: Added `selectedLayoutDetails` container in suggestions modal
+  - `css/styles.css`: Added styling for details panel and responsive layout
+  - `js/ui.js`: Added `showLayoutDetails()` function, auto-select first layout
+- **Result**: Users can now review full activity details before deciding to preview, making selection easier
+
+### Part 6: Implemented Preview Modal for AI Layouts
+- **Problem**: AI-suggested layouts were being applied directly to the main court, replacing user's work
+- **Solution**: Created a separate preview modal with its own court
+  1. Added new `layoutPreviewModal` with larger width (1200px) for better viewing
+  2. Created preview court (`#previewCourt`) that displays layouts without affecting main court
+  3. Added side panel showing activity details (instructions, rules, teaching points)
+  4. Changed workflow: Select layout → Preview → Apply if desired
+- **Features**:
+  - Preview court uses same fixed dimensions approach to ensure alignment
+  - Elements are non-draggable in preview (read-only view)
+  - "Apply This Layout" button transfers from preview to main court
+  - "Back to Options" returns to layout selection
+- **Files Modified**:
+  - `badminton-planner.html`: Added preview modal HTML structure
+  - `css/styles.css`: Added preview modal styling and responsive layout
+  - `js/main.js`: Added preview functions (previewSelectedLayout, createElementInPreview, etc.)
+  - `js/ui.js`: Updated button to show "Preview" instead of "Apply"
+- **Result**: Users can now safely preview AI suggestions before committing to them
+
+### Part 5: Fixed Staggered Animation Y-Axis Misalignment
+- **Problem**: Cones with identical Y coordinates (30% or 70%) appeared at different heights
+  - Left-side cones appeared higher than right-side cones despite same Y percentage
+  - JSON showed correct alignment but visual rendering was misaligned
+- **Root Cause**: Staggered animations (50ms delays) allowed court dimensions to change between element creations
+  - Each element was using different court dimensions for positioning calculations
+  - Court reflow/recalculation happened during the animation delays
+- **Solution**: Capture court dimensions once and use for all elements
+  1. Added `fixedCourtDimensions` capture at start of layout application
+  2. Pass fixed dimensions to all `createElementFromJson()` calls
+  3. Pass fixed dimensions to all `createAnnotationFromJson()` calls
+  4. Updated `CoordinateSystem.percentPositionToPixels()` to accept optional fixed dimensions
+- **Files Modified**:
+  - `js/main.js`: Updated `applyLayoutFromJson()` and `applySelectedLayout()` to capture and pass fixed dimensions
+  - `js/main.js`: Updated `createElementFromJson()` and `createAnnotationFromJson()` to use fixed dimensions
+  - `js/coordinates.js`: Updated `percentPositionToPixels()` to accept and use fixed dimensions parameter
+- **Result**: All elements with same Y percentage now appear at exactly the same height, ensuring perfect horizontal alignment
+
+## Session: 2025-09-14 - Fixed Y-Axis Positioning Issues
+
+### Part 4: Implemented Fresh Canvas Reset for AI Layouts
+- **Problem**: AI-suggested layouts could be affected by accumulated offsets or state from previous interactions
+- **Solution**: Created `resetCourtToFreshState()` function that completely resets the court before applying AI layouts
+- **What it does**:
+  1. Clears all inline styles (except aspect ratio)
+  2. Resets transforms, positioning, margins, and padding
+  3. Removes non-essential CSS classes
+  4. Clears data attributes and scroll positions
+  5. Resets global drag state variables
+  6. Forces browser layout recalculation
+  7. Verifies court is in correct state (position: relative)
+- **Result**: AI-suggested layouts now start from a completely clean slate, eliminating any offset issues
+
+### Part 3: Final Fix - Restricted Y Coordinates to 70% Maximum
+- **Root Cause Identified**: Elements positioned at 70% Y with 80px height extend beyond court
+  - When center is at 70% Y, bottom edge is at 70% + 40px (half height)
+  - This causes overflow outside the white court area into green border
+- **Final Solution**:
+  1. Updated AI prompt to use maximum 70% Y coordinate (was allowing up to 80%)
+  2. Changed safe corners to (30,30), (70,30), (30,70), (70,70)
+  3. Updated all validation to enforce 25-70% range
+  4. This ensures even 80px tall players stay within white court boundaries
+
+### Part 2: Debugging Added
+- **Problem**: Elements appeared offset even though AI coordinates were correct
+- **Investigation**:
+  - Added extensive debugging to track actual vs expected positions
+  - Added court dimension verification checks
+  - Created debug-positioning.html test file
+- **Initial Solutions Attempted**:
+  1. Added position verification after DOM insertion
+  2. Added debug logging to identify any dimension changes during layout
+  3. Ensured consistent use of clientWidth/clientHeight for court dimensions
+
+### Part 1: Fixed Y-Axis Offset Issue
+
+### ✅ Fixed Elements Appearing Outside White Court
+- **Problem**: Elements positioned at Y=80% were appearing outside the white court area in the green border
+- **Root Cause**:
+  - Elements have height (80px for players, 30px for cones)
+  - When centered at 80% Y, the bottom edge extends beyond court boundaries
+  - AI was suggesting positions up to 85% which pushed elements outside
+- **Solutions**:
+  1. Updated `percentPositionToPixels()` in coordinates.js to clamp positions within court boundaries
+  2. Changed AI prompt to use safer 20-75% range (was 15-85%)
+  3. Updated all coordinate validation to use 20-75% range
+  4. Added proper boundary clamping to prevent overflow
+
+### Key Changes Made
+- **js/coordinates.js**: Added position clamping in `percentPositionToPixels()` to ensure elements stay within court
+- **netlify/functions/analyzeLayout.mjs**:
+  - Updated coordinate ranges from 15-85% to 20-75%
+  - Modified safe corners from (20,20)-(80,80) to (25,25)-(75,75)
+  - Updated all fallback positions and validation logic
+  - Added note about element sizes in prompt
+
+### Testing
+- Created test-y-axis-offset.html to reproduce and verify the issue
+- Confirmed that elements now stay within white court boundaries
+- Symmetrical elements (cones) now align properly at same Y coordinates
+
 ## Session: 2025-01-14 - Comprehensive Bug Fixes
 
 ### Completed Tasks ✅

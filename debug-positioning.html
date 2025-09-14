@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Positioning Issue</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        /* Match the actual app styles */
+        .court-container {
+            background: #16a34a;
+            margin: 30px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .playing-area {
+            width: 100%;
+            max-width: 900px;
+            min-height: 400px;
+            position: relative;
+            margin: 0 auto;
+            background: white;
+            border: 2px solid #e5e7eb;
+        }
+
+        .custom-space {
+            aspect-ratio: 2 / 1;
+        }
+
+        .test-element {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: orange;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        .test-player {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: blue;
+            border-radius: 50%;
+        }
+
+        .debug-marker {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: red;
+            z-index: 1000;
+        }
+
+        .debug-info {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .debug-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .grid-line {
+            position: absolute;
+            background: rgba(0, 0, 255, 0.2);
+        }
+
+        .grid-line.horizontal {
+            width: 100%;
+            height: 1px;
+        }
+
+        .grid-line.vertical {
+            width: 1px;
+            height: 100%;
+        }
+
+        .percentage-label {
+            position: absolute;
+            font-size: 10px;
+            color: blue;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-info">
+        <h2>Debugging Court Positioning</h2>
+        <p>Testing why elements at 70% Y appear outside the white court area</p>
+        <div id="measurements"></div>
+    </div>
+
+    <div class="court-container">
+        <div class="playing-area custom-space" id="court">
+            <div class="debug-grid" id="grid"></div>
+        </div>
+    </div>
+
+    <script>
+        const court = document.getElementById('court');
+        const grid = document.getElementById('grid');
+        const measurements = document.getElementById('measurements');
+
+        // Wait for layout to settle
+        setTimeout(() => {
+            // Get court dimensions
+            const courtRect = court.getBoundingClientRect();
+            const courtWidth = court.clientWidth;
+            const courtHeight = court.clientHeight;
+            const courtOffsetWidth = court.offsetWidth;
+            const courtOffsetHeight = court.offsetHeight;
+
+            // Display measurements
+            measurements.innerHTML = `
+                <h3>Court Measurements:</h3>
+                <ul>
+                    <li>clientWidth: ${courtWidth}px</li>
+                    <li>clientHeight: ${courtHeight}px</li>
+                    <li>offsetWidth: ${courtOffsetWidth}px</li>
+                    <li>offsetHeight: ${courtOffsetHeight}px</li>
+                    <li>getBoundingClientRect width: ${courtRect.width}px</li>
+                    <li>getBoundingClientRect height: ${courtRect.height}px</li>
+                </ul>
+            `;
+
+            // Add grid lines at key percentages
+            [0, 20, 30, 50, 70, 80, 100].forEach(percent => {
+                // Horizontal line
+                const hLine = document.createElement('div');
+                hLine.className = 'grid-line horizontal';
+                hLine.style.top = percent + '%';
+                grid.appendChild(hLine);
+
+                // Label
+                const label = document.createElement('div');
+                label.className = 'percentage-label';
+                label.style.top = percent + '%';
+                label.style.left = '5px';
+                label.textContent = percent + '%';
+                grid.appendChild(label);
+
+                // Vertical line
+                const vLine = document.createElement('div');
+                vLine.className = 'grid-line vertical';
+                vLine.style.left = percent + '%';
+                grid.appendChild(vLine);
+            });
+
+            // Test positions
+            const testPositions = [
+                { x: 30, y: 30, type: 'cone' },
+                { x: 70, y: 30, type: 'cone' },
+                { x: 30, y: 70, type: 'cone' },
+                { x: 70, y: 70, type: 'cone' },
+                { x: 50, y: 50, type: 'player' }
+            ];
+
+            testPositions.forEach((pos, index) => {
+                // Calculate pixel position (center-based percentage)
+                const pixelX = (pos.x / 100) * courtWidth;
+                const pixelY = (pos.y / 100) * courtHeight;
+
+                // Create element
+                const elem = document.createElement('div');
+                elem.className = pos.type === 'cone' ? 'test-element' : 'test-player';
+
+                // Position from center (subtract half width/height)
+                const elemWidth = pos.type === 'cone' ? 30 : 80;
+                const elemHeight = pos.type === 'cone' ? 30 : 80;
+                elem.style.left = (pixelX - elemWidth/2) + 'px';
+                elem.style.top = (pixelY - elemHeight/2) + 'px';
+                elem.title = `${pos.type} at (${pos.x}%, ${pos.y}%)`;
+
+                court.appendChild(elem);
+
+                // Add marker at exact percentage position
+                const marker = document.createElement('div');
+                marker.className = 'debug-marker';
+                marker.style.left = pos.x + '%';
+                marker.style.top = pos.y + '%';
+                marker.style.transform = 'translate(-50%, -50%)';
+                court.appendChild(marker);
+
+                // Check if element is outside court
+                setTimeout(() => {
+                    const elemRect = elem.getBoundingClientRect();
+                    const isOutside =
+                        elemRect.bottom > courtRect.bottom ||
+                        elemRect.top < courtRect.top ||
+                        elemRect.left < courtRect.left ||
+                        elemRect.right > courtRect.right;
+
+                    if (isOutside) {
+                        console.error(`Element at (${pos.x}%, ${pos.y}%) is OUTSIDE court!`);
+                        console.error(`  Element bottom: ${elemRect.bottom}, Court bottom: ${courtRect.bottom}`);
+                        console.error(`  Overflow: ${elemRect.bottom - courtRect.bottom}px`);
+                        elem.style.border = '2px solid red';
+                    }
+                }, 50);
+            });
+
+            // Log final analysis
+            console.log('Court Analysis:');
+            console.log(`  Visible white area height: ${courtHeight}px`);
+            console.log(`  70% of height: ${courtHeight * 0.7}px`);
+            console.log(`  80px player at 70%: bottom would be at ${(courtHeight * 0.7) + 40}px`);
+            console.log(`  Would overflow by: ${Math.max(0, ((courtHeight * 0.7) + 40) - courtHeight)}px`);
+        }, 100);
+    </script>
+</body>
+</html>

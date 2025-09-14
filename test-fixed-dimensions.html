@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Fixed Dimensions for Y-Axis Alignment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #test-court {
+            width: 600px;
+            height: 400px;
+            background-color: white;
+            border: 2px solid #ccc;
+            position: relative;
+            margin: 20px auto;
+        }
+        .test-cone {
+            width: 30px;
+            height: 30px;
+            position: absolute;
+            background: conic-gradient(from 180deg, #ff6600 0deg, #ff8800 180deg, #ffaa00 360deg);
+            clip-path: polygon(50% 0%, 20% 100%, 80% 100%);
+            z-index: 10;
+        }
+        .alignment-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background-color: rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+            z-index: 5;
+        }
+        .coord-label {
+            position: absolute;
+            font-size: 10px;
+            color: #666;
+            z-index: 15;
+        }
+        #results {
+            width: 600px;
+            margin: 20px auto;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            margin: 5px 0;
+            padding: 5px;
+            background: #f9f9f9;
+            border-left: 3px solid #4CAF50;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        #controls {
+            width: 600px;
+            margin: 20px auto;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Fixed Dimensions for Y-Axis Alignment</h1>
+
+    <div id="controls">
+        <button onclick="testWithoutFixedDimensions()">Test WITHOUT Fixed Dimensions</button>
+        <button onclick="testWithFixedDimensions()">Test WITH Fixed Dimensions</button>
+        <button onclick="clearTest()">Clear</button>
+    </div>
+
+    <div id="test-court">
+        <!-- Alignment lines will be added here -->
+    </div>
+
+    <div id="results">
+        <h3>Test Results:</h3>
+        <div id="result-content">Click a test button to begin...</div>
+    </div>
+
+    <script>
+        // Simulate the staggered animation issue
+        function testWithoutFixedDimensions() {
+            clearTest();
+            const court = document.getElementById('test-court');
+            const results = [];
+
+            // Add alignment lines
+            addAlignmentLines();
+
+            // Cone positions to test (same as AI layout)
+            const conePositions = [
+                { x: 30, y: 30 },  // Top-left
+                { x: 70, y: 30 },  // Top-right
+                { x: 30, y: 70 },  // Bottom-left
+                { x: 70, y: 70 }   // Bottom-right
+            ];
+
+            results.push('Testing WITHOUT fixed dimensions (simulating the bug):');
+
+            // Create cones with delays (simulating staggered animation)
+            conePositions.forEach((pos, index) => {
+                setTimeout(() => {
+                    // Get current court dimensions (may change due to reflow)
+                    const width = court.clientWidth;
+                    const height = court.clientHeight;
+
+                    // Calculate pixel position
+                    const pixelX = (pos.x / 100) * width - 15; // Center the 30px cone
+                    const pixelY = (pos.y / 100) * height - 15;
+
+                    // Create cone
+                    const cone = document.createElement('div');
+                    cone.className = 'test-cone';
+                    cone.style.left = pixelX + 'px';
+                    cone.style.top = pixelY + 'px';
+
+                    // Add coordinate label
+                    const label = document.createElement('div');
+                    label.className = 'coord-label';
+                    label.textContent = `(${pos.x}%, ${pos.y}%)`;
+                    label.style.left = (pixelX - 10) + 'px';
+                    label.style.top = (pixelY + 35) + 'px';
+
+                    court.appendChild(cone);
+                    court.appendChild(label);
+
+                    // Force reflow (simulating what might happen in real app)
+                    court.offsetHeight;
+
+                    // Record result
+                    results.push(`Cone ${index + 1} at (${pos.x}%, ${pos.y}%) → pixel Y: ${pixelY.toFixed(2)}px (court height: ${height}px)`);
+
+                    // Check alignment
+                    if (index > 0) {
+                        const prevCone = court.querySelectorAll('.test-cone')[index - 1];
+                        if (prevCone && Math.abs(pos.y - conePositions[index - 1].y) < 0.1) {
+                            const prevY = parseFloat(prevCone.style.top);
+                            const diff = Math.abs(pixelY - prevY);
+                            if (diff > 0.5) {
+                                results.push(`<span style="color: red">⚠️ Misalignment detected! Difference: ${diff.toFixed(2)}px</span>`);
+                            }
+                        }
+                    }
+
+                    if (index === conePositions.length - 1) {
+                        displayResults(results);
+                    }
+                }, index * 50); // 50ms delay between elements
+            });
+        }
+
+        function testWithFixedDimensions() {
+            clearTest();
+            const court = document.getElementById('test-court');
+            const results = [];
+
+            // Add alignment lines
+            addAlignmentLines();
+
+            // Capture dimensions ONCE at the beginning
+            const fixedWidth = court.clientWidth;
+            const fixedHeight = court.clientHeight;
+
+            results.push('Testing WITH fixed dimensions (the fix):');
+            results.push(`Fixed dimensions captured: ${fixedWidth}x${fixedHeight}px`);
+
+            // Cone positions to test
+            const conePositions = [
+                { x: 30, y: 30 },
+                { x: 70, y: 30 },
+                { x: 30, y: 70 },
+                { x: 70, y: 70 }
+            ];
+
+            // Create cones with delays but using fixed dimensions
+            conePositions.forEach((pos, index) => {
+                setTimeout(() => {
+                    // Use FIXED dimensions for all calculations
+                    const pixelX = (pos.x / 100) * fixedWidth - 15;
+                    const pixelY = (pos.y / 100) * fixedHeight - 15;
+
+                    // Create cone
+                    const cone = document.createElement('div');
+                    cone.className = 'test-cone';
+                    cone.style.left = pixelX + 'px';
+                    cone.style.top = pixelY + 'px';
+
+                    // Add coordinate label
+                    const label = document.createElement('div');
+                    label.className = 'coord-label';
+                    label.textContent = `(${pos.x}%, ${pos.y}%)`;
+                    label.style.left = (pixelX - 10) + 'px';
+                    label.style.top = (pixelY + 35) + 'px';
+
+                    court.appendChild(cone);
+                    court.appendChild(label);
+
+                    // Force reflow (but we're using fixed dimensions so it doesn't matter)
+                    court.offsetHeight;
+
+                    // Record result
+                    results.push(`Cone ${index + 1} at (${pos.x}%, ${pos.y}%) → pixel Y: ${pixelY.toFixed(2)}px (using fixed height: ${fixedHeight}px)`);
+
+                    // Check alignment
+                    if (index > 0) {
+                        const prevCone = court.querySelectorAll('.test-cone')[index - 1];
+                        if (prevCone && Math.abs(pos.y - conePositions[index - 1].y) < 0.1) {
+                            const prevY = parseFloat(prevCone.style.top);
+                            const diff = Math.abs(pixelY - prevY);
+                            if (diff > 0.5) {
+                                results.push(`<span style="color: red">⚠️ Misalignment detected! Difference: ${diff.toFixed(2)}px</span>`);
+                            } else {
+                                results.push(`<span style="color: green">✅ Perfect alignment! Difference: ${diff.toFixed(2)}px</span>`);
+                            }
+                        }
+                    }
+
+                    if (index === conePositions.length - 1) {
+                        // Final alignment check
+                        const allCones = court.querySelectorAll('.test-cone');
+                        const topCones = [allCones[0], allCones[1]];
+                        const bottomCones = [allCones[2], allCones[3]];
+
+                        const topY1 = parseFloat(topCones[0].style.top);
+                        const topY2 = parseFloat(topCones[1].style.top);
+                        const bottomY1 = parseFloat(bottomCones[0].style.top);
+                        const bottomY2 = parseFloat(bottomCones[1].style.top);
+
+                        results.push('<br><strong>Final Alignment Check:</strong>');
+                        results.push(`Top row alignment: ${Math.abs(topY1 - topY2).toFixed(2)}px difference`);
+                        results.push(`Bottom row alignment: ${Math.abs(bottomY1 - bottomY2).toFixed(2)}px difference`);
+
+                        if (Math.abs(topY1 - topY2) < 0.1 && Math.abs(bottomY1 - bottomY2) < 0.1) {
+                            results.push('<span style="color: green; font-weight: bold">✅ PERFECT ALIGNMENT ACHIEVED!</span>');
+                        }
+
+                        displayResults(results);
+                    }
+                }, index * 50);
+            });
+        }
+
+        function addAlignmentLines() {
+            const court = document.getElementById('test-court');
+
+            // Add horizontal alignment lines at 30% and 70%
+            const line30 = document.createElement('div');
+            line30.className = 'alignment-line';
+            line30.style.top = '30%';
+
+            const line70 = document.createElement('div');
+            line70.className = 'alignment-line';
+            line70.style.top = '70%';
+
+            court.appendChild(line30);
+            court.appendChild(line70);
+        }
+
+        function clearTest() {
+            const court = document.getElementById('test-court');
+            court.innerHTML = '';
+            document.getElementById('result-content').innerHTML = 'Test cleared. Click a button to run a test.';
+        }
+
+        function displayResults(results) {
+            const content = document.getElementById('result-content');
+            content.innerHTML = results.map(r => {
+                if (r.includes('⚠️')) {
+                    return `<div class="result-item error">${r}</div>`;
+                } else if (r.includes('✅')) {
+                    return `<div class="result-item" style="border-left-color: #4CAF50">${r}</div>`;
+                } else if (r.includes('Testing')) {
+                    return `<h4>${r}</h4>`;
+                } else {
+                    return `<div class="result-item">${r}</div>`;
+                }
+            }).join('');
+        }
+    </script>
+</body>
+</html>

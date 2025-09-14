@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Multiple Layouts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .test-container {
+            background: white;
+            color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #764ba2;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .response-container {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .layout-preview {
+            background: white;
+            border: 2px solid #667eea;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .layout-header {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status.loading {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Multiple Layout Generation</h1>
+
+    <div class="test-container">
+        <h2>Test Configuration</h2>
+        <p>This test will send a sample PE lesson to the AI and verify it returns 3 different layout variations.</p>
+
+        <div>
+            <label>
+                <strong>Lesson Objective:</strong><br>
+                <input type="text" id="lessonObjective" value="Practice passing and receiving skills" style="width: 100%; padding: 5px; margin: 5px 0;">
+            </label>
+        </div>
+
+        <div>
+            <label>
+                <strong>Skills Focus:</strong><br>
+                <input type="text" id="skillsFocus" value="Ball control, teamwork, spatial awareness" style="width: 100%; padding: 5px; margin: 5px 0;">
+            </label>
+        </div>
+
+        <button class="test-button" onclick="runTest()">
+            🚀 Run Test
+        </button>
+
+        <button class="test-button" onclick="clearResults()">
+            🧹 Clear Results
+        </button>
+
+        <div id="status"></div>
+    </div>
+
+    <div class="test-container" id="results" style="display: none;">
+        <h2>Test Results</h2>
+        <div id="resultContent"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'loading') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        function clearResults() {
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('resultContent').innerHTML = '';
+            document.getElementById('status').textContent = '';
+        }
+
+        async function runTest() {
+            clearResults();
+            showStatus('🔄 Sending request to AI...', 'loading');
+
+            const lessonObjective = document.getElementById('lessonObjective').value;
+            const skillsFocus = document.getElementById('skillsFocus').value;
+
+            // Create sample layout data
+            const layoutData = `ACTIVITY DETAILS:
+- Activity Name: Passing Practice
+- Lesson Objective: ${lessonObjective}
+- Skills Focus: ${skillsFocus}
+- Rules & Instructions: Players work in pairs to pass and receive the ball
+
+PLAYING AREA SETUP:
+- Playing area: 20m × 15m custom space
+- Current phase: main
+
+EQUIPMENT & PARTICIPANTS:
+1. CONE at position (30%, 30% from top-left)
+2. CONE at position (70%, 30% from top-left)
+3. CONE at position (30%, 70% from top-left)
+4. CONE at position (70%, 70% from top-left)
+5. ATTACKER (Player 1) at position (40%, 50% from top-left)
+6. ATTACKER (Player 2) at position (60%, 50% from top-left)
+7. DEFENDER (Coach) at position (50%, 30% from top-left)
+8. BALL at position (50%, 50% from top-left)`;
+
+            const courtBoundaries = {
+                topLeftX: 20,
+                topLeftY: 20,
+                bottomRightX: 80,
+                bottomRightY: 80
+            };
+
+            try {
+                const startTime = Date.now();
+
+                const response = await fetch('/.netlify/functions/analyzeLayout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        layoutData: layoutData,
+                        courtBoundaries: courtBoundaries
+                    })
+                });
+
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Analyze the response
+                displayResults(data, elapsed);
+
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+                console.error('Test failed:', error);
+            }
+        }
+
+        function displayResults(data, elapsed) {
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('resultContent');
+
+            resultsDiv.style.display = 'block';
+
+            let html = '<div class="response-container">';
+
+            // Check if we got suggestions
+            if (data.suggestions) {
+                html += '<div class="layout-preview">';
+                html += '<div class="layout-header">📝 AI Suggestions:</div>';
+                html += `<p>${data.suggestions}</p>`;
+                html += '</div>';
+            }
+
+            // Check if we got layout options
+            if (data.layoutJson && data.layoutJson.layouts) {
+                const layouts = data.layoutJson.layouts;
+                const layoutCount = layouts.length;
+
+                if (layoutCount === 3) {
+                    showStatus(`✅ SUCCESS! Received ${layoutCount} layout variations in ${elapsed}s`, 'success');
+                } else {
+                    showStatus(`⚠️ WARNING: Expected 3 layouts but received ${layoutCount} in ${elapsed}s`, 'error');
+                }
+
+                html += '<div class="layout-preview">';
+                html += `<div class="layout-header">📊 Layout Analysis (${layoutCount} variations):</div>`;
+
+                layouts.forEach((layout, index) => {
+                    html += `<div style="margin: 15px 0; padding: 10px; background: #f9fafb; border-left: 4px solid #667eea;">`;
+                    html += `<h4 style="color: #667eea;">Layout ${index + 1}: ${layout.name}</h4>`;
+                    html += `<p><strong>Description:</strong> ${layout.description}</p>`;
+                    html += `<p><strong>Instructions:</strong> ${layout.instructions}</p>`;
+                    html += `<p><strong>Rules:</strong> ${layout.rules}</p>`;
+                    html += `<p><strong>Teaching Points:</strong> ${layout.teachingPoints}</p>`;
+                    html += `<p><strong>Elements:</strong> ${layout.elements ? layout.elements.length : 0} items</p>`;
+
+                    // Verify element positions are within bounds
+                    if (layout.elements) {
+                        let outOfBounds = 0;
+                        layout.elements.forEach(el => {
+                            if (el.position) {
+                                if (el.position.xPercent < 20 || el.position.xPercent > 80 ||
+                                    el.position.yPercent < 20 || el.position.yPercent > 80) {
+                                    outOfBounds++;
+                                }
+                            }
+                        });
+
+                        if (outOfBounds > 0) {
+                            html += `<p style="color: red;">⚠️ ${outOfBounds} elements out of bounds!</p>`;
+                        } else {
+                            html += `<p style="color: green;">✅ All elements within bounds</p>`;
+                        }
+                    }
+
+                    html += '</div>';
+                });
+
+                html += '</div>';
+
+                // Show raw JSON for debugging
+                html += '<div class="layout-preview">';
+                html += '<div class="layout-header">🔍 Raw JSON Response:</div>';
+                html += `<pre>${JSON.stringify(data.layoutJson, null, 2)}</pre>`;
+                html += '</div>';
+
+            } else {
+                showStatus('❌ No layout JSON received!', 'error');
+                html += '<div class="layout-preview">';
+                html += '<div class="layout-header">⚠️ No Layout Data</div>';
+                html += '<p>The AI did not return any layout options.</p>';
+                html += '</div>';
+            }
+
+            html += '</div>';
+            contentDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

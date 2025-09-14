@@ -81,6 +81,17 @@ function showAISuggestions(suggestions, layoutJson = null) {
             layoutCardsDiv.appendChild(cardElement);
         });
         layoutOptionsContainer.style.display = 'block';
+
+        // Show the preview button
+        const previewBtn = document.getElementById('previewLayoutBtn');
+        if (previewBtn) {
+            previewBtn.style.display = 'inline-block';
+        }
+
+        // Automatically select the first layout
+        if (layoutJson.layouts.length > 0) {
+            setTimeout(() => selectLayout(0), 100);
+        }
     } else if (layoutJson) {
         // Single layout (backward compatibility)
         currentSuggestedLayouts = { layouts: [layoutJson] };
@@ -117,20 +128,6 @@ function createLayoutCard(layout, index) {
         <div class="layout-card-preview">
             <div class="layout-preview-court" id="preview-court-${index}"></div>
         </div>
-        <div class="layout-card-details">
-            ${layout.instructions ? `<div class="layout-detail-section">
-                <strong>📋 Instructions:</strong>
-                <p>${layout.instructions}</p>
-            </div>` : ''}
-            ${layout.rules ? `<div class="layout-detail-section">
-                <strong>⚖️ Rules:</strong>
-                <p>${layout.rules}</p>
-            </div>` : ''}
-            ${layout.teachingPoints ? `<div class="layout-detail-section">
-                <strong>🎯 Teaching Points:</strong>
-                <p>${layout.teachingPoints}</p>
-            </div>` : ''}
-        </div>
         <div class="layout-card-features">
             ${layout.elements?.length || 0} elements • ${layout.annotations?.length || 0} notes
         </div>
@@ -161,33 +158,98 @@ function generateLayoutPreview(layout, index) {
 
 function selectLayout(index) {
     selectedLayoutIndex = index;
-    
+
     // Update card selection visual state
     document.querySelectorAll('.layout-card').forEach((card, i) => {
         card.classList.toggle('selected', i === index);
     });
-    
+
+    // Show activity details for selected layout
+    if (currentSuggestedLayouts && currentSuggestedLayouts.layouts && currentSuggestedLayouts.layouts[index]) {
+        showLayoutDetails(currentSuggestedLayouts.layouts[index]);
+    }
+
     // Update Apply Layout button
     updateApplyLayoutButton();
 }
 
+function showLayoutDetails(layout) {
+    const detailsPanel = document.getElementById('selectedLayoutDetails');
+    const detailsContent = document.getElementById('layoutDetailsContent');
+
+    if (!detailsPanel || !detailsContent) {
+        console.error('Details panel elements not found');
+        return;
+    }
+
+    console.log('Showing details for layout:', layout.name);
+
+    // Build HTML for layout details
+    let html = `
+        <h4>${layout.name || 'Activity Layout'}</h4>
+        <p>${layout.description || ''}</p>
+    `;
+
+    // Check if instructions is an array or string and handle both
+    if (layout.instructions) {
+        const instructionsList = Array.isArray(layout.instructions) ? layout.instructions : [layout.instructions];
+        if (instructionsList.length > 0 && instructionsList[0]) {
+            html += `
+                <h4>📋 Instructions:</h4>
+                <ol>
+                    ${instructionsList.map(inst => `<li>${inst}</li>`).join('')}
+                </ol>
+            `;
+        }
+    }
+
+    // Check if rules is an array or string and handle both
+    if (layout.rules) {
+        const rulesList = Array.isArray(layout.rules) ? layout.rules : [layout.rules];
+        if (rulesList.length > 0 && rulesList[0]) {
+            html += `
+                <h4>📏 Rules:</h4>
+                <ul>
+                    ${rulesList.map(rule => `<li>${rule}</li>`).join('')}
+                </ul>
+            `;
+        }
+    }
+
+    // Check if teachingPoints is an array or string and handle both
+    if (layout.teachingPoints) {
+        const pointsList = Array.isArray(layout.teachingPoints) ? layout.teachingPoints : [layout.teachingPoints];
+        if (pointsList.length > 0 && pointsList[0]) {
+            html += `
+                <h4>🎯 Teaching Points:</h4>
+                <ul>
+                    ${pointsList.map(point => `<li>${point}</li>`).join('')}
+                </ul>
+            `;
+        }
+    }
+
+    detailsContent.innerHTML = html;
+    detailsPanel.style.display = 'block';
+}
+
 function updateApplyLayoutButton() {
-    const applyLayoutBtn = document.getElementById('applyLayoutBtn');
-    if (applyLayoutBtn) {
-        const hasLayouts = currentSuggestedLayouts && 
-                          currentSuggestedLayouts.layouts && 
+    const previewLayoutBtn = document.getElementById('previewLayoutBtn');
+    if (previewLayoutBtn) {
+        const hasLayouts = currentSuggestedLayouts &&
+                          currentSuggestedLayouts.layouts &&
                           currentSuggestedLayouts.layouts.length > 0;
-        
-        const hasSelection = selectedLayoutIndex !== null || 
+
+        const hasSelection = selectedLayoutIndex !== null ||
                            (currentSuggestedLayouts && currentSuggestedLayouts.layouts && currentSuggestedLayouts.layouts.length === 1);
-        
-        applyLayoutBtn.style.display = hasLayouts && hasSelection ? 'inline-block' : 'none';
-        
+
+        previewLayoutBtn.style.display = hasLayouts && hasSelection ? 'inline-block' : 'none';
+
         // Update button text based on selection
         if (hasSelection && currentSuggestedLayouts && currentSuggestedLayouts.layouts) {
             const layoutIndex = selectedLayoutIndex !== null ? selectedLayoutIndex : 0;
             const layoutName = currentSuggestedLayouts.layouts[layoutIndex]?.name || 'Layout';
-            applyLayoutBtn.innerHTML = `<span>✨</span> Apply ${layoutName}`;
+            previewLayoutBtn.innerHTML = `<span>👁️</span> Preview ${layoutName}`;
         }
     }
 }

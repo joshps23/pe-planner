@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Y-Axis Offset Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .court-container {
+            background: #16a34a;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 900px;
+        }
+
+        .playing-area {
+            position: relative;
+            background: white;
+            width: 100%;
+            aspect-ratio: 2 / 1;
+            border: 2px solid #e5e7eb;
+        }
+
+        .cone {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: orange;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            transform: translate(-50%, -50%);
+        }
+
+        .marker {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: red;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+
+        .info {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .debug-line {
+            position: absolute;
+            background: rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+        }
+
+        .debug-line.horizontal {
+            width: 100%;
+            height: 1px;
+            left: 0;
+        }
+
+        .debug-line.vertical {
+            height: 100%;
+            width: 1px;
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>Y-Axis Offset Test</h2>
+        <p>Testing element positioning at various Y percentages to identify offset issues.</p>
+        <p>Red markers show exact percentage positions. Orange cones should align with them.</p>
+        <div id="results"></div>
+    </div>
+
+    <div class="court-container">
+        <div class="playing-area" id="court"></div>
+    </div>
+
+    <script src="js/coordinates.js"></script>
+    <script>
+        const court = document.getElementById('court');
+        const results = document.getElementById('results');
+
+        // Test positions - cones at same Y but different X
+        const testPositions = [
+            // Top row (20%)
+            {xPercent: 20, yPercent: 20, label: 'Top-Left'},
+            {xPercent: 50, yPercent: 20, label: 'Top-Center'},
+            {xPercent: 80, yPercent: 20, label: 'Top-Right'},
+
+            // Middle row (50%)
+            {xPercent: 20, yPercent: 50, label: 'Mid-Left'},
+            {xPercent: 50, yPercent: 50, label: 'Mid-Center'},
+            {xPercent: 80, yPercent: 50, label: 'Mid-Right'},
+
+            // Bottom row (80%)
+            {xPercent: 20, yPercent: 80, label: 'Bottom-Left'},
+            {xPercent: 50, yPercent: 80, label: 'Bottom-Center'},
+            {xPercent: 80, yPercent: 80, label: 'Bottom-Right'},
+        ];
+
+        // Add debug lines at key Y positions
+        [20, 50, 80].forEach(yPercent => {
+            const line = document.createElement('div');
+            line.className = 'debug-line horizontal';
+            line.style.top = yPercent + '%';
+            court.appendChild(line);
+
+            const label = document.createElement('div');
+            label.style.position = 'absolute';
+            label.style.left = '5px';
+            label.style.top = yPercent + '%';
+            label.style.transform = 'translateY(-50%)';
+            label.style.fontSize = '10px';
+            label.style.color = 'red';
+            label.textContent = yPercent + '%';
+            court.appendChild(label);
+        });
+
+        // Add vertical lines at key X positions
+        [20, 50, 80].forEach(xPercent => {
+            const line = document.createElement('div');
+            line.className = 'debug-line vertical';
+            line.style.left = xPercent + '%';
+            court.appendChild(line);
+        });
+
+        let resultText = '<h3>Position Analysis:</h3><ul>';
+
+        testPositions.forEach((pos, index) => {
+            // Create element object for coordinate system
+            const element = {
+                type: 'cone',
+                position: {
+                    xPercent: pos.xPercent,
+                    yPercent: pos.yPercent
+                }
+            };
+
+            // Use the coordinate system to calculate position
+            const pixelPos = CoordinateSystem.percentPositionToPixels(element, court);
+
+            // Create cone at calculated position
+            const cone = document.createElement('div');
+            cone.className = 'cone';
+            cone.style.left = (pixelPos.x + 15) + 'px'; // Add half width to center
+            cone.style.top = (pixelPos.y + 15) + 'px'; // Add half height to center
+            cone.title = pos.label;
+            court.appendChild(cone);
+
+            // Create marker at exact percentage position (for comparison)
+            const marker = document.createElement('div');
+            marker.className = 'marker';
+            marker.style.left = pos.xPercent + '%';
+            marker.style.top = pos.yPercent + '%';
+            court.appendChild(marker);
+
+            // Calculate actual position
+            const courtRect = court.getBoundingClientRect();
+            const coneRect = cone.getBoundingClientRect();
+            const actualY = ((coneRect.top + coneRect.height/2) - courtRect.top) / courtRect.height * 100;
+
+            resultText += `<li>${pos.label}: Expected Y=${pos.yPercent}%, Actual Y=${actualY.toFixed(1)}%, Diff=${(actualY - pos.yPercent).toFixed(1)}%</li>`;
+        });
+
+        resultText += '</ul>';
+
+        // Check if cones at same Y have same pixel Y
+        const topRow = testPositions.filter(p => p.yPercent === 20);
+        const midRow = testPositions.filter(p => p.yPercent === 50);
+        const bottomRow = testPositions.filter(p => p.yPercent === 80);
+
+        [
+            {row: topRow, name: 'Top Row (20%)'},
+            {row: midRow, name: 'Middle Row (50%)'},
+            {row: bottomRow, name: 'Bottom Row (80%)'}
+        ].forEach(({row, name}) => {
+            const cones = court.querySelectorAll('.cone');
+            const yPositions = row.map((pos, i) => {
+                const index = testPositions.findIndex(p => p === pos);
+                return parseFloat(cones[index].style.top);
+            });
+
+            const minY = Math.min(...yPositions);
+            const maxY = Math.max(...yPositions);
+            const diff = maxY - minY;
+
+            resultText += `<p><strong>${name}:</strong> Y positions = ${yPositions.map(y => y.toFixed(1)).join(', ')}px`;
+            if (diff > 0.1) {
+                resultText += ` <span style="color: red;">⚠️ MISALIGNED by ${diff.toFixed(1)}px</span>`;
+            } else {
+                resultText += ` <span style="color: green;">✓ Aligned</span>`;
+            }
+            resultText += '</p>';
+        });
+
+        // Check court boundaries
+        const boundaries = CoordinateSystem.getCourtBoundaries(court);
+        resultText += `<p><strong>Court Dimensions:</strong> ${boundaries.width}x${boundaries.height}px</p>`;
+        resultText += `<p><strong>Court Borders:</strong> Top=${boundaries.borderTop}px, Bottom=${boundaries.borderBottom}px</p>`;
+
+        results.innerHTML = resultText;
+    </script>
+</body>
+</html>

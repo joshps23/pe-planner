@@ -26,22 +26,22 @@ function validateLayout(layout) {
             
             const { xPercent, yPercent } = element.position;
             
-            // Validate coordinates are within safe bounds (15-85%)
+            // Validate coordinates are within safe bounds (15-85% to keep elements within white court)
             const originalX = xPercent;
             const originalY = yPercent;
 
-            if (xPercent < 20 || xPercent > 80) {
-                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid xPercent ${xPercent}, should be 20-80`);
+            if (xPercent < 15 || xPercent > 85) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid xPercent ${xPercent}, should be 15-85`);
                 // Auto-fix by clamping to safe range
-                element.position.xPercent = Math.max(20, Math.min(80, xPercent));
+                element.position.xPercent = Math.max(15, Math.min(85, xPercent));
                 console.log(`  Fixed X: ${originalX} -> ${element.position.xPercent}`);
                 hasErrors = true;
             }
 
-            if (yPercent < 20 || yPercent > 80) {
-                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid yPercent ${yPercent}, should be 20-80`);
+            if (yPercent < 15 || yPercent > 85) {
+                console.warn(`Layout ${layoutIndex}, Element ${elementIndex} (${element.type}): Invalid yPercent ${yPercent}, should be 15-85`);
                 // Auto-fix by clamping to safe range
-                element.position.yPercent = Math.max(20, Math.min(80, yPercent));
+                element.position.yPercent = Math.max(15, Math.min(85, yPercent));
                 console.log(`  Fixed Y: ${originalY} -> ${element.position.yPercent}`);
                 hasErrors = true;
             }
@@ -375,48 +375,13 @@ async function analyzeLayout() {
     analyzeBtn.disabled = true;
     
     try {
-        // Calculate actual court boundaries for custom spaces
-        const court = document.getElementById('court');
-        const isCustomSpace = court.classList.contains('custom-space');
-
-        // For custom spaces with green border, calculate the actual white court boundaries
-        let courtBoundaries = {
-            topLeftX: 20,
-            topLeftY: 20,
-            bottomRightX: 80,
-            bottomRightY: 80
-        };
-
-        if (isCustomSpace) {
-            // Get the parent container (green border area)
-            const container = court.parentElement;
-            const containerWidth = container.offsetWidth;
-            const containerHeight = container.offsetHeight;
-            const courtWidth = court.offsetWidth;
-            const courtHeight = court.offsetHeight;
-
-            // Calculate the percentage of the container that is the white court
-            const borderWidthX = (containerWidth - courtWidth) / 2;
-            const borderWidthY = (containerHeight - courtHeight) / 2;
-
-            // Calculate boundaries as percentages
-            // The white court starts at the border width and ends at container width minus border width
-            courtBoundaries.topLeftX = Math.round((borderWidthX / containerWidth) * 100);
-            courtBoundaries.topLeftY = Math.round((borderWidthY / containerHeight) * 100);
-            courtBoundaries.bottomRightX = Math.round(((containerWidth - borderWidthX) / containerWidth) * 100);
-            courtBoundaries.bottomRightY = Math.round(((containerHeight - borderWidthY) / containerHeight) * 100);
-
-            console.log('Calculated court boundaries:', courtBoundaries);
-        }
-
         const response = await fetch('/.netlify/functions/analyzeLayout', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                layoutData: description,
-                courtBoundaries: courtBoundaries
+                layoutData: description
             })
         });
         

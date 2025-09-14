@@ -3,6 +3,7 @@ let itemCounter = 0;
 let draggedElement = null;
 let dragOffset = { x: 0, y: 0 };
 let currentPhase = 'warmup';
+let currentPreviewedLayout = null;
 let isDrawingMode = false;
 let drawingPath = null;
 let drawingStartPoint = null;
@@ -227,20 +228,6 @@ function makeDraggable(element) {
     element.addEventListener('mousedown', startDrag);
     element.addEventListener('touchstart', startDrag);
     attachContextMenu(element);
-
-    // Ensure element is within bounds when first made draggable
-    const court = document.getElementById('court');
-    if (court && element.style.left && element.style.top) {
-        const x = parseInt(element.style.left) || 0;
-        const y = parseInt(element.style.top) || 0;
-        const validated = CoordinateSystem.validateElementPosition(element, x, y, court);
-
-        if (validated.clamped) {
-            element.style.left = validated.x + 'px';
-            element.style.top = validated.y + 'px';
-            console.log(`Element ${element.id} position adjusted on makeDraggable`);
-        }
-    }
 }
 
 function startDrag(e) {
@@ -264,32 +251,9 @@ function startDrag(e) {
     const court = document.getElementById('court');
     const mousePos = getMousePosition(e, court);
 
-    // Get current element position - but verify it's correct
-    let currentLeft = parseInt(draggedElement.style.left) || 0;
-    let currentTop = parseInt(draggedElement.style.top) || 0;
-
-    // IMPORTANT: Get the element's actual position relative to the court
-    // This handles cases where the element's style position doesn't match reality
-    const courtRect = court.getBoundingClientRect();
-    const elementRect = draggedElement.getBoundingClientRect();
-
-    // Calculate the actual position relative to court
-    const actualLeft = elementRect.left - courtRect.left;
-    const actualTop = elementRect.top - courtRect.top;
-
-    // If there's a significant discrepancy, use the actual position
-    if (Math.abs(actualLeft - currentLeft) > 2 || Math.abs(actualTop - currentTop) > 2) {
-        console.warn('Position mismatch detected! Using actual position instead of style position');
-        console.warn('Style position:', { left: currentLeft, top: currentTop });
-        console.warn('Actual position:', { left: actualLeft, top: actualTop });
-
-        // Update the element's style to match reality
-        draggedElement.style.left = actualLeft + 'px';
-        draggedElement.style.top = actualTop + 'px';
-
-        currentLeft = actualLeft;
-        currentTop = actualTop;
-    }
+    // Get current element position from style
+    const currentLeft = parseInt(draggedElement.style.left) || 0;
+    const currentTop = parseInt(draggedElement.style.top) || 0;
 
     // Calculate offset between mouse position and element position
     dragOffset.x = mousePos.x - currentLeft;
@@ -405,39 +369,8 @@ function drag(e) {
         }
     }
 
-    // For annotations/notes, allow dragging outside court boundaries
-    // but constrain to the court container area
-    if (draggedElement.classList.contains('annotation')) {
-        const elementSize = CoordinateSystem.getElementSize(draggedElement);
-
-        // Calculate relative position within the court container
-        const containerMaxX = courtContainer.clientWidth - elementSize.width;
-        const containerMaxY = courtContainer.clientHeight - elementSize.height;
-
-        // Allow movement within the entire court container with slight negative margin
-        newX = Math.max(-20, Math.min(newX, containerMaxX));
-        newY = Math.max(-20, Math.min(newY, containerMaxY));
-    } else {
-        // For equipment and students, use coordinate system validation
-        const validated = CoordinateSystem.validateElementPosition(
-            draggedElement,
-            newX,
-            newY,
-            court
-        );
-
-        if (window.debugMode && validated.clamped) {
-            console.log('Position was clamped!');
-            console.log('Original:', newX, newY);
-            console.log('Clamped to:', validated.x, validated.y);
-            const elementSize = CoordinateSystem.getElementSize(draggedElement);
-            console.log('Element size:', elementSize);
-            console.log('Max allowed:', court.clientWidth - elementSize.width, court.clientHeight - elementSize.height);
-        }
-
-        newX = validated.x;
-        newY = validated.y;
-    }
+    // No constraints - allow free positioning
+    // Elements can be positioned anywhere without restrictions
     
     draggedElement.style.left = newX + 'px';
     draggedElement.style.top = newY + 'px';
@@ -565,48 +498,9 @@ function applyCustomDimensions() {
 
 
 function revalidateAllElements() {
-    const court = document.getElementById('court');
-    if (!court) return;
-
-    // Revalidate all draggable items and annotations
-    const elements = court.querySelectorAll('.draggable-item, .annotation');
-    let adjustedCount = 0;
-
-    elements.forEach(element => {
-        const x = parseInt(element.style.left) || 0;
-        const y = parseInt(element.style.top) || 0;
-
-        // For annotations, allow slight overflow
-        if (element.classList.contains('annotation')) {
-            const elementSize = CoordinateSystem.getElementSize(element);
-            const boundaries = CoordinateSystem.getCourtBoundaries(court);
-            const safetyMargin = 10;
-            const maxX = boundaries.width - elementSize.width + safetyMargin;
-            const maxY = boundaries.height - elementSize.height + safetyMargin;
-
-            const newX = Math.max(-safetyMargin, Math.min(maxX, x));
-            const newY = Math.max(-safetyMargin, Math.min(maxY, y));
-
-            if (newX !== x || newY !== y) {
-                element.style.left = newX + 'px';
-                element.style.top = newY + 'px';
-                adjustedCount++;
-            }
-        } else {
-            // For other elements, use strict validation
-            const validated = CoordinateSystem.validateElementPosition(element, x, y, court);
-
-            if (validated.clamped) {
-                element.style.left = validated.x + 'px';
-                element.style.top = validated.y + 'px';
-                adjustedCount++;
-            }
-        }
-    });
-
-    if (adjustedCount > 0) {
-        console.log(`Adjusted ${adjustedCount} elements to fit new court dimensions`);
-    }
+    // This function is now a no-op to prevent unwanted position adjustments
+    // Elements are positioned correctly when created and don't need revalidation
+    return;
 }
 
 function updateAspectRatioDisplay(ratio) {
@@ -728,20 +622,13 @@ function loadPlan() {
         item.dataset.phase = itemData.phase || 'warmup';
 
         // Parse saved coordinates
-        let x = parseInt(itemData.left) || 0;
-        let y = parseInt(itemData.top) || 0;
+        const x = parseInt(itemData.left) || 0;
+        const y = parseInt(itemData.top) || 0;
 
-        // Use the new coordinate system for validation
-        const validated = CoordinateSystem.validateElementPosition(item, x, y, court);
-
-        if (validated.clamped) {
-            console.log(`Element ${itemData.id} position adjusted from (${x}, ${y}) to (${validated.x}, ${validated.y})`);
-        }
-
-        // Apply validated coordinates
+        // Apply coordinates directly without validation
         item.style.position = 'absolute';  // CRITICAL: Elements must be absolutely positioned
-        item.style.left = validated.x + 'px';
-        item.style.top = validated.y + 'px';
+        item.style.left = x + 'px';
+        item.style.top = y + 'px';
         
         if (itemData.text && item.classList.contains('student')) {
             const nameLabel = document.createElement('div');
@@ -1112,43 +999,158 @@ function applyLayoutFromJson() {
     }
     
     const court = document.getElementById('court');
-    
+
+    // STEP 1: Clear draggable items and show visual feedback
+    console.log('🧹 Clearing court for fresh layout...');
+
     // Clear existing draggable items and annotations
     court.querySelectorAll('.draggable-item, .annotation, .path-line, .path-arrow').forEach(item => {
         item.remove();
     });
-    
-    // Reset item counter to ensure unique IDs
+
+    // Add visual feedback - show empty court briefly
+    court.style.backgroundColor = '#f0f0f0';
+    court.style.transition = 'background-color 0.3s ease';
+
+    // STEP 2: Reset the court state
+    resetCourtToFreshState(court);
+
+    // Reset item counter and tracking
     itemCounter = 0;
-    
-    try {
-        // Apply elements (equipment and students)
-        if (currentSuggestedLayout.elements) {
-            currentSuggestedLayout.elements.forEach(element => {
-                createElementFromJson(element, court);
-            });
+    window.conePositions = [];
+    window.lastCourtDimensions = null;
+
+    // STEP 3: Apply new layout after delay
+    setTimeout(() => {
+        // Reset background to white
+        court.style.backgroundColor = 'white';
+
+        console.log('✨ Applying fresh layout from current suggestion');
+
+        // CRITICAL FIX: Capture court dimensions once and use for all elements
+        // This ensures consistent positioning even with staggered animations
+        const fixedCourtDimensions = {
+            width: court.clientWidth,
+            height: court.clientHeight
+        };
+        console.log(`📏 Fixed court dimensions for layout: ${fixedCourtDimensions.width}x${fixedCourtDimensions.height}`);
+
+        try {
+            // Apply elements with staggered animation
+            if (currentSuggestedLayout.elements) {
+                currentSuggestedLayout.elements.forEach((element, index) => {
+                    setTimeout(() => {
+                        createElementFromJson(element, court, fixedCourtDimensions);
+                    }, index * 50);
+                });
+            }
+        
+            // Apply annotations with delay
+            if (currentSuggestedLayout.annotations) {
+                currentSuggestedLayout.annotations.forEach((annotation, index) => {
+                    setTimeout(() => {
+                        createAnnotationFromJson(annotation, court, fixedCourtDimensions);
+                    }, (currentSuggestedLayout.elements?.length || 0) * 50 + index * 50);
+                });
+            }
+
+            // Show success message after all elements
+            const totalDelay = ((currentSuggestedLayout.elements?.length || 0) + (currentSuggestedLayout.annotations?.length || 0)) * 50;
+            setTimeout(() => {
+                // Show success message
+                showSuccessMessage('Suggested layout applied successfully!');
+
+                // Initialize z-indexes for new elements
+                initializeZIndexes();
+
+                // Close the suggestions modal
+                closeAISuggestionsModal();
+
+                console.log('✅ Fresh layout applied successfully');
+            }, totalDelay + 100);
+
+        } catch (error) {
+            console.error('Error applying layout:', error);
+            alert('Error applying layout. Please check the console for details.');
+            // Reset court background on error
+            court.style.backgroundColor = 'white';
         }
-        
-        // Apply annotations
-        if (currentSuggestedLayout.annotations) {
-            currentSuggestedLayout.annotations.forEach(annotation => {
-                createAnnotationFromJson(annotation, court);
-            });
+    }, 300); // Wait 300ms to show empty court
+}
+
+/**
+ * Completely reset the court to a fresh state, clearing any accumulated offsets or styles
+ * This ensures AI-suggested layouts start from a clean slate
+ */
+function resetCourtToFreshState(court) {
+    console.log('Resetting court to fresh state...');
+
+    // Clear any inline styles that might have been added (except essential ones)
+    const preservedStyles = {
+        aspectRatio: court.style.aspectRatio // Preserve aspect ratio for custom spaces
+    };
+
+    // Reset transforms and positioning that might cause offsets
+    court.style.transform = '';
+    court.style.translate = '';
+    court.style.position = 'relative'; // Ensure it's relative for absolute children
+    court.style.top = '';
+    court.style.left = '';
+    court.style.marginTop = '';
+    court.style.marginLeft = '';
+    court.style.paddingTop = '';
+    court.style.paddingLeft = '';
+
+    // Restore preserved styles
+    court.style.aspectRatio = preservedStyles.aspectRatio;
+
+    // Clear any data attributes that might affect positioning
+    delete court.dataset.offsetX;
+    delete court.dataset.offsetY;
+
+    // Reset any dynamically added classes (preserve essential ones)
+    const essentialClasses = ['playing-area', 'custom-space', 'badminton-court'];
+    const currentClasses = Array.from(court.classList);
+    currentClasses.forEach(className => {
+        if (!essentialClasses.includes(className)) {
+            court.classList.remove(className);
         }
-        
-        // Show success message
-        alert('Suggested layout applied successfully!');
-        
-        // Initialize z-indexes for new elements
-        initializeZIndexes();
-        
-        // Close the suggestions modal
-        closeAISuggestionsModal();
-        
-    } catch (error) {
-        console.error('Error applying layout:', error);
-        alert('Error applying layout. Please check the console for details.');
+    });
+
+    // Reset scroll position if any
+    court.scrollTop = 0;
+    court.scrollLeft = 0;
+
+    // Clear any cached coordinate calculations
+    if (window.CoordinateSystem) {
+        // Force coordinate system to recalculate boundaries
+        delete window.CoordinateSystem._cachedBoundaries;
     }
+
+    // Clear any global state that might affect positioning
+    window.lastMouseX = null;
+    window.lastMouseY = null;
+    window.dragOffsetX = 0;
+    window.dragOffsetY = 0;
+
+    // Reset global drag variables
+    if (draggedElement) {
+        draggedElement.classList.remove('dragging');
+        draggedElement = null;
+    }
+    dragOffset = { x: 0, y: 0 };
+
+    // Force the browser to recalculate layout
+    void court.offsetHeight; // Force reflow
+
+    // Verify court is in expected state
+    const computedStyle = window.getComputedStyle(court);
+    if (computedStyle.position !== 'relative') {
+        console.warn('Court position is not relative, fixing...');
+        court.style.position = 'relative';
+    }
+
+    console.log('Court reset complete. Fresh state ready for AI layout.');
 }
 
 function displayActivityDetails(layout) {
@@ -1183,6 +1185,311 @@ function hideActivityDetails() {
     }
 }
 
+// Preview functionality
+function previewSelectedLayout() {
+    if (!currentSuggestedLayouts || !currentSuggestedLayouts.layouts) {
+        alert('No layout suggestions available to preview.');
+        return;
+    }
+
+    // Determine which layout to preview
+    let layoutToPreview;
+    if (selectedLayoutIndex !== null && currentSuggestedLayouts.layouts[selectedLayoutIndex]) {
+        layoutToPreview = currentSuggestedLayouts.layouts[selectedLayoutIndex];
+    } else if (currentSuggestedLayouts.layouts.length === 1) {
+        layoutToPreview = currentSuggestedLayouts.layouts[0];
+    } else {
+        alert('Please select a layout option first.');
+        return;
+    }
+
+    // Store for later application
+    currentPreviewedLayout = layoutToPreview;
+
+    // Open preview modal
+    const previewModal = document.getElementById('layoutPreviewModal');
+    previewModal.classList.add('show');
+
+    // Create preview court if it doesn't exist
+    let previewCourt = document.getElementById('previewCourt');
+    if (!previewCourt) {
+        const container = document.getElementById('previewCourtContainer');
+        previewCourt = document.createElement('div');
+        previewCourt.id = 'previewCourt';
+        container.appendChild(previewCourt);
+    }
+
+    // Clear preview court
+    previewCourt.innerHTML = '';
+
+    // Apply same court style as main court
+    const mainCourt = document.getElementById('court');
+    const computedStyle = window.getComputedStyle(mainCourt);
+    previewCourt.style.borderColor = computedStyle.borderColor;
+    previewCourt.style.borderWidth = computedStyle.borderWidth;
+
+    // Capture dimensions for consistent positioning
+    const fixedCourtDimensions = {
+        width: previewCourt.clientWidth,
+        height: previewCourt.clientHeight
+    };
+
+    // Apply layout to preview court
+    if (layoutToPreview.elements) {
+        layoutToPreview.elements.forEach((element) => {
+            createElementInPreview(element, previewCourt, fixedCourtDimensions);
+        });
+    }
+
+    if (layoutToPreview.annotations) {
+        layoutToPreview.annotations.forEach((annotation) => {
+            createAnnotationInPreview(annotation, previewCourt, fixedCourtDimensions);
+        });
+    }
+
+    // Display activity details in preview
+    displayPreviewActivityDetails(layoutToPreview);
+}
+
+function createElementInPreview(element, previewCourt, fixedDimensions) {
+    // Similar to createElementFromJson but without drag functionality
+    const position = CoordinateSystem.percentPositionToPixels(element, previewCourt, fixedDimensions);
+
+    let newElement;
+    const itemId = 'preview-' + Date.now() + '-' + Math.random();
+
+    switch(element.type) {
+        case 'cone':
+            newElement = document.createElement('div');
+            newElement.className = 'cone draggable-item';
+            break;
+        case 'ball':
+            newElement = document.createElement('div');
+            newElement.className = 'ball draggable-item';
+            break;
+        case 'student':
+        case 'attacker':
+        case 'defender':
+            newElement = document.createElement('div');
+            newElement.className = `${element.type} draggable-item`;
+            if (element.name) {
+                const nameLabel = document.createElement('span');
+                nameLabel.className = 'student-name';
+                nameLabel.textContent = element.name;
+                newElement.appendChild(nameLabel);
+            }
+            break;
+        case 'racket':
+            newElement = document.createElement('div');
+            newElement.className = 'racket draggable-item';
+            break;
+        case 'shuttlecock':
+            newElement = document.createElement('div');
+            newElement.className = 'shuttlecock draggable-item';
+            break;
+        case 'net':
+            newElement = document.createElement('div');
+            newElement.className = 'net draggable-item';
+            break;
+        case 'marker':
+            newElement = document.createElement('div');
+            newElement.className = 'marker draggable-item';
+            break;
+        case 'hoop':
+            newElement = document.createElement('div');
+            newElement.className = 'hoop draggable-item';
+            break;
+        case 'bench':
+            newElement = document.createElement('div');
+            newElement.className = 'bench draggable-item';
+            break;
+        case 'floorball_stick':
+            newElement = document.createElement('div');
+            newElement.className = 'floorball-stick draggable-item';
+            break;
+        case 'frisbee':
+            newElement = document.createElement('div');
+            newElement.className = 'frisbee draggable-item';
+            break;
+        default:
+            console.warn('Unknown element type:', element.type);
+            return;
+    }
+
+    newElement.id = itemId;
+    newElement.style.position = 'absolute';
+    newElement.style.left = position.x + 'px';
+    newElement.style.top = position.y + 'px';
+    newElement.dataset.phase = currentPhase;
+
+    previewCourt.appendChild(newElement);
+}
+
+function createAnnotationInPreview(annotation, previewCourt, fixedDimensions) {
+    const position = CoordinateSystem.percentPositionToPixels(annotation, previewCourt, fixedDimensions);
+
+    const annotationDiv = document.createElement('div');
+    annotationDiv.className = 'annotation';
+    annotationDiv.style.position = 'absolute';
+    annotationDiv.style.left = position.x + 'px';
+    annotationDiv.style.top = position.y + 'px';
+    annotationDiv.dataset.phase = currentPhase;
+
+    const textarea = document.createElement('textarea');
+    textarea.value = annotation.text;
+    textarea.readOnly = true;
+    textarea.rows = 2;
+    textarea.cols = 20;
+
+    annotationDiv.appendChild(textarea);
+    previewCourt.appendChild(annotationDiv);
+}
+
+function displayPreviewActivityDetails(layout) {
+    const detailsContainer = document.getElementById('previewActivityDetails');
+
+    if (!detailsContainer) {
+        console.error('Preview activity details container not found');
+        return;
+    }
+
+    let html = `
+        <h3>${layout.name || 'Activity Layout'}</h3>
+        <p>${layout.description || ''}</p>
+    `;
+
+    // Handle instructions (array or string)
+    if (layout.instructions) {
+        const instructionsList = Array.isArray(layout.instructions) ? layout.instructions : [layout.instructions];
+        if (instructionsList.length > 0 && instructionsList[0]) {
+            html += `
+                <h4>📋 Instructions:</h4>
+                <ol>
+                    ${instructionsList.map(inst => `<li>${inst}</li>`).join('')}
+                </ol>
+            `;
+        }
+    }
+
+    // Handle rules (array or string)
+    if (layout.rules) {
+        const rulesList = Array.isArray(layout.rules) ? layout.rules : [layout.rules];
+        if (rulesList.length > 0 && rulesList[0]) {
+            html += `
+                <h4>📏 Rules:</h4>
+                <ul>
+                    ${rulesList.map(rule => `<li>${rule}</li>`).join('')}
+                </ul>
+            `;
+        }
+    }
+
+    // Handle teaching points (array or string)
+    if (layout.teachingPoints) {
+        const pointsList = Array.isArray(layout.teachingPoints) ? layout.teachingPoints : [layout.teachingPoints];
+        if (pointsList.length > 0 && pointsList[0]) {
+            html += `
+                <h4>🎯 Teaching Points:</h4>
+                <ul>
+                    ${pointsList.map(point => `<li>${point}</li>`).join('')}
+                </ul>
+            `;
+        }
+    }
+
+    detailsContainer.innerHTML = html;
+    detailsContainer.style.display = 'block';
+}
+
+function closeLayoutPreviewModal() {
+    const modal = document.getElementById('layoutPreviewModal');
+    modal.classList.remove('show');
+
+    // Clear preview court
+    const previewCourt = document.getElementById('previewCourt');
+    if (previewCourt) {
+        previewCourt.innerHTML = '';
+    }
+}
+
+function applyPreviewedLayout() {
+    if (!currentPreviewedLayout) {
+        alert('No layout to apply.');
+        return;
+    }
+
+    // Close preview modal
+    closeLayoutPreviewModal();
+
+    // Close AI suggestions modal
+    closeAISuggestionsModal();
+
+    // Apply layout to main court
+    applyLayoutToMainCourt(currentPreviewedLayout);
+}
+
+function applyLayoutToMainCourt(layoutToApply) {
+    // Confirm with user before clearing current layout
+    if (!confirm(`This will replace your current layout with "${layoutToApply.name}". Continue?`)) {
+        return;
+    }
+
+    const court = document.getElementById('court');
+
+    // Clear existing items
+    court.querySelectorAll('.draggable-item, .annotation, .path-line, .path-arrow').forEach(item => {
+        item.remove();
+    });
+
+    // Reset court state
+    resetCourtToFreshState(court);
+
+    // Reset counters
+    itemCounter = 0;
+    window.conePositions = [];
+    window.lastCourtDimensions = null;
+
+    // Apply new layout with fixed dimensions
+    setTimeout(() => {
+        court.style.backgroundColor = 'white';
+
+        const fixedCourtDimensions = {
+            width: court.clientWidth,
+            height: court.clientHeight
+        };
+
+        try {
+            if (layoutToApply.elements) {
+                layoutToApply.elements.forEach((element, index) => {
+                    setTimeout(() => {
+                        createElementFromJson(element, court, fixedCourtDimensions);
+                    }, index * 50);
+                });
+            }
+
+            if (layoutToApply.annotations) {
+                layoutToApply.annotations.forEach((annotation, index) => {
+                    setTimeout(() => {
+                        createAnnotationFromJson(annotation, court, fixedCourtDimensions);
+                    }, (layoutToApply.elements?.length || 0) * 50 + index * 50);
+                });
+            }
+
+            const totalDelay = ((layoutToApply.elements?.length || 0) + (layoutToApply.annotations?.length || 0)) * 50;
+            setTimeout(() => {
+                showSuccessMessage(`"${layoutToApply.name}" applied successfully!`);
+                displayActivityDetails(layoutToApply);
+                initializeZIndexes();
+            }, totalDelay + 100);
+
+        } catch (error) {
+            console.error('Error applying layout:', error);
+            alert('Error applying layout. Please check the console for details.');
+            court.style.backgroundColor = 'white';
+        }
+    }, 300);
+}
+
 function applySelectedLayout() {
     if (!currentSuggestedLayouts || !currentSuggestedLayouts.layouts) {
         alert('No layout suggestions available to apply.');
@@ -1206,68 +1513,197 @@ function applySelectedLayout() {
     }
     
     const court = document.getElementById('court');
-    
-    // Clear existing draggable items and annotations
+
+    // STEP 1: Clear draggable items and annotations (but preserve court lines)
+    console.log('🧹 Clearing court for fresh layout...');
+
+    // Remove only draggable items, annotations, paths - preserve court structure
     court.querySelectorAll('.draggable-item, .annotation, .path-line, .path-arrow').forEach(item => {
         item.remove();
     });
-    
-    // Reset item counter to ensure unique IDs
+
+    // Add visual feedback - show empty court briefly
+    court.style.backgroundColor = '#f0f0f0';
+    court.style.transition = 'background-color 0.3s ease';
+
+    // STEP 2: Reset the court state
+    resetCourtToFreshState(court);
+
+    // Store initial court dimensions for debugging
+    const initialCourtWidth = court.clientWidth;
+    const initialCourtHeight = court.clientHeight;
+    console.log(`Court dimensions after reset: ${initialCourtWidth}x${initialCourtHeight}`);
+
+    // Clear tracking data
+    window.conePositions = [];
+    window.lastCourtDimensions = null;
     itemCounter = 0;
-    
-    try {
-        // Apply elements (equipment and students)
-        if (layoutToApply.elements) {
-            layoutToApply.elements.forEach(element => {
-                createElementFromJson(element, court);
-            });
-        }
-        
-        // Apply annotations
-        if (layoutToApply.annotations) {
-            layoutToApply.annotations.forEach(annotation => {
-                createAnnotationFromJson(annotation, court);
-            });
-        }
-        
-        // Show success message
-        showSuccessMessage(`"${layoutToApply.name}" applied successfully!`);
-        
-        // Display activity details below the court
-        displayActivityDetails(layoutToApply);
-        
-        // Initialize z-indexes for new elements
-        initializeZIndexes();
-        
-        // Close the suggestions modal
-        closeAISuggestionsModal();
-        
-    } catch (error) {
-        console.error('Error applying layout:', error);
-        alert('Error applying layout. Please check the console for details.');
+
+    // Force layout recalculation
+    court.offsetHeight; // Force reflow
+
+    // Verify court has valid dimensions
+    if (court.clientWidth === 0 || court.clientHeight === 0) {
+        console.error('Court has invalid dimensions!', {
+            width: court.clientWidth,
+            height: court.clientHeight
+        });
+        setTimeout(() => applySelectedLayout(), 100);
+        return;
     }
+
+    // STEP 3: Add delay to make reset visible, then apply new layout
+    setTimeout(() => {
+        // Reset background to white
+        court.style.backgroundColor = 'white';
+
+        console.log('✨ Applying fresh layout:', layoutToApply.name);
+
+        // CRITICAL FIX: Capture court dimensions once for consistent positioning
+        const fixedCourtDimensions = {
+            width: court.clientWidth,
+            height: court.clientHeight
+        };
+        console.log(`📏 Fixed court dimensions for selected layout: ${fixedCourtDimensions.width}x${fixedCourtDimensions.height}`);
+
+        try {
+            // Apply elements (equipment and students)
+            if (layoutToApply.elements) {
+                layoutToApply.elements.forEach((element, index) => {
+                    // Add elements with slight delay for visual effect
+                    setTimeout(() => {
+                        createElementFromJson(element, court, fixedCourtDimensions);
+                    }, index * 50);
+                });
+            }
+
+            // Apply annotations with delay
+            if (layoutToApply.annotations) {
+                layoutToApply.annotations.forEach((annotation, index) => {
+                    setTimeout(() => {
+                        createAnnotationFromJson(annotation, court, fixedCourtDimensions);
+                    }, (layoutToApply.elements?.length || 0) * 50 + index * 50);
+                });
+            }
+
+            // Show success message after all elements are added
+            const totalDelay = ((layoutToApply.elements?.length || 0) + (layoutToApply.annotations?.length || 0)) * 50;
+            setTimeout(() => {
+                showSuccessMessage(`"${layoutToApply.name}" applied successfully!`);
+
+                // Display activity details below the court
+                displayActivityDetails(layoutToApply);
+
+                // Initialize z-indexes for new elements
+                initializeZIndexes();
+
+                // Close the suggestions modal
+                closeAISuggestionsModal();
+
+                // Final check of court dimensions
+                const finalCourtWidth = court.clientWidth;
+                const finalCourtHeight = court.clientHeight;
+                console.log(`✅ Layout applied. Final court dimensions: ${finalCourtWidth}x${finalCourtHeight}`);
+
+                if (finalCourtWidth !== initialCourtWidth || finalCourtHeight !== initialCourtHeight) {
+                    console.error(`⚠️ Court dimensions changed during layout!`);
+                }
+            }, totalDelay + 100);
+
+        } catch (error) {
+            console.error('Error applying layout:', error);
+            alert('Error applying layout. Please check the console for details.');
+            // Reset court background on error
+            court.style.backgroundColor = 'white';
+        }
+    }, 300); // Wait 300ms to show empty court
 }
 
-function createElementFromJson(element, court) {
-    console.log(`\n=== CREATING ELEMENT: ${element.type} ===`);
-    console.log(`Input coordinates: (${element.position?.xPercent}%, ${element.position?.yPercent}%)`);
-    console.log(`Court dimensions: ${court.clientWidth}x${court.clientHeight}px`);
+function createElementFromJson(element, court, fixedDimensions) {
+    // Use fixed dimensions if provided (for AI layouts), otherwise use current court dimensions
+    const courtDimensions = fixedDimensions || { width: court.clientWidth, height: court.clientHeight };
+
+    if (window.debugMode) {
+        console.log(`\n=== CREATING ELEMENT: ${element.type} ===`);
+        console.log(`Input coordinates: (${element.position?.xPercent}%, ${element.position?.yPercent}%)`);
+        console.log(`Using court dimensions: ${courtDimensions.width}x${courtDimensions.height}px`);
+    }
+
+    // Track court dimensions for consistency
+    if (!window.lastCourtDimensions) {
+        window.lastCourtDimensions = courtDimensions;
+    } else {
+        if (window.lastCourtDimensions.width !== courtDimensions.width ||
+            window.lastCourtDimensions.height !== courtDimensions.height) {
+            console.error('⚠️ COURT DIMENSIONS CHANGED!');
+            console.error(`  Was: ${window.lastCourtDimensions.width}x${window.lastCourtDimensions.height}`);
+            console.error(`  Now: ${courtDimensions.width}x${courtDimensions.height}`);
+        }
+        window.lastCourtDimensions = courtDimensions;
+    }
+
+    // Extra debugging for cone positioning
+    if (window.debugMode && element.type === 'cone') {
+        console.log('CONE DEBUG - Raw position:', element.position);
+    }
     
     // Use the new coordinate system to convert percentage to pixels with validation
-    const position = CoordinateSystem.percentPositionToPixels(element, court);
+    // Pass fixed dimensions to ensure consistent positioning
+    const position = CoordinateSystem.percentPositionToPixels(element, court, courtDimensions);
 
     if (position.clamped) {
         console.warn(`Element ${element.type} position was adjusted to stay within court boundaries`);
     }
 
-    console.log(`Final position: (${position.x}, ${position.y})`);
+    if (window.debugMode) {
+        console.log(`Final position: (${position.x}, ${position.y})`);
+    }
+
+    // ALWAYS check for Y-axis consistency (not just in debug mode)
+    if (element.type === 'cone') {
+        // Store cone positions to check for symmetry
+        if (!window.conePositions) window.conePositions = [];
+        window.conePositions.push({
+            xPercent: element.position?.xPercent,
+            yPercent: element.position?.yPercent,
+            x: position.x,
+            y: position.y
+        });
+
+        // Always log cone creation for debugging
+        console.log(`Created cone at (${element.position?.xPercent}%, ${element.position?.yPercent}%) -> pixel position (${position.x.toFixed(2)}, ${position.y.toFixed(2)})`);
+
+        // Check if we have matching Y coordinates
+        const sameLevelCones = window.conePositions.filter(c =>
+            Math.abs(c.yPercent - element.position?.yPercent) < 0.1
+        );
+        if (sameLevelCones.length > 1) {
+            const yPositions = sameLevelCones.map(c => c.y);
+            const yDifference = Math.max(...yPositions) - Math.min(...yPositions);
+
+            console.log(`Checking Y-axis alignment for cones at Y=${element.position?.yPercent}%:`);
+            sameLevelCones.forEach(c => {
+                console.log(`  Cone at X=${c.xPercent}% -> pixel Y=${c.y.toFixed(2)}`);
+            });
+
+            if (yDifference > 0.5) {
+                console.error(`⚠️ Y-AXIS MISMATCH DETECTED!`);
+                console.error(`  Cones at Y=${element.position?.yPercent}% have different pixel Y positions!`);
+                console.error(`  Y pixel positions:`, yPositions.map(y => y.toFixed(2)));
+                console.error(`  Difference: ${yDifference.toFixed(2)}px`);
+                console.error(`  This will cause visual asymmetry!`);
+            } else {
+                console.log(`✅ Y-axis alignment OK (difference: ${yDifference.toFixed(2)}px)`);
+            }
+        }
+    }
 
     // Debug mode visualization
     if (window.debugMode) {
         addDebugVisualization(court);
     }
-    
-    
+
+
     if (element.type === 'attacker' || element.type === 'defender') {
         // Create student element
         const item = document.createElement('div');
@@ -1289,10 +1725,6 @@ function createElementFromJson(element, court) {
             nameLabel.style.whiteSpace = 'nowrap';
             item.appendChild(nameLabel);
         }
-        
-        // Apply the validated position
-        item.style.left = position.x + 'px';
-        item.style.top = position.y + 'px';
 
         // Add remove button
         const removeBtn = document.createElement('button');
@@ -1302,9 +1734,33 @@ function createElementFromJson(element, court) {
             e.stopPropagation();
             court.removeChild(item);
         };
-        
+
         item.appendChild(removeBtn);
+
+        // Set position directly
+        item.style.left = position.x + 'px';
+        item.style.top = position.y + 'px';
+
+        // Append to DOM
         court.appendChild(item);
+
+        // Verify actual position after adding to DOM
+        setTimeout(() => {
+            const actualRect = item.getBoundingClientRect();
+            const courtRect = court.getBoundingClientRect();
+            const relativeY = actualRect.top - courtRect.top;
+            const expectedY = position.y;
+
+            if (Math.abs(relativeY - expectedY) > 5) {
+                console.error(`⚠️ POSITION MISMATCH for ${element.type}!`);
+                console.error(`  Expected Y: ${expectedY.toFixed(2)}px`);
+                console.error(`  Actual Y: ${relativeY.toFixed(2)}px`);
+                console.error(`  Difference: ${(relativeY - expectedY).toFixed(2)}px`);
+                console.error(`  Court height: ${court.clientHeight}px`);
+                console.error(`  Court offsetHeight: ${court.offsetHeight}px`);
+            }
+        }, 0);
+
         makeDraggable(item);
         
     } else {
@@ -1313,10 +1769,6 @@ function createElementFromJson(element, court) {
         item.className = `draggable-item ${element.type}`;
         item.id = 'item-' + (++itemCounter);
         item.dataset.phase = currentPhase;
-        
-        // Apply the validated position
-        item.style.left = position.x + 'px';
-        item.style.top = position.y + 'px';
 
         // Add remove button
         const removeBtn = document.createElement('button');
@@ -1326,16 +1778,43 @@ function createElementFromJson(element, court) {
             e.stopPropagation();
             court.removeChild(item);
         };
-        
+
         item.appendChild(removeBtn);
+
+        // Set position directly
+        item.style.left = position.x + 'px';
+        item.style.top = position.y + 'px';
+
+        // Append to DOM
         court.appendChild(item);
+
+        // Verify actual position after adding to DOM
+        setTimeout(() => {
+            const actualRect = item.getBoundingClientRect();
+            const courtRect = court.getBoundingClientRect();
+            const relativeY = actualRect.top - courtRect.top;
+            const expectedY = position.y;
+
+            if (Math.abs(relativeY - expectedY) > 5) {
+                console.error(`⚠️ POSITION MISMATCH for ${element.type}!`);
+                console.error(`  Expected Y: ${expectedY.toFixed(2)}px`);
+                console.error(`  Actual Y: ${relativeY.toFixed(2)}px`);
+                console.error(`  Difference: ${(relativeY - expectedY).toFixed(2)}px`);
+                console.error(`  Court height: ${court.clientHeight}px`);
+                console.error(`  Court offsetHeight: ${court.offsetHeight}px`);
+            }
+        }, 0);
+
         makeDraggable(item);
     }
 }
 
-function createAnnotationFromJson(annotation, court) {
+function createAnnotationFromJson(annotation, court, fixedDimensions) {
+    // Use fixed dimensions if provided (for AI layouts), otherwise use current court dimensions
+    const courtDimensions = fixedDimensions || { width: court.clientWidth, height: court.clientHeight };
     // Use the new coordinate system to convert percentage to pixels with validation
-    const position = CoordinateSystem.percentPositionToPixels(annotation, court);
+    // Pass fixed dimensions to ensure consistent positioning
+    const position = CoordinateSystem.percentPositionToPixels(annotation, court, courtDimensions);
 
     if (position.clamped) {
         console.warn(`Annotation position was adjusted to stay within court boundaries`);
@@ -1835,6 +2314,9 @@ window.exportToPDF = exportToPDF;
 window.analyzeLayout = analyzeLayout;
 window.applyLayoutFromJson = applyLayoutFromJson;
 window.applySelectedLayout = applySelectedLayout;
+window.previewSelectedLayout = previewSelectedLayout;
+window.closeLayoutPreviewModal = closeLayoutPreviewModal;
+window.applyPreviewedLayout = applyPreviewedLayout;
 window.viewLastAnalysis = viewLastAnalysis;
 window.runNewAnalysis = runNewAnalysis;
 window.updateAnalyzeButton = updateAnalyzeButton;
