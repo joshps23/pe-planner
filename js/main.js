@@ -2439,18 +2439,44 @@ function initializeZIndexes() {
 function showContextMenu(e, element) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Ensure all elements have z-index before showing menu
     initializeZIndexes();
-    
+
     const contextMenu = document.getElementById('contextMenu');
     contextMenuTarget = element;
-    
+
+    // Show/hide role change section based on whether it's a student
+    const roleChangeSection = document.getElementById('roleChangeSection');
+    if (element.classList.contains('student')) {
+        roleChangeSection.style.display = 'block';
+
+        // Hide the current role option
+        const currentRole = element.classList.contains('attacker') ? 'attacker' :
+                           element.classList.contains('defender') ? 'defender' : 'observer';
+
+        // Show all role options
+        roleChangeSection.querySelectorAll('.context-menu-item').forEach(item => {
+            item.style.display = 'flex';
+        });
+
+        // Optionally hide the current role to avoid redundant option
+        if (currentRole === 'attacker') {
+            roleChangeSection.children[0].style.display = 'none';
+        } else if (currentRole === 'defender') {
+            roleChangeSection.children[1].style.display = 'none';
+        } else if (currentRole === 'observer') {
+            roleChangeSection.children[2].style.display = 'none';
+        }
+    } else {
+        roleChangeSection.style.display = 'none';
+    }
+
     // Position the context menu at cursor location
     contextMenu.style.left = e.clientX + 'px';
     contextMenu.style.top = e.clientY + 'px';
     contextMenu.style.display = 'block';
-    
+
     // Hide menu when clicking elsewhere
     document.addEventListener('click', hideContextMenu);
 }
@@ -2580,6 +2606,38 @@ function deleteElement() {
     hideContextMenu();
 }
 
+function changePlayerRole(newRole) {
+    if (!contextMenuTarget || !contextMenuTarget.classList.contains('student')) {
+        hideContextMenu();
+        return;
+    }
+
+    // Get the current name if it exists
+    const nameLabel = contextMenuTarget.querySelector('div');
+    let playerName = null;
+    if (nameLabel && nameLabel.style.position === 'absolute' && nameLabel.style.bottom) {
+        playerName = nameLabel.textContent;
+    }
+
+    // Remove all role classes
+    contextMenuTarget.classList.remove('attacker', 'defender', 'observer');
+
+    // Add the new role class
+    contextMenuTarget.classList.add(newRole);
+
+    // Update the name label color if it exists
+    if (nameLabel && playerName) {
+        const newColor = newRole === 'attacker' ? '#e74c3c' :
+                        newRole === 'defender' ? '#3498db' : '#10b981';
+        nameLabel.style.color = newColor;
+    }
+
+    hideContextMenu();
+
+    // Trigger analyze button state update in case this affects the layout
+    updateAnalyzeFabState();
+}
+
 function attachContextMenu(element) {
     element.addEventListener('contextmenu', (e) => showContextMenu(e, element));
 }
@@ -2645,5 +2703,6 @@ window.bringForward = bringForward;
 window.sendBackward = sendBackward;
 window.duplicateElement = duplicateElement;
 window.deleteElement = deleteElement;
+window.changePlayerRole = changePlayerRole;
 window.submitCustomPrompt = submitCustomPrompt;
 window.closeCustomPrompt = closeCustomPrompt;

@@ -316,6 +316,20 @@
     
     <!-- Context Menu for Layer Adjustment -->
     <div id="contextMenu" class="context-menu" style="display: none;">
+        <!-- Role Change Options (only shown for students) -->
+        <div id="roleChangeSection" style="display: none;">
+            <div class="context-menu-item" onclick="changePlayerRole('attacker')">
+                <span>🔴</span> Change to Attacker
+            </div>
+            <div class="context-menu-item" onclick="changePlayerRole('defender')">
+                <span>🔵</span> Change to Defender
+            </div>
+            <div class="context-menu-item" onclick="changePlayerRole('observer')">
+                <span>🟢</span> Change to Observer
+            </div>
+            <div class="context-menu-divider"></div>
+        </div>
+
         <div class="context-menu-item" onclick="bringToFront()">
             <span>⬆️</span> Bring to Front
         </div>
