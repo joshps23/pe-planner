@@ -1,6 +1,13 @@
 // API Configuration and AI Assistant Functions
 let geminiApiKey = '';
 
+// Supabase configuration
+const SUPABASE_URL = 'https://kroomymtzniuytihbmmv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtyb29teW10em5pdXl0aWhibW12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMjI1ODAsImV4cCI6MjA3MzU5ODU4MH0.6NE1m78kGmVUAkMAVYENWNZsAaAdJ67C5KmOQ6nj9tA';
+
+// Toggle for using Supabase vs Netlify (can be changed via console)
+window.USE_SUPABASE = true; // Set to true to use Supabase Edge Functions
+
 // Layout validation function to ensure coordinates are within safe bounds
 function validateLayout(layout) {
     console.log('=== VALIDATING LAYOUT ===');
@@ -453,11 +460,25 @@ async function analyzeLayout() {
     showLoadingModal();
 
     try {
-        const response = await fetch('/.netlify/functions/analyzeLayout', {
-            method: 'POST',
-            headers: {
+        // Choose endpoint based on configuration
+        const endpoint = window.USE_SUPABASE
+            ? `${SUPABASE_URL}/functions/v1/analyze-layout`
+            : '/.netlify/functions/analyzeLayout';
+
+        const headers = window.USE_SUPABASE
+            ? {
                 'Content-Type': 'application/json',
-            },
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+              }
+            : {
+                'Content-Type': 'application/json'
+              };
+
+        console.log(`Using ${window.USE_SUPABASE ? 'Supabase' : 'Netlify'} Edge Function`);
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: headers,
             body: JSON.stringify({
                 layoutData: description
             })
@@ -489,16 +510,31 @@ async function analyzeLayout() {
             throw new Error(`Invalid response format: ${textResponse.substring(0, 100)}...`);
         }
         
-        if (data.suggestions) {
+        // Handle different response formats from Netlify vs Supabase
+        let suggestions = data.suggestions || '';
+        let layoutJson = data.layoutJson;
+        let review = data.review || '';
+
+        // If using Supabase and layouts are at top level, restructure
+        if (window.USE_SUPABASE && data.layouts && !data.layoutJson) {
+            layoutJson = { layouts: data.layouts };
+        }
+
+        // Ensure suggestions is a string for the UI function
+        if (typeof suggestions !== 'string') {
+            suggestions = JSON.stringify(suggestions, null, 2);
+        }
+
+        if (suggestions || layoutJson) {
             // Log raw AI response for debugging
             console.log('=== RAW AI RESPONSE ===');
             console.log('Full response:', JSON.stringify(data, null, 2));
-            if (data.review) {
-                console.log('Review received:', data.review.substring(0, 200) + '...');
+            if (review) {
+                console.log('Review received:', typeof review === 'string' ? review.substring(0, 200) + '...' : review);
             }
-            if (data.layoutJson && data.layoutJson.layouts) {
-                console.log('Layouts received:', data.layoutJson.layouts.length);
-                data.layoutJson.layouts.forEach((layout, idx) => {
+            if (layoutJson && layoutJson.layouts) {
+                console.log('Layouts received:', layoutJson.layouts.length);
+                layoutJson.layouts.forEach((layout, idx) => {
                     console.log(`Layout ${idx} - ${layout.name}:`);
                     if (layout.elements) {
                         layout.elements.forEach((el, elIdx) => {
@@ -510,15 +546,15 @@ async function analyzeLayout() {
             console.log('======================');
 
             // Validate and fix layout coordinates before storing/displaying
-            if (data.layoutJson) {
-                validateLayout(data.layoutJson);
+            if (layoutJson) {
+                validateLayout(layoutJson);
             }
 
             // Store the analysis results for later retrieval (including review)
             lastAnalysisResults = {
-                review: data.review || '',  // Include the review
-                suggestions: data.suggestions,
-                layoutJson: data.layoutJson,
+                review: review || '',
+                suggestions: suggestions,
+                layoutJson: layoutJson,
                 timestamp: new Date()
             };
             lastAnalysisTimestamp = Date.now();
@@ -537,7 +573,7 @@ async function analyzeLayout() {
                 showAIStatus('Analysis complete!', true);
             }
 
-            showAISuggestions(data.suggestions, data.layoutJson, data.review);
+            showAISuggestions(suggestions, layoutJson, review);
             updateAnalyzeButton(); // Update button text
         } else {
             throw new Error('No suggestions received from AI');

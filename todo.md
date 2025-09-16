@@ -1,5 +1,104 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-09-16 - Supabase Edge Functions Integration & AI Improvements
+
+### ✅ Completed Tasks
+
+#### Fixed AI Response Format Compatibility
+- **Problem**: TypeError when using Supabase - `suggestions.replace is not a function`
+- **Solution**: Updated api.js to handle different response formats from Netlify vs Supabase
+- **Changes**: Normalized response handling to work with both endpoints seamlessly
+
+#### Improved AI Prompt for Better Game Instructions
+- **Problem 1**: AI was using percentages (e.g., "Zone 1 is 25%-40%") instead of physical landmarks
+- **Solution**: Added explicit rules to reference cones physically (e.g., "area between the red and blue cones")
+- **Problem 2**: AI described cone zones but didn't include cones in the layout
+- **Solution**: Made it MANDATORY to include all equipment in elements array
+- **Added validation**: Auto-adds missing cones if AI fails to include them
+
+#### Upgraded AI Model Configuration
+- **Changed model**: From `gemini-1.5-flash` to `gemini-2.5-pro` for better quality
+- **Increased tokens**: From 10,000 to 30,000 for more comprehensive responses
+- **Result**: Higher quality, more detailed activity suggestions
+
+#### Successfully Integrated Supabase Edge Functions
+- **Problem**: Netlify Functions timing out (504 Gateway Timeout) due to 26-second limit
+- **Root Cause**: Large prompt with 4.7KB example JSON taking too long to process
+- **Solution**: Migrated to Supabase Edge Functions with 60-second timeout
+
+#### Implementation Details
+1. **Infrastructure Setup**:
+   - Installed Supabase CLI via Homebrew
+   - Initialized Supabase in project (`supabase init`)
+   - Created `analyze-layout` Edge Function
+
+2. **Edge Function Development**:
+   - Ported `analyzeLayout.mjs` to TypeScript/Deno
+   - Removed large example JSON from prompt (saved ~4.7KB)
+   - Switched to `gemini-1.5-flash` model for faster responses
+   - Set 55-second timeout (leaving 5-second buffer)
+   - Reduced maxOutputTokens from 25000 to 10000
+
+3. **Frontend Integration**:
+   - Updated `js/api.js` with toggle between Netlify/Supabase
+   - Added Supabase credentials (URL and anon key)
+   - Set `window.USE_SUPABASE = true` to enable
+
+4. **Files Created/Modified**:
+   - Created: `supabase/functions/analyze-layout/index.ts`
+   - Created: `supabase/functions/analyze-layout/index-standalone.ts` (for easy deployment)
+   - Created: `supabase/functions/_shared/cors.ts`
+   - Modified: `js/api.js` (added Supabase endpoint support)
+   - Modified: `.env` (added Supabase credentials)
+
+5. **Deployment Status**:
+   - Edge Function ready for deployment
+   - User needs to deploy via Supabase dashboard
+   - Environment variable `GOOGLE_GEMINI_API_KEY` needs to be set
+
+### 📋 Deployment Instructions for User
+1. Go to Supabase dashboard
+2. Create new Edge Function called `analyze-layout`
+3. Copy contents from `index-standalone.ts`
+4. Add environment variable: `GOOGLE_GEMINI_API_KEY`
+5. Deploy the function
+
+### 🎯 Results
+- **60-second timeout** vs 26-second Netlify limit
+- **Faster processing** with optimized prompt
+- **Better reliability** for complex layouts
+- **Seamless switching** between Netlify and Supabase
+
+## Session: 2025-09-16 - AI Layout Variation Fix & Power-up Improvements
+
+### ✅ Completed Tasks
+
+#### Fixed Duplicate Layout Coordinates in AI Prompt
+- **Problem**: All three AI-generated layout variations were returning identical element positions
+- **Root Cause**: The example JSON in the prompt showed all three layouts with the exact same coordinates
+- **Solution**: Updated the example to show three distinctly different layout patterns
+- **Implementation**:
+  - **Layout 1 (Ultimate Challenge Arena)**: Wide spread formation with corner cones and center elements
+  - **Layout 2 (Battle Royale Showdown)**: Compact central box formation with side zones
+  - **Layout 3 (Adventure Quest Champions)**: Progressive linear arrangement for level-based gameplay
+- **File Modified**: `netlify/functions/analyzeLayout.mjs` (lines 234)
+- **Result**: AI now generates unique positioning strategies for each layout variation
+
+#### Improved Power-up System to be Skill-Based and Realistic
+- **Problem**: Power-ups were unrealistic (e.g., "run faster") or unrelated to lesson objectives (e.g., "do jumping jacks")
+- **Solution**: Redesigned power-ups to be earned through lesson-specific skills
+- **Changes**:
+  - Removed magical abilities like "speed boost" and "teleport"
+  - Added skill-based activations tied to lesson objectives
+  - Power-ups now require demonstrating proper technique
+- **New Power-up Examples**:
+  - DOUBLE POINTS: Execute skill with proper technique (bounce pass, behind-back dribble)
+  - SAFETY ZONE: Complete 5 consecutive passes = 10-second safe zone from tagging
+  - FREEZE DEFENDERS: Complete challenge move = defenders count to 3 before moving
+  - SKILL CHAIN BONUS: Link 3 different skills = triple points on next score
+- **File Modified**: `netlify/functions/analyzeLayout.mjs` (lines 163-172)
+- **Result**: Power-ups now reinforce lesson skills rather than arbitrary exercises
+
 ## Session: 2025-09-16 - Cross-Platform Coordinate Mapping Fix
 
 ### ✅ Completed Tasks
