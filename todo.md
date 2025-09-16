@@ -1,5 +1,37 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-09-16 - Cross-Platform Coordinate Mapping Fix
+
+### ✅ Completed Tasks
+
+#### Fixed Mobile-Desktop Coordinate Mapping Issue
+- **Problem**: Elements positioned incorrectly when plans saved on desktop were loaded on mobile (and vice versa)
+- **Root Cause**: Positions were saved as pixel values that didn't scale to different screen sizes
+- **Solution**: Implemented percentage-based coordinate system
+- **Implementation**:
+  1. **Updated savePlan() function** (js/main.js:543-604):
+     - Now converts pixel positions to percentages before saving
+     - Stores both percentage and pixel values for backward compatibility
+     - Uses CoordinateSystem.pixelPositionToPercent() for conversion
+
+  2. **Updated loadPlan() function** (js/main.js:667-820):
+     - Detects if saved plan uses new percentage format or old pixel format
+     - For new format: Converts percentages to pixels based on current court size
+     - For old format: Estimates original court dimensions and converts to percentages
+     - Handles both items and annotations
+
+  3. **Backward Compatibility**:
+     - Automatically detects old pixel-based saves
+     - Converts old format to percentages on load
+     - Adjusts for mobile vs desktop original save context
+     - Maintains compatibility with all existing saved plans
+
+- **Technical Details**:
+  - Desktop court max-width: 900px
+  - Mobile court: variable width based on viewport
+  - Percentages stored as 0-100 values relative to court dimensions
+  - Element center positions calculated for accurate placement
+
 ## Session: 2025-09-16 - Gamification Enhancement for Fun Activities
 
 ### ✅ Completed Tasks

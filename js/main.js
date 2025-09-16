@@ -553,19 +553,49 @@ function savePlan() {
     court.querySelectorAll('.draggable-item').forEach(item => {
         const rect = item.getBoundingClientRect();
         const courtRect = court.getBoundingClientRect();
+
+        // Convert pixel positions to percentages for cross-platform compatibility
+        const pixelLeft = parseFloat(item.style.left) || 0;
+        const pixelTop = parseFloat(item.style.top) || 0;
+
+        // Use the coordinate system to convert to percentages
+        const percentPosition = CoordinateSystem.pixelPositionToPercent(
+            { type: item.classList[1] || 'equipment' }, // Get element type from class
+            pixelLeft,
+            pixelTop,
+            court
+        );
+
         items.push({
             id: item.id,
             className: item.className,
+            leftPercent: percentPosition.xPercent,  // Store as percentage
+            topPercent: percentPosition.yPercent,   // Store as percentage
+            // Keep pixel values for backward compatibility
             left: item.style.left,
             top: item.style.top,
             phase: item.dataset.phase || 'warmup',
             text: item.querySelector('div') ? item.querySelector('div').textContent : ''
         });
     });
-    
+
     const annotations = [];
     court.querySelectorAll('.annotation').forEach(ann => {
+        // Convert annotation positions to percentages too
+        const pixelLeft = parseFloat(ann.style.left) || 0;
+        const pixelTop = parseFloat(ann.style.top) || 0;
+
+        const percentPosition = CoordinateSystem.pixelPositionToPercent(
+            { type: 'annotation' },
+            pixelLeft,
+            pixelTop,
+            court
+        );
+
         annotations.push({
+            leftPercent: percentPosition.xPercent,  // Store as percentage
+            topPercent: percentPosition.yPercent,   // Store as percentage
+            // Keep pixel values for backward compatibility
             left: ann.style.left,
             top: ann.style.top,
             text: ann.querySelector('textarea').value,
@@ -640,11 +670,71 @@ function loadPlan() {
         item.id = itemData.id;
         item.dataset.phase = itemData.phase || 'warmup';
 
-        // Parse saved coordinates
-        const x = parseInt(itemData.left) || 0;
-        const y = parseInt(itemData.top) || 0;
+        let x, y;
 
-        // Apply coordinates directly without validation
+        // Check if plan uses percentage-based positioning (new format)
+        if (itemData.leftPercent !== undefined && itemData.topPercent !== undefined) {
+            // New format: Convert percentages to pixels for current court size
+            const elementType = itemData.className.split(' ')[1] || 'equipment';
+            const position = CoordinateSystem.percentPositionToPixels(
+                {
+                    type: elementType,
+                    position: {
+                        xPercent: itemData.leftPercent,
+                        yPercent: itemData.topPercent
+                    }
+                },
+                court
+            );
+            x = position.x;
+            y = position.y;
+        } else {
+            // Old format: Parse pixel values and convert to percentages, then back to pixels
+            // This ensures proper scaling for old saves
+            const pixelLeft = parseInt(itemData.left) || 0;
+            const pixelTop = parseInt(itemData.top) || 0;
+
+            // Get original court dimensions from when the plan was saved
+            const savedCourtWidth = plan.courtDimensions ? (plan.courtDimensions.width || 13.4) : 13.4;
+            const savedCourtHeight = plan.courtDimensions ? (plan.courtDimensions.height || 6.1) : 6.1;
+            const savedAspectRatio = savedCourtWidth / savedCourtHeight;
+
+            // Get current court dimensions to calculate scaling
+            const currentCourtBounds = CoordinateSystem.getCourtBoundaries(court);
+
+            // For old saves, we need to estimate the original court pixel dimensions
+            // Desktop typically has max-width: 900px, but we should check actual width
+            let estimatedOriginalWidth = 900; // Default desktop width
+
+            // If loading on mobile (narrower screen), adjust estimation
+            if (window.innerWidth <= 768) {
+                // Old mobile saves likely used full width minus padding
+                estimatedOriginalWidth = window.innerWidth - 40;
+            }
+
+            const estimatedOriginalHeight = estimatedOriginalWidth / savedAspectRatio;
+
+            // Convert old pixel positions to percentages
+            const xPercent = (pixelLeft / estimatedOriginalWidth) * 100;
+            const yPercent = (pixelTop / estimatedOriginalHeight) * 100;
+
+            // Now convert percentages to pixels for current court
+            const elementType = itemData.className.split(' ')[1] || 'equipment';
+            const position = CoordinateSystem.percentPositionToPixels(
+                {
+                    type: elementType,
+                    position: {
+                        xPercent: xPercent,
+                        yPercent: yPercent
+                    }
+                },
+                court
+            );
+            x = position.x;
+            y = position.y;
+        }
+
+        // Apply coordinates
         item.style.position = 'absolute';  // CRITICAL: Elements must be absolutely positioned
         item.style.left = x + 'px';
         item.style.top = y + 'px';
@@ -674,15 +764,70 @@ function loadPlan() {
         ann.className = 'annotation';
         ann.dataset.phase = annData.phase || 'warmup';
 
-        // Parse saved coordinates
-        let x = parseInt(annData.left) || 0;
-        let y = parseInt(annData.top) || 0;
+        let x, y;
 
-        // Use the new coordinate system for validation (annotations can go slightly outside)
-        const elementSize = CoordinateSystem.getElementSize(ann);
-        const boundaries = CoordinateSystem.getCourtBoundaries(court);
+        // Check if plan uses percentage-based positioning (new format)
+        if (annData.leftPercent !== undefined && annData.topPercent !== undefined) {
+            // New format: Convert percentages to pixels for current court size
+            const position = CoordinateSystem.percentPositionToPixels(
+                {
+                    type: 'annotation',
+                    position: {
+                        xPercent: annData.leftPercent,
+                        yPercent: annData.topPercent
+                    }
+                },
+                court
+            );
+            x = position.x;
+            y = position.y;
+        } else {
+            // Old format: Parse pixel values and convert to percentages, then back to pixels
+            const pixelLeft = parseInt(annData.left) || 0;
+            const pixelTop = parseInt(annData.top) || 0;
+
+            // Get original court dimensions from when the plan was saved
+            const savedCourtWidth = plan.courtDimensions ? (plan.courtDimensions.width || 13.4) : 13.4;
+            const savedCourtHeight = plan.courtDimensions ? (plan.courtDimensions.height || 6.1) : 6.1;
+            const savedAspectRatio = savedCourtWidth / savedCourtHeight;
+
+            // Get current court dimensions to calculate scaling
+            const currentCourtBounds = CoordinateSystem.getCourtBoundaries(court);
+
+            // For old saves, we need to estimate the original court pixel dimensions
+            // Desktop typically has max-width: 900px, but we should check actual width
+            let estimatedOriginalWidth = 900; // Default desktop width
+
+            // If loading on mobile (narrower screen), adjust estimation
+            if (window.innerWidth <= 768) {
+                // Old mobile saves likely used full width minus padding
+                estimatedOriginalWidth = window.innerWidth - 40;
+            }
+
+            const estimatedOriginalHeight = estimatedOriginalWidth / savedAspectRatio;
+
+            // Convert old pixel positions to percentages
+            const xPercent = (pixelLeft / estimatedOriginalWidth) * 100;
+            const yPercent = (pixelTop / estimatedOriginalHeight) * 100;
+
+            // Now convert percentages to pixels for current court
+            const position = CoordinateSystem.percentPositionToPixels(
+                {
+                    type: 'annotation',
+                    position: {
+                        xPercent: xPercent,
+                        yPercent: yPercent
+                    }
+                },
+                court
+            );
+            x = position.x;
+            y = position.y;
+        }
 
         // Allow annotations to extend slightly outside court (for notes on edges)
+        const elementSize = CoordinateSystem.getElementSize(ann);
+        const boundaries = CoordinateSystem.getCourtBoundaries(court);
         const safetyMargin = 10;
         const maxX = boundaries.width - elementSize.width + safetyMargin;
         const maxY = boundaries.height - elementSize.height + safetyMargin;
