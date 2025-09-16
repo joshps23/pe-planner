@@ -1,5 +1,36 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-09-17 - UI Fixes & Security Audit
+
+### ✅ Completed Tasks
+
+#### Fixed Header Title Centering
+- **Problem**: Title "PE Activity Consultant" was shifted left due to auth container
+- **Solution**:
+  - Modified `.header-top` to use `justify-content: center`
+  - Made auth container absolutely positioned to not affect flow
+  - Added `flex: 1` and `text-align: center` to title container
+- **Files Modified**:
+  - `css/styles.css`: Updated header layout CSS
+
+#### Security Audit for API Keys
+- **Performed full codebase scan for exposed credentials**
+- **Findings**:
+  - Google Gemini API key in `.env` (properly gitignored)
+  - Supabase anon key in multiple files (OK - designed to be public)
+  - Supabase URL exposed (OK - public information)
+- **Recommendations**:
+  - Regenerate Google Gemini API key as precaution
+  - Keep `.env` in gitignore
+  - Continue using Netlify Functions to hide API keys from frontend
+
+#### OAuth Display Name Issue
+- **Identified**: Google OAuth shows Supabase URL instead of app name
+- **Solutions Provided**:
+  - Option 1: Configure custom domain in Supabase (requires Pro plan)
+  - Option 2: Set up custom Google OAuth credentials (free)
+  - Option 3: Continue with current setup for development
+
 ## Session: 2025-09-17 - Google OAuth & Cloud Storage Integration
 
 ### ✅ Completed Tasks
@@ -29,6 +60,23 @@
   - `index.html`: Added Supabase script and auth UI
   - `css/styles.css`: Added auth-related styles
   - `js/main.js`: Updated save/load/delete functions for cloud integration
+
+#### Fixed Authentication Button Issues
+- **Problem**: Sign-in button was not visible and not clickable
+- **Root Causes**:
+  - Duplicate const declarations between api.js and auth.js preventing auth.js from loading
+  - Header ::before pseudo-element blocking clicks with overlay
+  - Missing pointer-events and z-index properties
+- **Solutions**:
+  - Removed duplicate SUPABASE_URL and SUPABASE_ANON_KEY declarations from auth.js
+  - Added `pointer-events: none` to header::before overlay
+  - Added `z-index: 10` to auth-container
+  - Added proper error handling and debugging logs
+  - Created fallback functions for debugging
+- **Files Modified**:
+  - `js/auth.js`: Removed duplicate const declarations, added error handling
+  - `css/styles.css`: Fixed pointer-events and z-index issues
+  - `index.html`: Added debug fallback scripts
 
 ## Session: 2025-09-17 - Observer Player Type & Mobile Context Menu
 
