@@ -1353,13 +1353,7 @@
             height: 100%;
             width: 0%;
             border-radius: 10px;
-            animation: loadingProgress 3s ease-in-out infinite;
-        }
-
-        @keyframes loadingProgress {
-            0% { width: 0%; }
-            50% { width: 70%; }
-            100% { width: 95%; }
+            transition: width 1s linear;
         }
 
         .loading-tips {

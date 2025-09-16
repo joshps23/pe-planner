@@ -421,13 +421,25 @@ function showLoadingModal() {
     const modal = document.getElementById('loadingModal');
     if (modal) {
         modal.style.display = 'flex';
-        // Reset animation by removing and re-adding
+        // Reset and start progress bar animation
         const progressBar = modal.querySelector('.loading-progress-bar');
         if (progressBar) {
             progressBar.style.animation = 'none';
-            setTimeout(() => {
-                progressBar.style.animation = 'loadingProgress 3s ease-in-out infinite';
-            }, 10);
+            progressBar.style.width = '0%';
+
+            // Start progress animation - 25 seconds, 4% per second
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 4;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(progressInterval);
+                }
+                progressBar.style.width = progress + '%';
+            }, 1000);
+
+            // Store interval ID for cleanup
+            progressBar.dataset.intervalId = progressInterval;
         }
 
         // Randomize loading tips
@@ -448,6 +460,13 @@ function showLoadingModal() {
 function hideLoadingModal() {
     const modal = document.getElementById('loadingModal');
     if (modal) {
+        // Clear progress interval if it exists
+        const progressBar = modal.querySelector('.loading-progress-bar');
+        if (progressBar && progressBar.dataset.intervalId) {
+            clearInterval(progressBar.dataset.intervalId);
+            delete progressBar.dataset.intervalId;
+            progressBar.style.width = '0%';
+        }
         modal.style.display = 'none';
     }
 }
