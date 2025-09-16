@@ -1,5 +1,52 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-09-17 - Observer Player Type & Mobile Context Menu
+
+### ✅ Completed Tasks
+
+#### Added Observer Player Type
+- **Feature**: Third player type (Observer) with green icon
+- **Implementation**:
+  - Added observer.png as the third player icon (green)
+  - Updated HTML with Observer button in controls
+  - Added CSS styles for observer elements (main, alternative, and preview)
+  - Modified main.js to handle observer type with green color (#10b981)
+  - Updated api.js to capture observers in layout analysis
+  - Enhanced Supabase Edge Function to count and handle observers
+- **Use Cases**: Observers can serve as referees, judges, scorekeepers, or rotation players
+- **Files Modified**:
+  - `index.html`: Added Observer button
+  - `css/styles.css`: Added observer styles
+  - `js/main.js`: Updated addStudent function
+  - `js/api.js`: Modified layout capture for observers
+  - `supabase/functions/analyze-layout/index-standalone.ts`: Added observer handling
+
+#### Right-Click Role Change Feature
+- **Feature**: Players can change roles via right-click context menu
+- **Implementation**:
+  - Added "Change Role" section to context menu (appears only for players)
+  - Created changePlayerRole function that preserves player names
+  - Current role is hidden from options to avoid redundancy
+  - Name label colors update automatically (red/blue/green)
+- **Files Modified**:
+  - `index.html`: Added role change options to context menu
+  - `js/main.js`: Added changePlayerRole function and menu logic
+
+#### Long-Press Context Menu for Mobile
+- **Feature**: Mobile users can long-press (500ms) players to show context menu
+- **Implementation**:
+  - Added touch event handlers for long-press detection
+  - 10px movement threshold prevents accidental triggers
+  - Haptic feedback on supported devices
+  - Mobile-optimized menu with 44px minimum touch targets
+  - Backdrop overlay for easier dismissal
+  - No conflicts with drag-and-drop functionality
+- **Desktop Compatibility**: Right-click functionality remains unchanged
+- **Files Modified**:
+  - `js/main.js`: Added long-press handlers and touch support
+  - `css/styles.css`: Added mobile-specific context menu styles
+  - `index.html`: Added backdrop element for mobile
+
 ## Session: 2025-09-16 - Supabase Edge Functions Integration & AI Improvements
 
 ### ✅ Completed Tasks
@@ -365,5 +412,5 @@ All reported issues have been resolved.
 
 ---
 
-*Last Updated: 2025-09-16*
-*Next Session: Test gamified activities with users and gather feedback*
+*Last Updated: 2025-09-17*
+*Next Session: Continue enhancing mobile experience and test with users*

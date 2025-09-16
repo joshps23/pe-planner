@@ -30,6 +30,13 @@ let lassoElement = null;
 let contextMenuTarget = null;
 let currentZIndex = 100;
 
+// Long-press detection variables
+let longPressTimer = null;
+let isLongPress = false;
+let touchStartPos = { x: 0, y: 0 };
+const LONG_PRESS_DURATION = 500; // milliseconds
+const TOUCH_MOVE_THRESHOLD = 10; // pixels
+
 // Custom prompt variables
 let customPromptCallback = null;
 let customPromptType = null;
@@ -252,7 +259,17 @@ function startDrag(e) {
     if (e.target.tagName === 'TEXTAREA' && document.activeElement === e.target) {
         return;
     }
-    
+
+    // Don't start drag if a long-press is in progress or was just triggered
+    if (isLongPress || longPressTimer) {
+        // Cancel the long-press timer if it's still running
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        return;
+    }
+
     e.preventDefault();
     // Find the draggable element (could be the target itself or a parent)
     const element = e.target.closest('.draggable-item, .annotation') || e.target;
@@ -2472,19 +2489,81 @@ function showContextMenu(e, element) {
         roleChangeSection.style.display = 'none';
     }
 
-    // Position the context menu at cursor location
-    contextMenu.style.left = e.clientX + 'px';
-    contextMenu.style.top = e.clientY + 'px';
+    // Get position based on event type (mouse vs touch)
+    let posX, posY;
+    if (e.touches && e.touches.length > 0) {
+        // Touch event
+        posX = e.touches[0].clientX;
+        posY = e.touches[0].clientY;
+    } else if (e.clientX !== undefined && e.clientY !== undefined) {
+        // Mouse event
+        posX = e.clientX;
+        posY = e.clientY;
+    } else {
+        // Fallback
+        posX = 100;
+        posY = 100;
+    }
+
+    // Position the context menu and ensure it stays within viewport
+    const menuRect = contextMenu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Adjust position if menu would go off-screen
+    if (posX + 200 > viewportWidth) { // Assume menu width is ~200px
+        posX = viewportWidth - 200;
+    }
+    if (posY + menuRect.height > viewportHeight) {
+        posY = viewportHeight - menuRect.height - 10;
+    }
+
+    contextMenu.style.left = posX + 'px';
+    contextMenu.style.top = posY + 'px';
     contextMenu.style.display = 'block';
 
-    // Hide menu when clicking elsewhere
-    document.addEventListener('click', hideContextMenu);
+    // Add event listeners for closing menu
+    if ('ontouchstart' in window && e.touches) {
+        // For mobile, add touch listener and show backdrop
+        document.addEventListener('touchstart', hideContextMenuTouch);
+
+        // Show backdrop on mobile
+        const backdrop = document.getElementById('contextMenuBackdrop');
+        if (backdrop) {
+            backdrop.classList.add('active');
+            backdrop.addEventListener('touchstart', hideContextMenu);
+        }
+    } else {
+        // For desktop, add click listener
+        document.addEventListener('click', hideContextMenu);
+    }
+}
+
+// Hide context menu on touch outside (mobile)
+function hideContextMenuTouch(e) {
+    const contextMenu = document.getElementById('contextMenu');
+    if (!contextMenu.contains(e.target)) {
+        hideContextMenu();
+    }
 }
 
 function hideContextMenu() {
     const contextMenu = document.getElementById('contextMenu');
     contextMenu.style.display = 'none';
+
+    // Remove both click and touch event listeners
     document.removeEventListener('click', hideContextMenu);
+    document.removeEventListener('touchstart', hideContextMenuTouch);
+
+    // Hide and clean up backdrop
+    const backdrop = document.getElementById('contextMenuBackdrop');
+    if (backdrop) {
+        backdrop.classList.remove('active');
+        backdrop.removeEventListener('touchstart', hideContextMenu);
+    }
+
+    // Reset long-press state
+    isLongPress = false;
 }
 
 function bringToFront() {
@@ -2639,7 +2718,77 @@ function changePlayerRole(newRole) {
 }
 
 function attachContextMenu(element) {
+    // Desktop right-click
     element.addEventListener('contextmenu', (e) => showContextMenu(e, element));
+
+    // Mobile long-press
+    if ('ontouchstart' in window) {
+        element.addEventListener('touchstart', (e) => handleLongPressStart(e, element), { passive: false });
+        element.addEventListener('touchmove', handleLongPressMove, { passive: false });
+        element.addEventListener('touchend', handleLongPressEnd, { passive: false });
+        element.addEventListener('touchcancel', handleLongPressEnd, { passive: false });
+    }
+}
+
+// Long-press handlers for mobile
+function handleLongPressStart(e, element) {
+    // Don't interfere with multi-touch gestures
+    if (e.touches.length !== 1) return;
+
+    // Store the initial touch position
+    touchStartPos = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+    };
+
+    // Start the long-press timer
+    longPressTimer = setTimeout(() => {
+        isLongPress = true;
+
+        // Trigger haptic feedback if available
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
+        }
+
+        // Show context menu
+        showContextMenu(e, element);
+
+        // Prevent the default touch behavior
+        e.preventDefault();
+    }, LONG_PRESS_DURATION);
+}
+
+function handleLongPressMove(e) {
+    if (!longPressTimer) return;
+
+    // Check if finger moved too much
+    const touch = e.touches[0];
+    const moveDistance = Math.sqrt(
+        Math.pow(touch.clientX - touchStartPos.x, 2) +
+        Math.pow(touch.clientY - touchStartPos.y, 2)
+    );
+
+    // Cancel long-press if moved beyond threshold
+    if (moveDistance > TOUCH_MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+        isLongPress = false;
+    }
+}
+
+function handleLongPressEnd(e) {
+    // Clear the timer if it's still running
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+
+    // If long-press was triggered, prevent default touch end behavior
+    if (isLongPress) {
+        e.preventDefault();
+        e.stopPropagation();
+        isLongPress = false;
+    }
 }
 
 // Initialize the application when DOM is loaded

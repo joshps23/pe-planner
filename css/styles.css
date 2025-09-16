@@ -469,6 +469,52 @@
             margin: 4px 8px;
         }
 
+        /* Mobile-specific context menu styles */
+        @media (max-width: 768px) {
+            .context-menu {
+                min-width: 220px;
+                font-size: 16px; /* Larger font for mobile */
+            }
+
+            .context-menu-item {
+                padding: 12px 16px; /* Larger touch targets (min 44px height) */
+                min-height: 44px;
+            }
+
+            /* Add backdrop for easier dismissal on mobile */
+            .context-menu-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.3);
+                z-index: 9999;
+                display: none;
+            }
+
+            .context-menu-backdrop.active {
+                display: block;
+            }
+        }
+
+        /* Visual feedback for long-press */
+        .long-press-active {
+            animation: longPressScale 0.5s ease-out;
+        }
+
+        @keyframes longPressScale {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(0.95);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
         /* Custom Prompt Modal Styles */
         .custom-prompt-modal {
             position: fixed;
