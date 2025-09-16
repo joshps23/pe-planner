@@ -682,6 +682,25 @@
             display: none;
         }
 
+        .observer {
+            width: 80px;
+            height: 80px;
+            background-image: url('../observer.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .observer::before {
+            content: '';
+            display: none;
+        }
+
         /* Alternative options for variety */
         .student.alt-style.attacker {
             background-image: url('../attacker.png');
@@ -706,6 +725,19 @@
         }
 
         .student.alt-style.defender::before {
+            display: none;
+        }
+
+        .student.alt-style.observer {
+            background-image: url('../observer.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .student.alt-style.observer::before {
             display: none;
         }
 
@@ -1926,6 +1958,17 @@
             background-position: center;
             background-color: #3b82f6;
             border: 1px solid #2563eb;
+        }
+
+        .layout-preview-element.observer {
+            width: 11px;
+            height: 11px;
+            background-image: url('../observer.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #10b981;
+            border: 1px solid #059669;
         }
         
         .layout-preview-element.net {

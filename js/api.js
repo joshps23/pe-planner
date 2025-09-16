@@ -136,7 +136,8 @@ function captureCourtLayout() {
                 if (nameLabel && !nameLabel.classList.contains('remove-btn')) {
                     element.name = nameLabel.textContent;
                 }
-                element.role = item.classList.contains('attacker') ? 'attacker' : 'defender';
+                element.role = item.classList.contains('attacker') ? 'attacker' :
+                               item.classList.contains('defender') ? 'defender' : 'observer';
             }
             
             layout.elements.push(element);
@@ -185,7 +186,8 @@ function captureCourtLayout() {
 
 function getElementType(element) {
     if (element.classList.contains('student')) {
-        return element.classList.contains('attacker') ? 'attacker' : 'defender';
+        return element.classList.contains('attacker') ? 'attacker' :
+               element.classList.contains('defender') ? 'defender' : 'observer';
     } else if (element.classList.contains('cone')) {
         return 'cone';
     } else if (element.classList.contains('racket')) {

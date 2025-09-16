@@ -155,8 +155,9 @@ async function addStudent(type) {
         console.error('Court element not found!');
         return;
     }
-    
-    const studentType = type === 'attacker' ? 'Attacker' : 'Defender';
+
+    const studentType = type === 'attacker' ? 'Attacker' :
+                       type === 'defender' ? 'Defender' : 'Observer';
     const name = await showCustomPrompt(
         `Add ${studentType}`,
         `Enter student name:`,
@@ -164,17 +165,17 @@ async function addStudent(type) {
         'text',
         `Leave blank to use default label "${studentType.toUpperCase()}"`
     );
-    
+
     // If user cancelled, don't add student
     if (name === null) return;
-    
+
     console.log('Adding student:', type);
-    
+
     const item = document.createElement('div');
     item.className = `draggable-item student ${type}`;
     item.id = 'item-' + (++itemCounter);
     item.dataset.phase = currentPhase;
-    
+
     if (name && name.trim()) {
         const nameLabel = document.createElement('div');
         nameLabel.textContent = name.trim();
@@ -183,7 +184,8 @@ async function addStudent(type) {
         nameLabel.style.left = '50%';
         nameLabel.style.transform = 'translateX(-50%)';
         nameLabel.style.fontSize = '11px';
-        nameLabel.style.color = type === 'attacker' ? '#e74c3c' : '#3498db';
+        nameLabel.style.color = type === 'attacker' ? '#e74c3c' :
+                                type === 'defender' ? '#3498db' : '#10b981';
         nameLabel.style.fontWeight = 'bold';
         nameLabel.style.whiteSpace = 'nowrap';
         nameLabel.style.textAlign = 'center';
@@ -2022,13 +2024,13 @@ function createElementFromJson(element, court, fixedDimensions) {
     }
 
 
-    if (element.type === 'attacker' || element.type === 'defender') {
+    if (element.type === 'attacker' || element.type === 'defender' || element.type === 'observer') {
         // Create student element
         const item = document.createElement('div');
         item.className = `draggable-item student ${element.type}`;
         item.id = 'item-' + (++itemCounter);
         item.dataset.phase = currentPhase;
-        
+
         // Add name label if provided
         if (element.name) {
             const nameLabel = document.createElement('div');
@@ -2038,7 +2040,8 @@ function createElementFromJson(element, court, fixedDimensions) {
             nameLabel.style.left = '50%';
             nameLabel.style.transform = 'translateX(-50%)';
             nameLabel.style.fontSize = '8px';
-            nameLabel.style.color = element.type === 'attacker' ? '#e74c3c' : '#3498db';
+            nameLabel.style.color = element.type === 'attacker' ? '#e74c3c' :
+                                    element.type === 'defender' ? '#3498db' : '#10b981';
             nameLabel.style.fontWeight = 'bold';
             nameLabel.style.whiteSpace = 'nowrap';
             item.appendChild(nameLabel);

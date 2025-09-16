@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     let skillsFocus = '';
     let studentSkillLevel = 'intermediate';
     let rules = '';
-    let equipmentCount = { cones: 0, balls: 0, attackers: 0, defenders: 0 };
+    let equipmentCount = { cones: 0, balls: 0, attackers: 0, defenders: 0, observers: 0 };
 
     for (const line of lines) {
       if (line.includes('Activity Name:')) {
@@ -85,15 +85,16 @@ Deno.serve(async (req) => {
       if (line.includes('BALL')) equipmentCount.balls++;
       if (line.includes('ATTACKER')) equipmentCount.attackers++;
       if (line.includes('DEFENDER')) equipmentCount.defenders++;
+      if (line.includes('OBSERVER')) equipmentCount.observers++;
     }
 
     // Simplified prompt without large example JSON
     const prompt = `PE ACTIVITY ANALYSIS - CREATE FUN GAMES!
 
 LESSON: ${lessonObjective || 'general PE'} | Skill Level: ${studentSkillLevel}
-Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
+Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.observers} observers
 
-TASK: Review the layout, then suggest 3 EXCITING GAME variations with DIFFERENT positioning strategies.
+TASK: Review the layout, then suggest 3 EXCITING GAME variations with DIFFERENT positioning strategies.${equipmentCount.observers > 0 ? '\nNote: Observers/referees are present - incorporate them as judges, scorekeepers, or rotation players!' : ''}
 
 MAKE IT FUN - Include:
 - Points/scoring (10pts per goal, bonuses, combos)
@@ -138,7 +139,7 @@ FORMAT: Return a JSON object with exactly this structure:
       "rules": "Specific game rules including how to activate power-ups",
       "teachingPoints": "Key coaching tips as a single string",
       "elements": [
-        {"type": "cone/ball/attacker/defender", "position": {"xPercent": 25-70, "yPercent": 25-70}}
+        {"type": "cone/ball/attacker/defender/observer", "position": {"xPercent": 25-70, "yPercent": 25-70}}
       ]
     }
   ]
@@ -149,12 +150,13 @@ CRITICAL:
 - Layout 1: Wide spread formation
 - Layout 2: Compact central formation
 - Layout 3: Progressive/linear arrangement
-- MANDATORY: Each layout MUST include ALL ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
+- MANDATORY: Each layout MUST include ALL ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.observers} observers
 - The "elements" array MUST contain EXACTLY:
   * ${equipmentCount.cones} cone objects
   * ${equipmentCount.balls} ball objects
   * ${equipmentCount.attackers} attacker objects
   * ${equipmentCount.defenders} defender objects
+  * ${equipmentCount.observers} observer objects
 - If instructions mention cones/zones, those cones MUST be in the elements array
 - NO overlapping positions - each element must have unique coordinates
 - Instructions MUST reference physical cones/equipment, NOT coordinates
@@ -236,7 +238,8 @@ ${layoutData}`
                 cone: 0,
                 ball: 0,
                 attacker: 0,
-                defender: 0
+                defender: 0,
+                observer: 0
               }
 
               layout.elements.forEach((el: any) => {
@@ -255,6 +258,18 @@ ${layoutData}`
                 })
                 elementCounts.cone++
                 console.log(`Added missing cone to layout ${layoutIndex + 1}`)
+              }
+
+              // Add missing observers if needed
+              while (elementCounts.observer < equipmentCount.observers) {
+                const x = 25 + (elementCounts.observer * 15) % 45
+                const y = 25 + Math.floor(elementCounts.observer / 3) * 15
+                layout.elements.push({
+                  type: 'observer',
+                  position: { xPercent: x, yPercent: y }
+                })
+                elementCounts.observer++
+                console.log(`Added missing observer to layout ${layoutIndex + 1}`)
               }
 
               // Ensure no overlapping positions
