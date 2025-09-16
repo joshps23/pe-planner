@@ -1,6 +1,6 @@
 # PE Activity Consultant - Development Todo List
 
-## Session: 2025-09-17 - UI Fixes & Security Audit
+## Session: 2025-09-17 - UI Fixes, Security Audit & Mobile Improvements
 
 ### ✅ Completed Tasks
 
@@ -30,6 +30,33 @@
   - Option 1: Configure custom domain in Supabase (requires Pro plan)
   - Option 2: Set up custom Google OAuth credentials (free)
   - Option 3: Continue with current setup for development
+
+#### Fixed OAuth Redirect to Localhost in Production
+- **Problem**: Sign-in button redirects to localhost instead of production URL
+- **Root Cause**: Supabase Dashboard URL configuration not updated for production
+- **Solution**:
+  - Must update URL settings in Supabase Dashboard (not in code)
+  - Navigate to Authentication → URL Configuration in Supabase Console
+  - Update Site URL and Redirect URLs to production domain
+- **Note**: The `supabase/config.toml` localhost references are only for local development
+
+#### Fixed Mobile Sign-in Button Overlapping Title
+- **Problem**: Google sign-in button covered the "PE Activity" title on mobile devices
+- **Solution**: Added responsive CSS to reduce button size on mobile
+- **Changes Made**:
+  - For tablets/mobile (max-width: 768px):
+    - Reduced button padding from 10px 16px to 6px 10px
+    - Decreased font size from 14px to 12px
+    - Smaller Google icon (14x14px instead of 18x18px)
+    - Added margin-right to title for spacing
+    - Vertically centered button in header
+  - For very small screens (max-width: 400px):
+    - Shows only Google icon (text hidden using font-size: 0)
+    - Further reduced title font size to 1.3rem
+    - Minimal button padding for compact display
+- **Files Modified**:
+  - `css/styles.css`: Added mobile-specific auth button styles (lines 2557-2585, 3055-3077)
+- **Result**: Desktop layout remains unchanged, mobile UI is now usable
 
 ## Session: 2025-09-17 - Google OAuth & Cloud Storage Integration
 

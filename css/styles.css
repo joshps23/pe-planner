@@ -2557,10 +2557,31 @@
             .header h1 {
                 font-size: 1.5rem;
                 margin-left: 40px; /* Space for hamburger */
+                margin-right: 180px; /* Space for auth button */
             }
 
             .header p {
                 display: none; /* Hide subtitle on mobile to save space */
+            }
+
+            /* Fix auth button overlapping title on mobile */
+            .auth-container {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 10;
+            }
+
+            .auth-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+                gap: 6px;
+            }
+
+            .auth-btn img {
+                width: 14px;
+                height: 14px;
             }
             
             .main-content {
@@ -3028,5 +3049,29 @@
             
             .controls {
                 max-height: 60vh;
+            }
+        }
+
+        /* Extra small screens - hide button text, show only icon */
+        @media (max-width: 400px) {
+            .auth-btn {
+                padding: 8px;
+                min-width: auto;
+            }
+
+            /* Hide the text, keep only the Google icon */
+            .auth-btn {
+                font-size: 0; /* Hide text */
+            }
+
+            .auth-btn img {
+                width: 16px;
+                height: 16px;
+                margin: 0;
+            }
+
+            .header h1 {
+                margin-right: 50px; /* Less space needed with icon-only button */
+                font-size: 1.3rem;
             }
         }
