@@ -982,6 +982,56 @@
             background: rgba(255, 255, 255, 0.6);
         }
 
+        /* Basketball style - using emoji */
+        .ball.basketball {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 25px;
+        }
+
+        .ball.basketball::before {
+            content: '🏀';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 25px;
+            line-height: 1;
+        }
+
+        .ball.basketball::after {
+            display: none;
+        }
+
+        /* Soccer ball style - using emoji */
+        .ball.soccer {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 25px;
+        }
+
+        .ball.soccer::before {
+            content: '⚽';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 25px;
+            line-height: 1;
+        }
+
+        .ball.soccer::after {
+            display: none;
+        }
+
         /* Bench visual representation */
         .bench {
             width: 50px;

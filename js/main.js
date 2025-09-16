@@ -2465,8 +2465,12 @@ function showContextMenu(e, element) {
 
     // Show/hide role change section based on whether it's a student
     const roleChangeSection = document.getElementById('roleChangeSection');
+    const ballTypeSection = document.getElementById('ballTypeSection');
+
+    // Handle student context menu
     if (element.classList.contains('student')) {
         roleChangeSection.style.display = 'block';
+        ballTypeSection.style.display = 'none';
 
         // Hide the current role option
         const currentRole = element.classList.contains('attacker') ? 'attacker' :
@@ -2485,8 +2489,34 @@ function showContextMenu(e, element) {
         } else if (currentRole === 'observer') {
             roleChangeSection.children[2].style.display = 'none';
         }
-    } else {
+    }
+    // Handle ball context menu
+    else if (element.classList.contains('ball')) {
         roleChangeSection.style.display = 'none';
+        ballTypeSection.style.display = 'block';
+
+        // Determine current ball type
+        const currentBallType = element.classList.contains('basketball') ? 'basketball' :
+                               element.classList.contains('soccer') ? 'soccer' : 'generic';
+
+        // Show all ball type options
+        ballTypeSection.querySelectorAll('.context-menu-item').forEach(item => {
+            item.style.display = 'flex';
+        });
+
+        // Hide the current ball type option
+        if (currentBallType === 'generic') {
+            ballTypeSection.children[0].style.display = 'none';
+        } else if (currentBallType === 'basketball') {
+            ballTypeSection.children[1].style.display = 'none';
+        } else if (currentBallType === 'soccer') {
+            ballTypeSection.children[2].style.display = 'none';
+        }
+    }
+    // Hide both sections for other elements
+    else {
+        roleChangeSection.style.display = 'none';
+        ballTypeSection.style.display = 'none';
     }
 
     // Get position based on event type (mouse vs touch)
@@ -2717,6 +2747,29 @@ function changePlayerRole(newRole) {
     updateAnalyzeFabState();
 }
 
+function changeBallType(newType) {
+    if (!contextMenuTarget || !contextMenuTarget.classList.contains('ball')) {
+        hideContextMenu();
+        return;
+    }
+
+    // Remove all ball type classes
+    contextMenuTarget.classList.remove('basketball', 'soccer');
+
+    // Add the new ball type class (if not generic)
+    if (newType === 'basketball') {
+        contextMenuTarget.classList.add('basketball');
+    } else if (newType === 'soccer') {
+        contextMenuTarget.classList.add('soccer');
+    }
+    // 'generic' doesn't need a class - it uses the default .ball styling
+
+    hideContextMenu();
+
+    // Trigger analyze button state update in case this affects the layout
+    updateAnalyzeFabState();
+}
+
 function attachContextMenu(element) {
     // Desktop right-click
     element.addEventListener('contextmenu', (e) => showContextMenu(e, element));
@@ -2853,5 +2906,6 @@ window.sendBackward = sendBackward;
 window.duplicateElement = duplicateElement;
 window.deleteElement = deleteElement;
 window.changePlayerRole = changePlayerRole;
+window.changeBallType = changeBallType;
 window.submitCustomPrompt = submitCustomPrompt;
 window.closeCustomPrompt = closeCustomPrompt;

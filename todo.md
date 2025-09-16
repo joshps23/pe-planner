@@ -47,6 +47,23 @@
   - `css/styles.css`: Added mobile-specific context menu styles
   - `index.html`: Added backdrop element for mobile
 
+#### Ball Type Change Feature
+- **Feature**: Users can change ball types via context menu (Generic, Basketball, Soccer)
+- **Implementation**:
+  - Added context menu section for ball type options
+  - Created changeBallType function similar to changePlayerRole
+  - Ball types displayed as emojis for better recognition:
+    - Generic Ball: Yellow CSS-styled ball
+    - Basketball: 🏀 emoji
+    - Soccer Ball: ⚽ emoji
+  - Current ball type hidden from menu options
+  - Works with both desktop right-click and mobile long-press
+- **Visual Design**: Emojis render natively at 25px size for clear visibility
+- **Files Modified**:
+  - `index.html`: Added ball type options to context menu
+  - `js/main.js`: Added changeBallType function and detection logic
+  - `css/styles.css`: Added basketball and soccer ball styles using emoji
+
 ## Session: 2025-09-16 - Supabase Edge Functions Integration & AI Improvements
 
 ### ✅ Completed Tasks
