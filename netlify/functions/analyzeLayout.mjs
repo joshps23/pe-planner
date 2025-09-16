@@ -12,7 +12,7 @@ export default async (request, context) => {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json; charset=utf-8'
       }
     });
   }
@@ -28,21 +28,37 @@ export default async (request, context) => {
     });
   }
 
+  // Sanitize function to remove problematic Unicode characters
+  function sanitizeString(str) {
+    if (!str) return '';
+    // Remove control characters and fix Unicode issues
+    return str
+      .replace(/[\u0000-\u0008\u000B-\u000C\u000E-\u001F\u007F-\u009F]/g, '') // Control characters
+      .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '') // Orphaned high surrogates
+      .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '') // Orphaned low surrogates
+      .replace(/[\uFFFE\uFFFF]/g, '') // Invalid characters
+      .normalize('NFC'); // Normalize Unicode
+  }
+
   let modelToUse = null; // Track which model was actually used
 
   try {
-    const { layoutData } = JSON.parse(event.body);
+    const requestBody = JSON.parse(event.body);
+    const { layoutData: rawLayoutData } = requestBody;
 
-    if (!layoutData) {
+    if (!rawLayoutData) {
       return new Response(JSON.stringify({ error: 'Layout data is required' }), {
         status: 400,
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=utf-8'
         }
       });
     }
+
+    // Sanitize the layout data
+    const layoutData = sanitizeString(rawLayoutData);
 
     const geminiApiKey = process.env.GOOGLE_GEMINI_API_KEY
 
@@ -70,7 +86,7 @@ export default async (request, context) => {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=utf-8'
         }
       });
     }
@@ -91,16 +107,16 @@ export default async (request, context) => {
         activityInfo += line + '\n';
       }
       if (line.includes('Lesson Objective:')) {
-        lessonObjective = line.replace('- Lesson Objective:', '').trim();
+        lessonObjective = sanitizeString(line.replace('- Lesson Objective:', '').trim());
       }
       if (line.includes('Skills Focus:')) {
-        skillsFocus = line.replace('- Skills Focus:', '').trim();
+        skillsFocus = sanitizeString(line.replace('- Skills Focus:', '').trim());
       }
       if (line.includes('Student Skill Level:')) {
-        studentSkillLevel = line.replace('- Student Skill Level:', '').trim();
+        studentSkillLevel = sanitizeString(line.replace('- Student Skill Level:', '').trim());
       }
       if (line.includes('Rules & Instructions:')) {
-        rules = line.replace('- Rules & Instructions:', '').trim();
+        rules = sanitizeString(line.replace('- Rules & Instructions:', '').trim());
       }
       if (line.includes('Playing area:')) {
         activityInfo += line + '\n';
@@ -111,6 +127,8 @@ export default async (request, context) => {
       if (line.includes('DEFENDER')) equipmentCount.defenders++;
     }
 
+    activityInfo = sanitizeString(activityInfo);
+
     // Log extracted details for debugging
     console.log('Activity details extracted:', {
       lessonObjective,
@@ -120,9 +138,6 @@ export default async (request, context) => {
       activityInfo: activityInfo.trim()
     });
 
-    // SIMPLIFIED COORDINATE SYSTEM - Always use 0-100% for the white court area
-    // This avoids confusion between container percentages and court percentages
-
     // Generate full layout description for analysis
     const layoutDescription = `${activityInfo}${lessonObjective ? `Lesson Objective: ${lessonObjective}\n` : ''}${skillsFocus ? `Skills Focus: ${skillsFocus}\n` : ''}Student Skill Level: ${studentSkillLevel}\n${rules ? `Rules: ${rules}\n` : ''}
 Equipment Count: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
@@ -130,23 +145,20 @@ Equipment Count: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, $
 Full Layout Data:
 ${layoutData}`;
 
-    // STRICT FORMAT PROMPT WITH COMPREHENSIVE REVIEW
-    let prompt = `PE ACTIVITY ANALYSIS REQUEST
+    // CLEANED PROMPT WITHOUT EMOJIS
+    let prompt = `PE ACTIVITY ANALYSIS - CREATE FUN GAMES!
 
-CURRENT LAYOUT DATA:
-${layoutDescription}
+LESSON: ${lessonObjective || 'general PE'} | Skill Level: ${studentSkillLevel}
+Equipment: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
 
-LESSON DETAILS:
-${activityInfo}${lessonObjective ? `Lesson Objective: ${lessonObjective}\n` : ''}${skillsFocus ? `Skills Focus: ${skillsFocus}\n` : ''}Student Skill Level: ${studentSkillLevel}\n${rules ? `Rules: ${rules}\n` : ''}
-Equipment Count: ${equipmentCount.cones} cones, ${equipmentCount.balls} balls, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders
+TASK: Review the layout, then suggest 3 EXCITING GAME variations.
 
-YOUR TASK: Provide a comprehensive review of the submitted layout, then suggest improvements and alternatives.
-
-IMPORTANT: Your analysis and layout suggestions MUST be directly related to the lesson objective above.
-- If the objective is about "dribbling with hands", suggest basketball/handball drills
-- If the objective is about "passing", suggest passing drills
-- If the objective is about "shooting", suggest shooting drills
-- DO NOT mention unrelated sports or skills
+MAKE IT FUN - Include:
+- Points/scoring (10pts per goal, bonuses, combos)
+- Power-ups (FREEZE, SHIELD, TURBO abilities)
+- Game themes (Lava maze, Treasure hunt, Battle arena)
+- Win conditions (Last team standing, Most points, Beat the boss)
+- Celebrations (Victory zone, Team chants)
 
 COORDINATE SYSTEM:
 - The playing area (white court) uses a 0-100% coordinate system
@@ -199,120 +211,37 @@ Based on the lesson objective "${lessonObjective || 'general PE activity'}", pro
 
 STUDENT SKILL LEVEL: ${studentSkillLevel}
 
-DIFFERENTIATED INSTRUCTION USING CRAFT FRAMEWORK (NON-LINEAR PEDAGOGY):
-Generate instructions, rules, and teaching points using the CRAFT framework principles for non-linear pedagogy.
+SKILL MODES:
+${studentSkillLevel === 'beginner' ? 'EASY: Extra lives, bigger targets, guaranteed fun!' : studentSkillLevel === 'advanced' ? 'HARD: Boss battles, combos, sudden death rounds!' : 'MEDIUM: Quests, achievements, special abilities!'}
 
-CRAFT FRAMEWORK PRINCIPLES TO APPLY:
+3 GAME LAYOUTS:
+1. "Ultimate Arena" - Points, power zones, combos
+2. "Battle Royale" - Lives, eliminations, last team standing
+3. "Adventure Quest" - Levels, boss battles, treasures
 
-**C - CONSTRAINTS** (Manipulate task, environment, or individual constraints):
-- Task Constraints: Rules, goals, equipment modifications
-- Environmental Constraints: Space, boundaries, zones
-- Individual Constraints: Skill level, physical capabilities
+MAKE INSTRUCTIONS EXCITING:
+- Not "practice dribbling" -> "Navigate the LASER MAZE!"
+- Attackers = TREASURE HUNTERS, Defenders = GUARDIANS
+- Cones = Lava/Power zones, Balls = Golden treasures
+- Include: Points, lives, special moves, victory celebrations
 
-**R - REPRESENTATIVE LEARNING** (Game-like scenarios):
-- Create situations that mirror actual game/sport contexts
-- Include decision-making opportunities
-- Embed perception-action coupling
-
-**A - ADAPTATION** (Encourage learner self-organization):
-- Allow multiple solutions to movement problems
-- Avoid prescriptive "one right way" instructions
-- Foster exploration of movement possibilities
-
-**F - FUNCTIONAL VARIABILITY** (Embrace movement diversity):
-- Encourage different movement patterns
-- Avoid over-coaching specific techniques
-- Value creative problem-solving
-
-**T - TASK SIMPLIFICATION** (Progressive complexity):
-- Start with simplified versions
-- Gradually add complexity through constraints
-- Layer challenges based on emergence
-
-SKILL LEVEL APPLICATIONS:
-
-For BEGINNER level:
-- Constraints: Larger spaces, softer balls, modified rules (e.g., "Stay in your zone")
-- Representative: Simple game scenarios (e.g., "Keep ball away from defender")
-- Adaptation: "Find your own way to move past the cones"
-- Variability: "Try different ways to control the ball"
-- Simplification: Reduce options, increase success opportunities
-
-For INTERMEDIATE level:
-- Constraints: Standard spaces, time limits (e.g., "Complete in 30 seconds")
-- Representative: Realistic game situations with moderate pressure
-- Adaptation: "Discover which dribbling style works best for you"
-- Variability: "Experiment with different speeds and directions"
-- Simplification: Balanced challenge with achievable goals
-
-For ADVANCED level:
-- Constraints: Reduced space, multiple defenders, complex rules
-- Representative: High-pressure game-like scenarios
-- Adaptation: "Solve the defensive puzzle using your strengths"
-- Variability: "Create unpredictable movement patterns"
-- Simplification: Complex problems requiring creative solutions
-
-For MIXED abilities:
-- Provide constraint-based options: "Choose your challenge zone (green=easier, yellow=medium, red=harder)"
-- Self-scaling tasks: "Defenders: Adjust your pressure based on attacker's skill"
-- Open-ended goals: "Score points your way - dribbling=1pt, passing=2pts, trick=3pts"
-
-LAYOUT 1: "Constraint-Based Discovery" - Uses environmental and task constraints to guide learning
-- Apply CRAFT principles: Manipulate space, rules, or equipment to create learning opportunities
-- Example constraints: Zone restrictions, time limits, equipment modifications
-- Focus on exploration rather than prescription
-
-LAYOUT 2: "Game-Based Learning" - Representative scenarios that mirror real game situations
-- Apply CRAFT principles: Create game-like contexts with decision-making
-- Include perception-action coupling opportunities
-- Allow multiple solutions to movement challenges
-
-LAYOUT 3: "Adaptive Challenge" - Self-organizing tasks that adapt to learner needs
-- Apply CRAFT principles: Functional variability and emergent learning
-- Provide options for different skill levels within same setup
-- Encourage creative problem-solving and movement exploration
-
-IMPORTANT CRAFT-BASED INSTRUCTION REQUIREMENTS:
-1. Your element positions MUST create meaningful constraints and learning opportunities
-2. Instructions should be EXPLORATORY not PRESCRIPTIVE:
-   - AVOID: "Use crossover dribble at cone 2"
-   - USE: "Explore different ways to change direction at each cone"
-3. For each player type, provide PROBLEM-SOLVING tasks:
-   - Attackers: "Find ways to maintain possession while moving through the space"
-   - Defenders: "Discover how to influence the attacker's movement without contact"
-   - Both: "Negotiate the space - attackers seek openings, defenders close gaps"
-4. Include CONSTRAINTS that shape behavior without dictating it:
-   - Space constraints: "Stay within your zone"
-   - Time constraints: "Complete before music stops"
-   - Rule constraints: "3 touches maximum per zone"
-5. Encourage VARIABILITY and ADAPTATION:
-   - "Try at least 3 different solutions"
-   - "Adjust your approach based on defender positioning"
-   - "Find what works best for your style"
-
-Return response in EXACTLY this format:
+Return EXACTLY this format:
 ===REVIEW===
-Provide a detailed paragraph reviewing the submitted layout covering:
-- Strengths: What works well in the current setup
-- Areas for Improvement: Specific issues that need addressing
-- Safety Considerations: Any safety concerns noted
-- Engagement Analysis: How well students will stay engaged
-- Space Utilization: Assessment of court usage
+Brief review: Strengths, Fun Factor (1-10), how to make it MORE game-like
 ===SUGGESTIONS===
-Write 2-3 specific, actionable improvement suggestions for the current layout
+2-3 ways to add fun (points, power-ups, themes)
 ===LAYOUT_OPTIONS===
-{"layouts":[{"name":"Constraint-Based Discovery","description":"Environmental constraints guide exploration and learning","instructions":"CRAFT-BASED for ${studentSkillLevel}: Explore movement solutions within these constraints. Attackers: Find pathways through the cone gates while maintaining control. Defenders: Influence attacker movement using positioning. Challenge: Discover at least 3 different ways to navigate the space.","rules":"Constraints: Stay in designated zones (marked by cones), maximum 3 seconds in any zone, switch roles every 2 minutes. Scoring: Award points for creative solutions, not just completion.","teachingPoints":"Notice how different body positions affect your control. Explore how speed changes your options. Discover which movements feel most natural to you. Reflect on what worked and why.","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":30}},{"type":"cone","position":{"xPercent":25,"yPercent":65}},{"type":"cone","position":{"xPercent":50,"yPercent":30}},{"type":"cone","position":{"xPercent":50,"yPercent":65}},{"type":"cone","position":{"xPercent":70,"yPercent":30}},{"type":"cone","position":{"xPercent":70,"yPercent":65}},{"type":"attacker","position":{"xPercent":30,"yPercent":45}},{"type":"attacker","position":{"xPercent":60,"yPercent":50}},{"type":"defender","position":{"xPercent":45,"yPercent":60}},{"type":"ball","position":{"xPercent":30,"yPercent":40}}]},{"name":"Game-Based Learning","description":"Representative game scenario with decision-making","instructions":"CRAFT-BASED for ${studentSkillLevel}: Engage in game-like problem solving. Attackers: Read defender positions and find scoring opportunities. Defenders: Anticipate attacker movements and close spaces. Both: Make real-time decisions based on opponent actions.","rules":"Game constraints: Score by reaching opposite cone with ball control, defenders cannot grab - only position to influence, switch after each score. Adaptation: Modify pressure based on success rate.","teachingPoints":"Observe before acting. Recognize patterns in opponent movement. Experiment with timing and spacing. Learn from both successes and mistakes.","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":30}},{"type":"cone","position":{"xPercent":25,"yPercent":65}},{"type":"cone","position":{"xPercent":50,"yPercent":30}},{"type":"cone","position":{"xPercent":50,"yPercent":65}},{"type":"cone","position":{"xPercent":70,"yPercent":30}},{"type":"cone","position":{"xPercent":70,"yPercent":65}},{"type":"attacker","position":{"xPercent":25,"yPercent":45}},{"type":"attacker","position":{"xPercent":50,"yPercent":50}},{"type":"defender","position":{"xPercent":70,"yPercent":45}},{"type":"ball","position":{"xPercent":25,"yPercent":40}}]},{"name":"Adaptive Challenge","description":"Self-organizing task with variable difficulty","instructions":"CRAFT-BASED for ${studentSkillLevel}: Self-regulate your challenge level. All players: Choose your starting position and difficulty zone. Create your own movement challenges using the equipment. Partner up to design problems for each other to solve.","rules":"Variability focus: Must demonstrate 3+ different movement solutions, can modify space by moving cones, self-assess and adjust difficulty. Meta-learning: Explain your movement choices to partner.","teachingPoints":"What makes a movement efficient vs creative? How does changing constraints affect your solutions? When is it better to go fast vs controlled? What did you learn from watching others?","elements":[{"type":"cone","position":{"xPercent":30,"yPercent":30}},{"type":"cone","position":{"xPercent":65,"yPercent":30}},{"type":"cone","position":{"xPercent":30,"yPercent":65}},{"type":"cone","position":{"xPercent":65,"yPercent":65}},{"type":"attacker","position":{"xPercent":35,"yPercent":40}},{"type":"attacker","position":{"xPercent":60,"yPercent":40}},{"type":"defender","position":{"xPercent":47,"yPercent":55}},{"type":"ball","position":{"xPercent":35,"yPercent":35}}]}]}
+{"layouts":[{"name":"Ultimate Challenge Arena","description":"Epic point-scoring adventure with power zones and special abilities!","instructions":"GAME MODE for ${studentSkillLevel}: Welcome to the Ultimate Challenge Arena! Attackers are TREASURE HUNTERS collecting points by dribbling through cone gates (10 pts each). Defenders are GUARDIANS protecting the treasure zones. POWER-UP ZONE: Center court gives 2X points for 5 seconds! COMBO BONUS: Pass through 3 gates in 10 seconds for MEGA POINTS (50 pts)!","rules":"GAME RULES: 3-minute rounds, team with most points wins! SPECIAL ABILITIES: Attackers can call FREEZE once per round (defenders stop for 3 seconds). Defenders can create a FORCE FIELD (link arms) once per round for 5 seconds. SUDDEN DEATH: Tie? Golden ball worth 100 points appears!","teachingPoints":"PRO TIPS: Use fake moves to earn style points! Team combos unlock bonus achievements! Speed bursts through gates = extra points! Victory dance in the end zone after scoring!","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":30}},{"type":"cone","position":{"xPercent":25,"yPercent":65}},{"type":"cone","position":{"xPercent":50,"yPercent":30}},{"type":"cone","position":{"xPercent":50,"yPercent":65}},{"type":"cone","position":{"xPercent":70,"yPercent":30}},{"type":"cone","position":{"xPercent":70,"yPercent":65}},{"type":"attacker","position":{"xPercent":30,"yPercent":45}},{"type":"attacker","position":{"xPercent":60,"yPercent":50}},{"type":"defender","position":{"xPercent":45,"yPercent":60}},{"type":"ball","position":{"xPercent":30,"yPercent":40}}]},{"name":"Battle Royale Showdown","description":"Intense team battle with eliminations and epic comebacks!","instructions":"BATTLE MODE for ${studentSkillLevel}: RED TEAM vs BLUE TEAM in the ultimate showdown! Each player has 3 LIVES shown by cone tokens. GET TAGGED = LOSE A LIFE! Last team with players standing wins! REVIVAL CHALLENGE: Eliminated players can earn a life back by completing the sideline skill challenge in 30 seconds!","rules":"BATTLE RULES: NO CAMPING (must move every 5 seconds)! POWER MOVES: SHIELD = 5-second immunity (once per life), TURBO = super speed for 3 seconds (once per game). BOSS MODE: When down to 1 player, they become the BOSS with double speed! VICTORY CONDITION: Eliminate all opponents or have most lives when time expires!","teachingPoints":"CHAMPION STRATEGIES: Use teamwork for combo attacks! Save power moves for critical moments! Create distractions for surprise attacks! Celebrate every elimination with team chant!","elements":[{"type":"cone","position":{"xPercent":25,"yPercent":30}},{"type":"cone","position":{"xPercent":25,"yPercent":65}},{"type":"cone","position":{"xPercent":50,"yPercent":30}},{"type":"cone","position":{"xPercent":50,"yPercent":65}},{"type":"cone","position":{"xPercent":70,"yPercent":30}},{"type":"cone","position":{"xPercent":70,"yPercent":65}},{"type":"attacker","position":{"xPercent":25,"yPercent":45}},{"type":"attacker","position":{"xPercent":50,"yPercent":50}},{"type":"defender","position":{"xPercent":70,"yPercent":45}},{"type":"ball","position":{"xPercent":25,"yPercent":40}}]},{"name":"Adventure Quest Champions","description":"Level-based adventure with boss battles and treasure hunting!","instructions":"QUEST MODE for ${studentSkillLevel}: MISSION - Complete 3 LEVELS to become CHAMPIONS! LEVEL 1: Navigate the Lava Maze (cones = lava) without touching! LEVEL 2: Defeat the Guardian (defender) using skill moves! LEVEL 3: BOSS BATTLE - All attackers vs all defenders for the GOLDEN TREASURE (ball)! Each level completed = new special ability unlocked!","rules":"QUEST RULES: 2 minutes per level! SPECIAL ABILITIES: Level 1 unlock = DASH (burst of speed), Level 2 unlock = PHASE (dodge one tag), Level 3 = ULTIMATE (team super move)! BONUS CHALLENGES: Hidden treasures (cones) worth extra points! EPIC FINALE: Winners perform victory celebration for bonus XP!","teachingPoints":"HERO TRAINING: Master each level before advancing! Use abilities strategically! Work as a team in boss battles! Create your own victory dance! Encourage fallen teammates!","elements":[{"type":"cone","position":{"xPercent":30,"yPercent":30}},{"type":"cone","position":{"xPercent":65,"yPercent":30}},{"type":"cone","position":{"xPercent":30,"yPercent":65}},{"type":"cone","position":{"xPercent":65,"yPercent":65}},{"type":"attacker","position":{"xPercent":35,"yPercent":40}},{"type":"attacker","position":{"xPercent":60,"yPercent":40}},{"type":"defender","position":{"xPercent":47,"yPercent":55}},{"type":"ball","position":{"xPercent":35,"yPercent":35}}]}]}
 ===END===
 
-IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout must:
-1. Have different element positions (don't just copy the same positions)
-2. Apply CRAFT principles (Constraints, Representative, Adaptation, Functional variability, Task simplification)
-3. Keep ALL elements within 25-70% range for both X and Y coordinates
-4. Include ALL ${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.balls} balls
-5. Use EXPLORATORY language, not prescriptive commands
-6. Include constraints that shape behavior without dictating exact movements
-7. Encourage multiple solutions and creative problem-solving
-8. Create game-like scenarios with decision-making opportunities`;
+THEMES: Superhero, Space, Pirates, Ninja, Zombies, Video Games
+
+PROVIDE 3 layouts with:
+- Different positions (25-70% range)
+- ALL equipment (${equipmentCount.cones} cones, ${equipmentCount.attackers} attackers, ${equipmentCount.defenders} defenders, ${equipmentCount.balls} balls)
+- Game mechanics (points, lives, powers)
+- Fun language & celebrations
+- Clear win conditions`;
 
     // Function to make API call with timeout
     async function callGeminiAPI(model, promptText) {
@@ -332,13 +261,13 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
           },
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: promptText
+                text: sanitizeString(promptText)
               }]
             }],
             generationConfig: {
@@ -390,29 +319,29 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
 
         // If we got a successful response, break out of the loop
         if (response && response.ok) {
-          console.log(`✅ Successfully used model: ${model}`);
+          console.log(`Successfully used model: ${model}`);
           break;
         } else if (response) {
-          console.warn(`❌ Model ${model} returned status ${response.status}, trying next model...`);
+          console.warn(`Model ${model} returned status ${response.status}, trying next model...`);
           lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
           response = null; // Clear response for next attempt
         }
       } catch (error) {
-        console.error(`❌ Failed to call API with model ${model}: ${error.message}`);
+        console.error(`Failed to call API with model ${model}: ${error.message}`);
         lastError = error;
         response = null; // Clear response for next attempt
 
         // If it's a timeout, log it clearly and try fallback
         if (error.name === 'AbortError') {
-          console.log(`⏱️ Model ${model} timed out after 25 seconds`);
+          console.log(`Model ${model} timed out after 25 seconds`);
           if (!isLastModel) {
-            console.log(`🔄 Trying fallback model: ${modelFallbackChain[i + 1]}...`);
+            console.log(`Trying fallback model: ${modelFallbackChain[i + 1]}...`);
           }
         }
 
         if (isLastModel) {
           // This was the last model in the chain, throw the stored error
-          console.error(`❌ All models in the fallback chain failed`);
+          console.error(`All models in the fallback chain failed`);
           throw lastError || error;
         }
         // Otherwise, continue to next model
@@ -454,7 +383,7 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
 
     if (data.candidates && data.candidates[0] && data.candidates[0].content &&
         data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
-      const fullResponse = data.candidates[0].content.parts[0].text;
+      const fullResponse = sanitizeString(data.candidates[0].content.parts[0].text);
       
       // Parse the response to extract review, suggestions and JSON
       let review = '';
@@ -466,7 +395,7 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
         try {
           const reviewMatch = fullResponse.match(/===REVIEW===\s*([\s\S]*?)===SUGGESTIONS===/);
           if (reviewMatch) {
-            review = reviewMatch[1].trim();
+            review = sanitizeString(reviewMatch[1].trim());
           }
         } catch (e) {
           console.log('Could not extract review section:', e);
@@ -479,7 +408,7 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
           const layoutsMatch = fullResponse.match(/===LAYOUT_OPTIONS===\s*([\s\S]*?)===END===/);
 
           if (suggestionsMatch) {
-            suggestions = suggestionsMatch[1].trim();
+            suggestions = sanitizeString(suggestionsMatch[1].trim());
             // If suggestions is accidentally an array in string form, extract the first item
             if (suggestions.startsWith('[') && suggestions.endsWith(']')) {
               try {
@@ -492,7 +421,7 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
           }
 
           if (layoutsMatch) {
-            let layoutsStr = layoutsMatch[1].trim();
+            let layoutsStr = sanitizeString(layoutsMatch[1].trim());
             // Handle markdown code blocks that some models add
             layoutsStr = layoutsStr.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
             layoutsStr = layoutsStr.replace(/```\s*$/, '');
@@ -528,6 +457,12 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
                 if (Array.isArray(layout.rules)) {
                   layout.rules = layout.rules.join(' ');
                 }
+                // Sanitize all text fields in the layout
+                layout.name = sanitizeString(layout.name || '');
+                layout.description = sanitizeString(layout.description || '');
+                layout.instructions = sanitizeString(layout.instructions || '');
+                layout.rules = sanitizeString(layout.rules || '');
+                layout.teachingPoints = sanitizeString(layout.teachingPoints || '');
               });
             }
             
@@ -659,24 +594,44 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
       
       // Add info about which model was used if fallback occurred
       const response_data = {
-        review,  // Include the review section
-        suggestions,
-        layoutJson
+        review: sanitizeString(review),  // Include the review section
+        suggestions: sanitizeString(suggestions),
+        layoutJson: layoutJson
       };
+
       if (modelToUse !== geminiModel) {
         response_data.modelUsed = modelToUse;
         response_data.modelFallback = true;
-        console.log(`🔄 Fallback occurred: Originally requested ${geminiModel}, but successfully used ${modelToUse}`);
+        console.log(`Fallback occurred: Originally requested ${geminiModel}, but successfully used ${modelToUse}`);
       }
 
-      return new Response(JSON.stringify(response_data), {
-        status: 200,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-          'Content-Type': 'application/json'
-        }
-      });
+      // Ensure valid JSON before sending
+      try {
+        const jsonString = JSON.stringify(response_data);
+        // Validate it can be parsed back
+        JSON.parse(jsonString);
+        
+        return new Response(jsonString, {
+          status: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Content-Type': 'application/json; charset=utf-8'
+          }
+        });
+      } catch (jsonError) {
+        console.error('JSON serialization error:', jsonError);
+        return new Response(JSON.stringify({
+          error: 'Failed to serialize response data',
+          details: jsonError.message
+        }), {
+          status: 500,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json; charset=utf-8'
+          }
+        });
+      }
     } else {
       console.error('Unexpected API response structure:', JSON.stringify(data, null, 2));
       throw new Error('Unexpected response format from AI. The API response structure may have changed.');
@@ -720,7 +675,7 @@ IMPORTANT: You MUST provide exactly 3 layouts using CRAFT framework. Each layout
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json; charset=utf-8'
       }
     });
   }
