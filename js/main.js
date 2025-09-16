@@ -622,7 +622,7 @@ function savePlan() {
         });
     });
     
-    lessonPlans[planName] = {
+    const planData = {
         items,
         annotations,
         activityDetails: {
@@ -638,10 +638,30 @@ function savePlan() {
         },
         timestamp: new Date().toISOString()
     };
-    
-    localStorage.setItem('lessonPlans', JSON.stringify(lessonPlans));
-    updatePlanSelect();
-    alert('Lesson plan saved successfully!');
+
+    // Save to cloud if signed in, otherwise save locally
+    if (window.isSignedIn && window.isSignedIn()) {
+        window.saveToCloud(planName, planData)
+            .then(() => {
+                lessonPlans[planName] = planData;
+                updatePlanSelect();
+                alert('Lesson plan saved to cloud successfully!');
+            })
+            .catch(error => {
+                console.error('Error saving to cloud:', error);
+                // Fall back to local storage
+                lessonPlans[planName] = planData;
+                localStorage.setItem('lessonPlans', JSON.stringify(lessonPlans));
+                updatePlanSelect();
+                alert('Failed to save to cloud. Saved locally instead.');
+            });
+    } else {
+        // Not signed in, save locally
+        lessonPlans[planName] = planData;
+        localStorage.setItem('lessonPlans', JSON.stringify(lessonPlans));
+        updatePlanSelect();
+        alert('Lesson plan saved locally. Sign in to save to cloud.');
+    }
     document.getElementById('planName').value = '';
 }
 
@@ -902,25 +922,58 @@ function loadPlan() {
     }, 100); // Small delay to ensure DOM is updated
 }
 
-function deletePlan() {
+async function deletePlan() {
     const select = document.getElementById('savedPlans');
     const planName = select.value;
     if (!planName) {
         alert('Please select a lesson plan to delete');
         return;
     }
-    
+
     if (confirm(`Are you sure you want to delete "${planName}"?`)) {
-        delete lessonPlans[planName];
-        localStorage.setItem('lessonPlans', JSON.stringify(lessonPlans));
-        updatePlanSelect();
-        alert('Lesson plan deleted successfully!');
+        // Delete from cloud if signed in
+        if (window.isSignedIn && window.isSignedIn()) {
+            try {
+                await window.deletePlanFromCloud(planName);
+                delete lessonPlans[planName];
+                updatePlanSelect();
+                alert('Lesson plan deleted from cloud successfully!');
+            } catch (error) {
+                console.error('Error deleting from cloud:', error);
+                alert('Failed to delete from cloud.');
+            }
+        } else {
+            // Not signed in, delete from local storage
+            delete lessonPlans[planName];
+            localStorage.setItem('lessonPlans', JSON.stringify(lessonPlans));
+            updatePlanSelect();
+            alert('Lesson plan deleted successfully!');
+        }
     }
 }
 
-function updatePlanSelect() {
+async function updatePlanSelect() {
     const select = document.getElementById('savedPlans');
     select.innerHTML = '<option value="">Select saved plan...</option>';
+
+    // Load plans from cloud if signed in
+    if (window.isSignedIn && window.isSignedIn()) {
+        try {
+            const cloudPlans = await window.loadPlansFromCloud();
+            lessonPlans = cloudPlans;
+        } catch (error) {
+            console.error('Error loading plans from cloud:', error);
+            // Fall back to local storage
+            const localPlans = localStorage.getItem('lessonPlans');
+            lessonPlans = localPlans ? JSON.parse(localPlans) : {};
+        }
+    } else {
+        // Not signed in, load from local storage
+        const localPlans = localStorage.getItem('lessonPlans');
+        lessonPlans = localPlans ? JSON.parse(localPlans) : {};
+    }
+
+    // Populate dropdown
     Object.keys(lessonPlans).forEach(planName => {
         const option = document.createElement('option');
         option.value = planName;
@@ -2845,19 +2898,27 @@ function handleLongPressEnd(e) {
 }
 
 // Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('PE Activity Consultant loaded.');
     console.log('TIP: Type "window.debugMode = true" in console then re-apply layout to see court boundary markers');
 
+    // Initialize authentication
+    if (window.initAuth) {
+        await window.initAuth();
+    }
+
     // Initialize API configuration
     loadApiConfig();
-    
+
     // Set initial court layout (default is badminton)
     changeLayout();
-    
+
     // Initialize z-indexes for any existing elements
     initializeZIndexes();
-    
+
+    // Load saved plans
+    await updatePlanSelect();
+
     // Prevent default context menu on court
     document.getElementById('court').addEventListener('contextmenu', (e) => {
         if (e.target.id === 'court') {

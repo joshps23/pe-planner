@@ -6,6 +6,8 @@
     <title>PE Activity Consultant</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="css/styles.css">
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Mobile Menu Toggle -->
@@ -64,8 +66,47 @@
 
     <div class="container">
         <div class="header">
-            <h1>PE Activity Consultant</h1>
-            <p>Complete lesson planning with multiple phases, timers, annotations, and save/load functionality</p>
+            <div class="header-top">
+                <div>
+                    <h1>PE Activity Consultant</h1>
+                    <p>Complete lesson planning with multiple phases, timers, annotations, and save/load functionality</p>
+                </div>
+
+                <!-- Authentication UI -->
+                <div class="auth-container">
+                    <!-- Sign In Button (shown when logged out) -->
+                    <button id="authButton" class="auth-btn" onclick="signInWithGoogle()">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="18" height="18">
+                        Sign in with Google
+                    </button>
+
+                    <!-- User Info (shown when logged in) -->
+                    <div id="userInfo" class="user-info" style="display: none;">
+                        <div class="user-dropdown">
+                            <button class="user-dropdown-btn">
+                                <span class="user-name"></span>
+                                <span class="dropdown-arrow">▼</span>
+                            </button>
+                            <div class="user-dropdown-content">
+                                <div class="user-email"></div>
+                                <div class="dropdown-divider"></div>
+                                <div class="plan-stats">
+                                    <span class="stats-icon">📊</span>
+                                    <span class="stats-text">Loading plans...</span>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <button onclick="signOut()" class="sign-out-btn">Sign Out</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sign In Prompt (shown when user has local plans) -->
+            <div id="signInPrompt" class="sign-in-prompt" style="display: none;">
+                <span>💡 Sign in to sync your lesson plans across devices</span>
+                <button onclick="signInWithGoogle()" class="prompt-sign-in-btn">Sign In</button>
+            </div>
         </div>
         
         <div class="main-content">
@@ -506,7 +547,36 @@
     <script src="js/coordinates.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/database.js"></script>
     <script src="js/main.js"></script>
     <script src="js/mobile.js"></script>
+    <script>
+        // Fallback in case auth.js doesn't load
+        if (typeof signInWithGoogle === 'undefined') {
+            console.error('Auth.js did not load properly. Creating fallback function.');
+            window.signInWithGoogle = function() {
+                console.log('Fallback signInWithGoogle called');
+                alert('Authentication system is not loaded. Please check the browser console for errors.');
+
+                // Check if Supabase is loaded
+                if (typeof window.supabase === 'undefined') {
+                    console.error('Supabase library is not loaded from CDN');
+                } else {
+                    console.log('Supabase library is loaded:', window.supabase);
+                }
+            }
+        }
+
+        // Debug script loading
+        console.log('Page scripts loaded. Checking auth functions...');
+        setTimeout(() => {
+            console.log('Auth functions available:', {
+                signInWithGoogle: typeof window.signInWithGoogle,
+                initAuth: typeof window.initAuth,
+                supabase: typeof window.supabase
+            });
+        }, 1000);
+    </script>
 </body>
 </html>

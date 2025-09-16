@@ -1,5 +1,35 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-09-17 - Google OAuth & Cloud Storage Integration
+
+### ✅ Completed Tasks
+
+#### Google OAuth and Supabase Integration
+- **Feature**: User authentication with Google OAuth and cloud storage for lesson plans
+- **Implementation**:
+  - Created auth.js module for Google OAuth using Supabase
+  - Created database.js module for cloud CRUD operations
+  - Added authentication UI components to index.html (sign-in button, user dropdown)
+  - Added authentication styles to styles.css
+  - Updated main.js to integrate cloud storage with existing save/load functions
+  - Modified savePlan() to save to cloud when signed in
+  - Modified loadPlan() to load from cloud when signed in
+  - Modified deletePlan() to delete from cloud when signed in
+  - Added async updatePlanSelect() to load plans from cloud/local
+  - Added initAuth() call on DOMContentLoaded
+- **Key Features**:
+  - Automatic migration of local plans to cloud on first login
+  - Dual storage strategy (localStorage when logged out, cloud when logged in)
+  - Seamless fallback to localStorage when offline
+  - Row Level Security (RLS) for user data protection
+  - User email and name display in header when logged in
+- **Files Modified**:
+  - `js/auth.js`: NEW - Complete authentication module
+  - `js/database.js`: NEW - Database operations module
+  - `index.html`: Added Supabase script and auth UI
+  - `css/styles.css`: Added auth-related styles
+  - `js/main.js`: Updated save/load/delete functions for cloud integration
+
 ## Session: 2025-09-17 - Observer Player Type & Mobile Context Menu
 
 ### ✅ Completed Tasks
