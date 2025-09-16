@@ -139,15 +139,7 @@ function addEquipment(type) {
     item.style.position = 'absolute';
     item.style.zIndex = currentZIndex++; // Set initial z-index
     
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-btn';
-    removeBtn.textContent = '×';
-    removeBtn.onclick = (e) => {
-        e.stopPropagation();
-        court.removeChild(item);
-        updateAnalyzeFabState();
-    };
-    
+    const removeBtn = createRemoveButton(item);
     item.appendChild(removeBtn);
     court.appendChild(item);
 
@@ -210,15 +202,7 @@ async function addStudent(type) {
     item.style.position = 'absolute';
     item.style.zIndex = currentZIndex++; // Set initial z-index
     
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-btn';
-    removeBtn.textContent = '×';
-    removeBtn.onclick = (e) => {
-        e.stopPropagation();
-        court.removeChild(item);
-        updateAnalyzeFabState();
-    };
-    
+    const removeBtn = createRemoveButton(item);
     item.appendChild(removeBtn);
     court.appendChild(item);
 
@@ -232,6 +216,33 @@ function makeDraggable(element) {
     element.addEventListener('mousedown', startDrag);
     element.addEventListener('touchstart', startDrag);
     attachContextMenu(element);
+}
+
+// Helper function to create remove button with proper touch support
+function createRemoveButton(parentElement) {
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '×';
+
+    // Handle both click and touch events
+    const handleRemove = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const court = document.getElementById('court');
+        if (court && court.contains(parentElement)) {
+            court.removeChild(parentElement);
+            updateAnalyzeFabState();
+        }
+    };
+
+    removeBtn.onclick = handleRemove;
+    removeBtn.ontouchstart = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        handleRemove(e);
+    };
+
+    return removeBtn;
 }
 
 function startDrag(e) {
@@ -652,14 +663,7 @@ function loadPlan() {
             item.appendChild(nameLabel);
         }
         
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-btn';
-        removeBtn.textContent = '×';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            court.removeChild(item);
-        };
-        
+        const removeBtn = createRemoveButton(item);
         item.appendChild(removeBtn);
         court.appendChild(item);
         makeDraggable(item);
@@ -712,13 +716,7 @@ function loadPlan() {
         
         ann.appendChild(textarea);
         
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-btn';
-        removeBtn.textContent = '×';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            court.removeChild(ann);
-        };
+        const removeBtn = createRemoveButton(ann);
         ann.appendChild(removeBtn);
         
         court.appendChild(ann);
@@ -1901,15 +1899,8 @@ function createElementFromJson(element, court, fixedDimensions) {
             item.appendChild(nameLabel);
         }
 
-        // Add remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-btn';
-        removeBtn.textContent = '×';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            court.removeChild(item);
-        };
-
+        // Add remove button with touch support
+        const removeBtn = createRemoveButton(item);
         item.appendChild(removeBtn);
 
         // Set position directly - ensure absolute positioning
@@ -1946,15 +1937,8 @@ function createElementFromJson(element, court, fixedDimensions) {
         item.id = 'item-' + (++itemCounter);
         item.dataset.phase = currentPhase;
 
-        // Add remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-btn';
-        removeBtn.textContent = '×';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            court.removeChild(item);
-        };
-
+        // Add remove button with touch support
+        const removeBtn = createRemoveButton(item);
         item.appendChild(removeBtn);
 
         // Set position directly - ensure absolute positioning
@@ -2009,14 +1993,8 @@ function createAnnotationFromJson(annotation, court, fixedDimensions) {
     textarea.rows = 2;
     textarea.cols = 20;
     
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-btn';
-    removeBtn.textContent = '×';
-    removeBtn.onclick = (e) => {
-        e.stopPropagation();
-        court.removeChild(annotationDiv);
-    };
-    
+    const removeBtn = createRemoveButton(annotationDiv);
+
     annotationDiv.appendChild(textarea);
     annotationDiv.appendChild(removeBtn);
     court.appendChild(annotationDiv);
@@ -2425,12 +2403,19 @@ function duplicateElement() {
         makeDraggable(clone);
         attachContextMenu(clone);
         
-        // Re-attach remove button handler
+        // Re-attach remove button handler with touch support
         const removeBtn = clone.querySelector('.remove-btn');
         if (removeBtn) {
-            removeBtn.onclick = (e) => {
+            const handleRemove = (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 court.removeChild(clone);
+            };
+            removeBtn.onclick = handleRemove;
+            removeBtn.ontouchstart = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleRemove(e);
             };
         }
         

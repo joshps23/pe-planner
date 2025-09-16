@@ -60,7 +60,7 @@ function mobileNavSwitch(section) {
             break;
         case 'ai':
             // Show AI analysis
-            getAISuggestions();
+            analyzeLayout();
             break;
     }
 }
