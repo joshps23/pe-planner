@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alignment Guide Test - PE Activity Consultant</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .instructions {
+            background: #f0f4f8;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        .instructions h2 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .instructions ul {
+            margin: 10px 0;
+        }
+        .instructions li {
+            margin: 8px 0;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .court-container {
+            position: relative;
+            margin: 0 auto;
+            max-width: 900px;
+        }
+        #testCourt {
+            width: 100%;
+            height: 500px;
+            background: white;
+            border: 3px solid #10b981;
+            position: relative;
+            margin: 0 auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .test-element {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            cursor: move;
+            user-select: none;
+            transition: box-shadow 0.2s;
+        }
+        .test-element:hover {
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        .test-element.dragging {
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            z-index: 9999 !important;
+        }
+        .test-element.red {
+            background: #ef4444;
+        }
+        .test-element.blue {
+            background: #3b82f6;
+        }
+        .test-element.green {
+            background: #10b981;
+        }
+        .test-element.purple {
+            background: #8b5cf6;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .status h3 {
+            margin-top: 0;
+            color: #374151;
+        }
+        .status-item {
+            margin: 5px 0;
+            color: #6b7280;
+        }
+        .highlight {
+            color: #10b981;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 Alignment Guide Test</h1>
+
+        <div class="instructions">
+            <h2>Test Instructions</h2>
+            <p>This page tests the new alignment guide feature. Try the following:</p>
+            <ul>
+                <li>✨ <strong>Drag any element</strong> - Click and drag elements around the court</li>
+                <li>📍 <strong>Automatic alignment</strong> - Elements will snap to align with others when close</li>
+                <li>📏 <strong>Visual guides</strong> - Blue lines appear to show alignment</li>
+                <li>🎯 <strong>Horizontal alignment</strong> - Elements align on the same horizontal line</li>
+                <li>📊 <strong>Vertical alignment</strong> - Elements align on the same vertical line</li>
+                <li>🔄 <strong>Test scenarios</strong>:
+                    <ul>
+                        <li>Drag an element near another's X or Y position</li>
+                        <li>Try aligning multiple elements in a row</li>
+                        <li>Create a grid pattern</li>
+                        <li>Test diagonal arrangements</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="addTestElement('red')">Add Red Element</button>
+            <button class="btn" onclick="addTestElement('blue')">Add Blue Element</button>
+            <button class="btn" onclick="addTestElement('green')">Add Green Element</button>
+            <button class="btn" onclick="addTestElement('purple')">Add Purple Element</button>
+            <button class="btn" onclick="clearTestCourt()">Clear All</button>
+            <button class="btn" onclick="createTestGrid()">Create Test Grid</button>
+            <button class="btn" onclick="createTestRow()">Create Test Row</button>
+        </div>
+
+        <div class="court-container">
+            <div id="testCourt"></div>
+        </div>
+
+        <div class="status">
+            <h3>Alignment Status</h3>
+            <div id="alignmentStatus">
+                <div class="status-item">Drag an element to see alignment information...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/coordinates.js"></script>
+    <script>
+        // Import alignment constants and functions from main.js
+        const ALIGNMENT_THRESHOLD = 10;
+        const SNAP_STRENGTH = 5;
+
+        let draggedElement = null;
+        let dragOffset = { x: 0, y: 0 };
+        let elementCounter = 0;
+
+        function addTestElement(color) {
+            const court = document.getElementById('testCourt');
+            const element = document.createElement('div');
+            element.className = `test-element ${color}`;
+            element.id = `test-element-${++elementCounter}`;
+            element.textContent = elementCounter;
+
+            // Random initial position
+            const maxX = court.offsetWidth - 60;
+            const maxY = court.offsetHeight - 60;
+            element.style.left = Math.random() * maxX + 'px';
+            element.style.top = Math.random() * maxY + 'px';
+
+            court.appendChild(element);
+            makeTestDraggable(element);
+        }
+
+        function makeTestDraggable(element) {
+            element.addEventListener('mousedown', startTestDrag);
+            element.addEventListener('touchstart', startTestDrag);
+        }
+
+        function startTestDrag(e) {
+            e.preventDefault();
+            draggedElement = e.target;
+
+            const court = document.getElementById('testCourt');
+            const rect = court.getBoundingClientRect();
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+            const mouseX = clientX - rect.left;
+            const mouseY = clientY - rect.top;
+
+            dragOffset.x = mouseX - parseInt(draggedElement.style.left);
+            dragOffset.y = mouseY - parseInt(draggedElement.style.top);
+
+            draggedElement.classList.add('dragging');
+
+            document.addEventListener('mousemove', testDrag);
+            document.addEventListener('mouseup', stopTestDrag);
+            document.addEventListener('touchmove', testDrag);
+            document.addEventListener('touchend', stopTestDrag);
+        }
+
+        function testDrag(e) {
+            if (!draggedElement) return;
+            e.preventDefault();
+
+            const court = document.getElementById('testCourt');
+            const rect = court.getBoundingClientRect();
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+            const mouseX = clientX - rect.left;
+            const mouseY = clientY - rect.top;
+
+            let newX = mouseX - dragOffset.x;
+            let newY = mouseY - dragOffset.y;
+
+            // Get center position of dragged element
+            const elementWidth = draggedElement.offsetWidth;
+            const elementHeight = draggedElement.offsetHeight;
+            const centerX = newX + elementWidth / 2;
+            const centerY = newY + elementHeight / 2;
+
+            // Find alignments
+            const alignments = findTestAlignments(draggedElement, centerX, centerY, court);
+
+            // Update status
+            updateAlignmentStatus(alignments, centerX, centerY);
+
+            // Apply snapping
+            if (alignments.horizontal) {
+                newY = alignments.horizontal - elementHeight / 2;
+                showHorizontalGuide(alignments.horizontal, court);
+            } else {
+                hideHorizontalGuide();
+            }
+
+            if (alignments.vertical) {
+                newX = alignments.vertical - elementWidth / 2;
+                showVerticalGuide(alignments.vertical, court);
+            } else {
+                hideVerticalGuide();
+            }
+
+            // Constrain to court bounds
+            newX = Math.max(0, Math.min(newX, court.offsetWidth - elementWidth));
+            newY = Math.max(0, Math.min(newY, court.offsetHeight - elementHeight));
+
+            draggedElement.style.left = newX + 'px';
+            draggedElement.style.top = newY + 'px';
+        }
+
+        function stopTestDrag() {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement = null;
+                hideAlignmentGuides();
+                updateAlignmentStatus(null);
+            }
+
+            document.removeEventListener('mousemove', testDrag);
+            document.removeEventListener('mouseup', stopTestDrag);
+            document.removeEventListener('touchmove', testDrag);
+            document.removeEventListener('touchend', stopTestDrag);
+        }
+
+        function findTestAlignments(draggedEl, centerX, centerY, court) {
+            const alignments = {
+                horizontal: null,
+                vertical: null,
+                alignedElements: []
+            };
+
+            const elements = court.querySelectorAll('.test-element');
+
+            elements.forEach(el => {
+                if (el === draggedEl) return;
+
+                const elLeft = parseInt(el.style.left) || 0;
+                const elTop = parseInt(el.style.top) || 0;
+                const elCenterX = elLeft + el.offsetWidth / 2;
+                const elCenterY = elTop + el.offsetHeight / 2;
+
+                // Check horizontal alignment
+                if (!alignments.horizontal && Math.abs(centerY - elCenterY) <= ALIGNMENT_THRESHOLD) {
+                    alignments.horizontal = elCenterY;
+                    alignments.alignedElements.push({ el, type: 'horizontal' });
+                }
+
+                // Check vertical alignment
+                if (!alignments.vertical && Math.abs(centerX - elCenterX) <= ALIGNMENT_THRESHOLD) {
+                    alignments.vertical = elCenterX;
+                    alignments.alignedElements.push({ el, type: 'vertical' });
+                }
+            });
+
+            return alignments;
+        }
+
+        // Reuse guide functions from main implementation
+        function showHorizontalGuide(yPosition, court) {
+            let guide = court.querySelector('.alignment-guide.horizontal');
+
+            if (!guide) {
+                guide = document.createElement('div');
+                guide.className = 'alignment-guide horizontal';
+                court.appendChild(guide);
+            }
+
+            guide.style.top = (yPosition - 0.5) + 'px';
+            guide.classList.add('active');
+        }
+
+        function hideHorizontalGuide() {
+            const court = document.getElementById('testCourt');
+            const guide = court.querySelector('.alignment-guide.horizontal');
+            if (guide) {
+                guide.classList.remove('active');
+                setTimeout(() => {
+                    if (guide && !guide.classList.contains('active')) {
+                        guide.remove();
+                    }
+                }, 200);
+            }
+        }
+
+        function showVerticalGuide(xPosition, court) {
+            let guide = court.querySelector('.alignment-guide.vertical');
+
+            if (!guide) {
+                guide = document.createElement('div');
+                guide.className = 'alignment-guide vertical';
+                court.appendChild(guide);
+            }
+
+            guide.style.left = (xPosition - 0.5) + 'px';
+            guide.classList.add('active');
+        }
+
+        function hideVerticalGuide() {
+            const court = document.getElementById('testCourt');
+            const guide = court.querySelector('.alignment-guide.vertical');
+            if (guide) {
+                guide.classList.remove('active');
+                setTimeout(() => {
+                    if (guide && !guide.classList.contains('active')) {
+                        guide.remove();
+                    }
+                }, 200);
+            }
+        }
+
+        function hideAlignmentGuides() {
+            hideHorizontalGuide();
+            hideVerticalGuide();
+        }
+
+        function clearTestCourt() {
+            const court = document.getElementById('testCourt');
+            court.innerHTML = '';
+            elementCounter = 0;
+            updateAlignmentStatus(null);
+        }
+
+        function createTestGrid() {
+            clearTestCourt();
+            const court = document.getElementById('testCourt');
+            const colors = ['red', 'blue', 'green', 'purple'];
+
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const element = document.createElement('div');
+                    element.className = `test-element ${colors[(row + col) % colors.length]}`;
+                    element.id = `test-element-${++elementCounter}`;
+                    element.textContent = elementCounter;
+
+                    element.style.left = (100 + col * 150) + 'px';
+                    element.style.top = (50 + row * 150) + 'px';
+
+                    court.appendChild(element);
+                    makeTestDraggable(element);
+                }
+            }
+        }
+
+        function createTestRow() {
+            clearTestCourt();
+            const court = document.getElementById('testCourt');
+            const colors = ['red', 'blue', 'green', 'purple'];
+
+            for (let i = 0; i < 5; i++) {
+                const element = document.createElement('div');
+                element.className = `test-element ${colors[i % colors.length]}`;
+                element.id = `test-element-${++elementCounter}`;
+                element.textContent = elementCounter;
+
+                element.style.left = (50 + i * 150) + 'px';
+                element.style.top = '220px';
+
+                court.appendChild(element);
+                makeTestDraggable(element);
+            }
+        }
+
+        function updateAlignmentStatus(alignments, centerX, centerY) {
+            const statusDiv = document.getElementById('alignmentStatus');
+
+            if (!alignments) {
+                statusDiv.innerHTML = '<div class="status-item">Drag an element to see alignment information...</div>';
+                return;
+            }
+
+            let html = '';
+
+            if (alignments.horizontal) {
+                html += `<div class="status-item"><span class="highlight">✓ Horizontal Alignment Detected</span> at Y: ${Math.round(alignments.horizontal)}px</div>`;
+            } else {
+                html += '<div class="status-item">No horizontal alignment</div>';
+            }
+
+            if (alignments.vertical) {
+                html += `<div class="status-item"><span class="highlight">✓ Vertical Alignment Detected</span> at X: ${Math.round(alignments.vertical)}px</div>`;
+            } else {
+                html += '<div class="status-item">No vertical alignment</div>';
+            }
+
+            if (centerX && centerY) {
+                html += `<div class="status-item">Element center: (${Math.round(centerX)}, ${Math.round(centerY)})</div>`;
+            }
+
+            if (alignments.alignedElements && alignments.alignedElements.length > 0) {
+                html += '<div class="status-item">Aligned with: ';
+                alignments.alignedElements.forEach(item => {
+                    html += `Element ${item.el.textContent} (${item.type}) `;
+                });
+                html += '</div>';
+            }
+
+            statusDiv.innerHTML = html;
+        }
+
+        // Initialize with a few elements
+        window.addEventListener('load', () => {
+            createTestRow();
+        });
+    </script>
+</body>
+</html>

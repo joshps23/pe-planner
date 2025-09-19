@@ -2318,6 +2318,35 @@
             border-top: 1px solid #e5e7eb;
         }
 
+        /* Alignment guide styles */
+        .alignment-guide {
+            position: absolute;
+            pointer-events: none;
+            z-index: 9998;
+            background: #4299e1;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .alignment-guide.horizontal {
+            width: 100%;
+            height: 1px;
+            left: 0;
+            box-shadow: 0 0 2px rgba(66, 153, 225, 0.5);
+        }
+
+        .alignment-guide.vertical {
+            width: 1px;
+            height: 100%;
+            top: 0;
+            box-shadow: 0 0 2px rgba(66, 153, 225, 0.5);
+        }
+
+        .alignment-guide.active {
+            opacity: 1;
+            background: #3182ce;
+        }
+
         /* Mobile-first responsive design */
         
         /* Small screens (mobile phones) */

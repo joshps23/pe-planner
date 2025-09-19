@@ -1,5 +1,58 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-09-19 - Grid Locking with Alignment Guides
+
+### ✅ Completed Tasks
+
+#### Implemented Grid Locking Feature with Alignment Guides
+- **Feature**: Elements automatically align when dragged near the same X or Y coordinate as other elements
+- **Implementation**:
+  1. **CSS Styles Added** (`css/styles.css` lines 2321-2348):
+     - Created `.alignment-guide` class for visual guide lines
+     - Horizontal guides span full court width (1px blue line)
+     - Vertical guides span full court height (1px blue line)
+     - Active state with increased opacity and stronger color
+     - Smooth transition animations for appearance/disappearance
+
+  2. **Alignment Detection Logic** (`js/main.js`):
+     - Added `ALIGNMENT_THRESHOLD` constant (10px) for detection distance
+     - Added `SNAP_STRENGTH` constant (5px) for snap distance
+     - Created `findAlignments()` function to detect nearby elements (lines 514-548)
+     - Checks all visible elements on court for alignment opportunities
+     - Returns horizontal and vertical alignment positions when found
+
+  3. **Visual Guide System** (`js/main.js`):
+     - `showHorizontalGuide()` - Creates/shows horizontal alignment line (lines 551-562)
+     - `showVerticalGuide()` - Creates/shows vertical alignment line (lines 577-588)
+     - `hideHorizontalGuide()` and `hideVerticalGuide()` - Hide guides with animation
+     - `hideAlignmentGuides()` - Cleanup function for all guides
+
+  4. **Snapping Behavior** (`js/main.js` lines 400-480):
+     - Modified `drag()` function to check for alignments during dragging
+     - Calculates element center position for accurate alignment
+     - Automatically snaps element to aligned position when within threshold
+     - Works with grouped elements (they move together maintaining relative positions)
+     - Cleans up guides when dragging stops
+
+  5. **Test File Created** (`test-alignment.html`):
+     - Comprehensive test page with visual feedback
+     - Shows alignment status in real-time
+     - Includes test scenarios (grid, row, random placement)
+     - Displays which elements are aligned and on which axis
+
+- **User Benefits**:
+  - Easier to create symmetrical and organized layouts
+  - Professional-looking alignment without manual pixel adjustments
+  - Visual feedback makes it clear when elements are aligned
+  - Works seamlessly with all element types (equipment, players, annotations)
+  - Compatible with existing group dragging functionality
+
+- **Technical Details**:
+  - No performance impact - alignment checks only during active dragging
+  - Guides are created on-demand and cleaned up after use
+  - Respects element groups (grouped elements move together)
+  - Works on both desktop and mobile devices
+
 ## Session: 2025-09-19 - Net Visual Representation Update
 
 ### ✅ Completed Tasks

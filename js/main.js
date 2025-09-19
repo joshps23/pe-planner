@@ -393,6 +393,10 @@ function startDrag(e) {
     draggedElement.style.zIndex = '9999';
 }
 
+// Alignment configuration
+const ALIGNMENT_THRESHOLD = 10; // pixels - distance to trigger alignment
+const SNAP_STRENGTH = 5; // pixels - distance to snap to alignment
+
 function drag(e) {
     if (!draggedElement) return;
 
@@ -404,6 +408,32 @@ function drag(e) {
     // Calculate new position based on mouse position minus offset
     let newX = mousePos.x - dragOffset.x;
     let newY = mousePos.y - dragOffset.y;
+
+    // Get center position of dragged element
+    const elementWidth = draggedElement.offsetWidth;
+    const elementHeight = draggedElement.offsetHeight;
+    const centerX = newX + elementWidth / 2;
+    const centerY = newY + elementHeight / 2;
+
+    // Find alignments with other elements
+    const alignments = findAlignments(draggedElement, centerX, centerY, court);
+
+    // Apply snapping if alignments found
+    if (alignments.horizontal) {
+        // Snap to horizontal alignment (same Y position)
+        newY = alignments.horizontal - elementHeight / 2;
+        showHorizontalGuide(alignments.horizontal, court);
+    } else {
+        hideHorizontalGuide();
+    }
+
+    if (alignments.vertical) {
+        // Snap to vertical alignment (same X position)
+        newX = alignments.vertical - elementWidth / 2;
+        showVerticalGuide(alignments.vertical, court);
+    } else {
+        hideVerticalGuide();
+    }
 
     // Debug logging for boundary issues
     if (window.debugMode && draggedElement.classList.contains('cone')) {
@@ -417,6 +447,9 @@ function drag(e) {
         });
         console.log('Mouse position in court:', mousePos);
         console.log('Proposed element position:', newX, newY);
+        if (alignments.horizontal || alignments.vertical) {
+            console.log('Alignments found:', alignments);
+        }
 
         // Check if mouse is actually within court bounds
         if (mousePos.y < 0 || mousePos.y > court.clientHeight) {
@@ -429,10 +462,10 @@ function drag(e) {
 
     // No constraints - allow free positioning
     // Elements can be positioned anywhere without restrictions
-    
+
     draggedElement.style.left = newX + 'px';
     draggedElement.style.top = newY + 'px';
-    
+
     // Move grouped elements together
     if (draggedElement.dataset.groupId && dragOffset.groupOffsets) {
         const groupId = draggedElement.dataset.groupId;
@@ -450,7 +483,7 @@ function stopDrag() {
     if (draggedElement) {
         // Remove dragging class
         draggedElement.classList.remove('dragging');
-        
+
         // Restore original z-index
         if (dragOffset.originalZIndex !== undefined) {
             draggedElement.style.zIndex = dragOffset.originalZIndex;
@@ -458,20 +491,118 @@ function stopDrag() {
             // If no original z-index was stored, assign a new one
             draggedElement.style.zIndex = currentZIndex++;
         }
-        
+
         // Clear group offsets and original z-index
         if (dragOffset.groupOffsets) {
             delete dragOffset.groupOffsets;
         }
         delete dragOffset.originalZIndex;
-        
+
+        // Hide alignment guides
+        hideAlignmentGuides();
+
         draggedElement = null;
     }
-    
+
     document.removeEventListener('mousemove', drag);
     document.removeEventListener('mouseup', stopDrag);
     document.removeEventListener('touchmove', drag);
     document.removeEventListener('touchend', stopDrag);
+}
+
+// Alignment detection function
+function findAlignments(draggedEl, centerX, centerY, court) {
+    const alignments = {
+        horizontal: null,
+        vertical: null
+    };
+
+    // Get all draggable elements except the one being dragged
+    const elements = court.querySelectorAll('.draggable-item, .annotation');
+
+    elements.forEach(el => {
+        // Skip the dragged element and hidden elements
+        if (el === draggedEl || el.style.display === 'none') return;
+
+        // Skip elements in the same group as they move together
+        if (draggedEl.dataset.groupId && el.dataset.groupId === draggedEl.dataset.groupId) return;
+
+        // Get element center position
+        const elLeft = parseInt(el.style.left) || 0;
+        const elTop = parseInt(el.style.top) || 0;
+        const elCenterX = elLeft + el.offsetWidth / 2;
+        const elCenterY = elTop + el.offsetHeight / 2;
+
+        // Check horizontal alignment (Y axis)
+        if (!alignments.horizontal && Math.abs(centerY - elCenterY) <= ALIGNMENT_THRESHOLD) {
+            alignments.horizontal = elCenterY;
+        }
+
+        // Check vertical alignment (X axis)
+        if (!alignments.vertical && Math.abs(centerX - elCenterX) <= ALIGNMENT_THRESHOLD) {
+            alignments.vertical = elCenterX;
+        }
+    });
+
+    return alignments;
+}
+
+// Guide creation and management functions
+function showHorizontalGuide(yPosition, court) {
+    let guide = court.querySelector('.alignment-guide.horizontal');
+
+    if (!guide) {
+        guide = document.createElement('div');
+        guide.className = 'alignment-guide horizontal';
+        court.appendChild(guide);
+    }
+
+    guide.style.top = yPosition + 'px';
+    guide.classList.add('active');
+}
+
+function hideHorizontalGuide() {
+    const court = document.getElementById('court');
+    const guide = court.querySelector('.alignment-guide.horizontal');
+    if (guide) {
+        guide.classList.remove('active');
+        setTimeout(() => {
+            if (guide && !guide.classList.contains('active')) {
+                guide.remove();
+            }
+        }, 200);
+    }
+}
+
+function showVerticalGuide(xPosition, court) {
+    let guide = court.querySelector('.alignment-guide.vertical');
+
+    if (!guide) {
+        guide = document.createElement('div');
+        guide.className = 'alignment-guide vertical';
+        court.appendChild(guide);
+    }
+
+    guide.style.left = xPosition + 'px';
+    guide.classList.add('active');
+}
+
+function hideVerticalGuide() {
+    const court = document.getElementById('court');
+    const guide = court.querySelector('.alignment-guide.vertical');
+    if (guide) {
+        guide.classList.remove('active');
+        setTimeout(() => {
+            if (guide && !guide.classList.contains('active')) {
+                guide.remove();
+            }
+        }, 200);
+    }
+}
+
+function hideAlignmentGuides() {
+    hideHorizontalGuide();
+    hideVerticalGuide();
 }
 
 function clearCourt() {
