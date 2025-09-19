@@ -1613,7 +1613,7 @@ function createElementInPreview(element, previewCourt, fixedDimensions) {
             break;
         case 'net':
             newElement = document.createElement('div');
-            newElement.className = 'net draggable-item';
+            newElement.className = 'equipment-net draggable-item';
             break;
         case 'marker':
             newElement = document.createElement('div');
@@ -2213,7 +2213,9 @@ function createElementFromJson(element, court, fixedDimensions) {
     } else {
         // Create equipment element
         const item = document.createElement('div');
-        item.className = `draggable-item ${element.type}`;
+        // Map 'net' type to 'equipment-net' class for consistency
+        const elementClass = element.type === 'net' ? 'equipment-net' : element.type;
+        item.className = `draggable-item ${elementClass}`;
         item.id = 'item-' + (++itemCounter);
         item.dataset.phase = currentPhase;
 
@@ -2581,11 +2583,13 @@ function showContextMenu(e, element) {
     // Show/hide role change section based on whether it's a student
     const roleChangeSection = document.getElementById('roleChangeSection');
     const ballTypeSection = document.getElementById('ballTypeSection');
+    const netOrientationSection = document.getElementById('netOrientationSection');
 
     // Handle student context menu
     if (element.classList.contains('student')) {
         roleChangeSection.style.display = 'block';
         ballTypeSection.style.display = 'none';
+        netOrientationSection.style.display = 'none';
 
         // Hide the current role option
         const currentRole = element.classList.contains('attacker') ? 'attacker' :
@@ -2609,6 +2613,7 @@ function showContextMenu(e, element) {
     else if (element.classList.contains('ball')) {
         roleChangeSection.style.display = 'none';
         ballTypeSection.style.display = 'block';
+        netOrientationSection.style.display = 'none';
 
         // Determine current ball type
         const currentBallType = element.classList.contains('basketball') ? 'basketball' :
@@ -2628,10 +2633,17 @@ function showContextMenu(e, element) {
             ballTypeSection.children[2].style.display = 'none';
         }
     }
-    // Hide both sections for other elements
+    // Handle net context menu
+    else if (element.classList.contains('equipment-net')) {
+        roleChangeSection.style.display = 'none';
+        ballTypeSection.style.display = 'none';
+        netOrientationSection.style.display = 'block';
+    }
+    // Hide all sections for other elements
     else {
         roleChangeSection.style.display = 'none';
         ballTypeSection.style.display = 'none';
+        netOrientationSection.style.display = 'none';
     }
 
     // Get position based on event type (mouse vs touch)
@@ -2878,6 +2890,25 @@ function changeBallType(newType) {
         contextMenuTarget.classList.add('soccer');
     }
     // 'generic' doesn't need a class - it uses the default .ball styling
+
+    hideContextMenu();
+
+    // Trigger analyze button state update in case this affects the layout
+    updateAnalyzeFabState();
+}
+
+function toggleNetOrientation() {
+    if (!contextMenuTarget || !contextMenuTarget.classList.contains('equipment-net')) {
+        hideContextMenu();
+        return;
+    }
+
+    // Toggle the horizontal class
+    if (contextMenuTarget.classList.contains('horizontal')) {
+        contextMenuTarget.classList.remove('horizontal');
+    } else {
+        contextMenuTarget.classList.add('horizontal');
+    }
 
     hideContextMenu();
 

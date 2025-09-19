@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Net Visual</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .test-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
+        }
+        .test-court {
+            position: relative;
+            width: 400px;
+            height: 300px;
+            background: white;
+            border: 2px solid #333;
+            margin: 20px auto;
+        }
+        h2 {
+            margin-top: 30px;
+            color: #333;
+        }
+        .equipment-preview {
+            display: inline-block;
+            margin: 10px;
+            padding: 20px;
+            background: white;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Net Visual Test</h1>
+
+    <h2>1. Main Court Net (Draggable Element)</h2>
+    <div class="test-container">
+        <div class="test-court">
+            <div class="net draggable-item" style="left: 200px; top: 150px;"></div>
+        </div>
+        <p>This shows the net as it appears on the main court (vertical block with brown base)</p>
+    </div>
+
+    <h2>2. Equipment Button Preview</h2>
+    <div class="test-container">
+        <div class="equipment-preview">
+            <div class="equipment-net"></div>
+        </div>
+        <p>This shows the net icon in the equipment panel</p>
+    </div>
+
+    <h2>3. Layout Preview Element</h2>
+    <div class="test-container">
+        <div style="background: #f0f0f0; padding: 20px; display: inline-block;">
+            <div class="layout-preview-element net" style="display: inline-block; position: relative;"></div>
+        </div>
+        <p>This shows the net in the mini preview (smaller version)</p>
+    </div>
+
+    <h2>4. Horizontal Net (Rotated 90°)</h2>
+    <div class="test-container">
+        <div class="test-court">
+            <div class="net horizontal draggable-item" style="left: 200px; top: 150px;"></div>
+        </div>
+        <p>This shows the net rotated 90° to horizontal orientation</p>
+    </div>
+
+    <h2>5. Rotation Test (Click to Toggle)</h2>
+    <div class="test-container">
+        <div class="test-court">
+            <div id="rotatingNet" class="net draggable-item" style="left: 200px; top: 150px; cursor: pointer;"></div>
+        </div>
+        <p>Click the net above to toggle between vertical and horizontal orientation</p>
+    </div>
+
+    <h2>Comparison with Old Design</h2>
+    <p>The new design is a simple vertical rectangular block that better represents a net in PE diagrams:</p>
+    <ul>
+        <li>✅ Clear vertical orientation (like viewing a net from above)</li>
+        <li>✅ Simple solid design (no confusing mesh pattern)</li>
+        <li>✅ Brown base representing the net stand</li>
+        <li>✅ Better visibility and recognition in diagrams</li>
+        <li>✅ Can rotate 90° via right-click context menu</li>
+    </ul>
+
+    <script>
+        // Test rotation functionality
+        document.getElementById('rotatingNet').addEventListener('click', function() {
+            this.classList.toggle('horizontal');
+        });
+    </script>
+</body>
+</html>

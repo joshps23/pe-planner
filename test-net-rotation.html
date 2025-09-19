@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Net Rotation Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .test-court {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            background: white;
+            border: 2px solid #333;
+            margin: 20px auto;
+        }
+        .instructions {
+            text-align: center;
+            margin: 20px;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 8px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e0f2fe;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Net Rotation Feature Test</h1>
+
+    <div class="instructions">
+        <h2>Testing Net Rotation</h2>
+        <p>Click the buttons below to add nets and test rotation:</p>
+        <button onclick="addTestNet()">Add Net to Court</button>
+        <button onclick="rotateLastNet()">Rotate Last Net</button>
+        <button onclick="clearCourt()">Clear Court</button>
+        <div id="status" class="status">Ready to test...</div>
+    </div>
+
+    <div id="testCourt" class="test-court"></div>
+
+    <div class="instructions">
+        <h3>Expected Behavior:</h3>
+        <ul style="text-align: left;">
+            <li>✅ Nets should appear as vertical blocks (10px × 80px) with brown base</li>
+            <li>✅ Right-clicking a net should show "Rotate Net 90°" option</li>
+            <li>✅ Clicking rotate should change net to horizontal (80px × 10px)</li>
+            <li>✅ Base should move to left side when horizontal</li>
+            <li>✅ Transition should be smooth (0.3s)</li>
+            <li>✅ Long-press on mobile should also show the rotation option</li>
+        </ul>
+    </div>
+
+    <script>
+        let netCounter = 0;
+
+        function addTestNet() {
+            const court = document.getElementById('testCourt');
+            const net = document.createElement('div');
+            net.className = 'equipment-net draggable-item';
+            net.id = 'test-net-' + (++netCounter);
+
+            // Random position
+            const x = 50 + Math.random() * 500;
+            const y = 50 + Math.random() * 300;
+
+            net.style.position = 'absolute';
+            net.style.left = x + 'px';
+            net.style.top = y + 'px';
+            net.style.cursor = 'pointer';
+
+            // Add click handler to toggle rotation
+            net.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('horizontal');
+                updateStatus(`Net ${this.id} rotated. Horizontal: ${this.classList.contains('horizontal')}`);
+            });
+
+            // Add right-click handler
+            net.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                if (confirm('Rotate this net 90°?')) {
+                    this.classList.toggle('horizontal');
+                    updateStatus(`Net ${this.id} rotated via context menu. Horizontal: ${this.classList.contains('horizontal')}`);
+                }
+            });
+
+            court.appendChild(net);
+            updateStatus(`Added net ${net.id} to court. Click to rotate or right-click for menu.`);
+        }
+
+        function rotateLastNet() {
+            const nets = document.querySelectorAll('.equipment-net');
+            if (nets.length > 0) {
+                const lastNet = nets[nets.length - 1];
+                lastNet.classList.toggle('horizontal');
+                updateStatus(`Rotated ${lastNet.id}. Horizontal: ${lastNet.classList.contains('horizontal')}`);
+            } else {
+                updateStatus('No nets on court to rotate!');
+            }
+        }
+
+        function clearCourt() {
+            const court = document.getElementById('testCourt');
+            court.innerHTML = '';
+            netCounter = 0;
+            updateStatus('Court cleared.');
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        // Add one net on load
+        window.addEventListener('load', function() {
+            addTestNet();
+        });
+    </script>
+</body>
+</html>

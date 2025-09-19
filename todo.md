@@ -1,5 +1,73 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-09-19 - Net Visual Representation Update
+
+### ✅ Completed Tasks
+
+#### Updated Net Visual to Vertical Block Design
+- **Problem**: The net had a complex mesh-like appearance that wasn't clear for PE activity diagrams
+- **Solution**: Changed to a simple vertical rectangular block design matching standard diagrammatic conventions
+- **Changes Made**:
+  1. **Main Net Element** (`css/styles.css` lines 473-514):
+     - Changed from horizontal (100% width) to vertical orientation (10px wide, 80px tall)
+     - Removed gradient backgrounds and mesh patterns
+     - Added simple solid light gray fill (#f5f5f5) with black border
+     - Added brown base (#8B7355) representing the net stand
+  2. **Equipment Preview Net** (`css/styles.css` lines 1052-1071):
+     - Updated to match vertical block design (10px × 60px)
+     - Consistent styling with main net element
+  3. **Layout Preview Net** (`css/styles.css` lines 2233-2239):
+     - Adjusted for mini preview (3px × 12px)
+     - Maintained proportional appearance
+- **Design Rationale**:
+  - Vertical orientation represents side view of net (standard in PE diagrams)
+  - Simple block design is immediately recognizable
+  - Brown base clearly shows it's a standing net structure
+  - Much clearer than previous mesh pattern
+- **Test File Created**: `test-net-visual.html` for visual verification
+- **Result**: Net now appears as a clear vertical block matching the reference image provided
+
+#### Fixed Net Class Naming Issue & Added Rotation Feature
+- **Problem**: Net elements were using inconsistent class names ('net' vs 'equipment-net')
+- **Solution**: Standardized all net elements to use 'equipment-net' class
+- **Fixes Applied**:
+  1. **Context Menu Detection** (`js/main.js` line 2635):
+     - Changed from checking `classList.contains('net')` to `classList.contains('equipment-net')`
+  2. **Toggle Function** (`js/main.js` line 2899):
+     - Updated to check for 'equipment-net' class
+  3. **CSS Selectors** (`css/styles.css` lines 473-514):
+     - Changed from `.net` to `.equipment-net` for all styles
+  4. **Element Creation** (`js/main.js` line 2217):
+     - Added mapping to ensure 'net' type creates 'equipment-net' class
+  5. **Preview Function** (`js/main.js` line 1616):
+     - Updated to use 'equipment-net' class for consistency
+
+#### Added Net Rotation Feature
+- **Feature**: Nets can now be rotated 90° between vertical and horizontal orientations
+- **Implementation**:
+  1. **Context Menu Update** (`index.html` lines 413-419):
+     - Added "Net Orientation" section to context menu
+     - Shows "Rotate Net 90°" option with rotation icon (🔄)
+     - Only appears when right-clicking on net elements
+  2. **JavaScript Functionality** (`js/main.js`):
+     - Updated `showContextMenu()` to handle net elements (lines 2634-2638)
+     - Added `toggleNetOrientation()` function (lines 2898-2915)
+     - Toggles 'horizontal' class on net element
+  3. **CSS Styling** (`css/styles.css` lines 499-514):
+     - Added `.net.horizontal` class for horizontal orientation
+     - Horizontal net: 80px wide × 10px tall
+     - Base repositions to left side when horizontal
+     - Smooth transition animation (0.3s)
+- **User Interaction**:
+  - Right-click (desktop) or long-press (mobile) on any net
+  - Select "Rotate Net 90°" from context menu
+  - Net smoothly transitions between orientations
+- **Use Cases**:
+  - Vertical nets for activities like badminton, volleyball
+  - Horizontal nets for activities requiring barriers or dividers
+- **Test File Updated**: `test-net-visual.html` includes rotation tests
+- **Result**: Nets can now be oriented based on activity requirements
+
 ## Session: 2025-09-19 - Mobile Group Dragging Fix, Save/Load Groups Fix & Mobile Group Selection Interface
 
 ### ✅ Completed Tasks
@@ -64,6 +132,28 @@
   - Implemented selection logic in `js/mobile.js` (lines 368-598)
   - Modified `js/main.js` to prevent drag during selection mode
 - **Result**: Mobile users can now select multiple elements and group them together
+
+#### Fixed Mobile Group Sync Issue
+- **Problem**: After grouping elements via mobile selection mode, they weren't dragging together
+- **Root Cause**: The `selectedElements` variable wasn't exposed to window object for mobile access
+- **Solution**:
+  - Exposed `selectedElements` to window object in main.js
+  - Updated mobile grouping to properly sync with main selection system
+- **Files Modified**:
+  - `js/main.js`: Added `window.selectedElements = selectedElements` (line 3024)
+  - `js/mobile.js`: Fixed mobileGroupSelected() to properly sync selections
+
+#### Hide Desktop Group Tools on Mobile
+- **Improvement**: Desktop group tools panel now hidden on mobile since mobile has its own interface
+- **Implementation**:
+  - Added `id="desktopGroupTools"` to the panel in index.html
+  - Added CSS rule to hide panel on mobile devices (max-width: 768px)
+- **Result**: Cleaner mobile interface without duplicate functionality
+
+### 📝 Repository Updates
+- Successfully committed all changes with descriptive message
+- Pushed to main branch on GitHub
+- Added three test files for mobile functionality testing
 
 ## Session: 2025-09-17 - UI Fixes, Security Audit & Mobile Improvements
 

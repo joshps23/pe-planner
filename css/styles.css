@@ -470,32 +470,47 @@
             top: 65%;
         }
 
-        .net {
+        .equipment-net {
             position: absolute;
-            width: calc(100% - 40px);
-            height: 6px;
-            background: linear-gradient(to bottom, #1f2937, #111827);
-            left: 20px;
+            width: 10px;
+            height: 80px;
+            background: #f5f5f5;
+            border: 2px solid #333;
+            left: 50%;
             top: 50%;
-            transform: translateY(-50%);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: width 0.3s, height 0.3s;
         }
-        
-        .net::before {
+
+        .equipment-net::before {
             content: '';
             position: absolute;
-            top: -8px;
-            left: 0;
-            right: 0;
-            height: 20px;
-            background: repeating-linear-gradient(
-                90deg,
-                transparent,
-                transparent 4px,
-                rgba(31, 41, 55, 0.3) 4px,
-                rgba(31, 41, 55, 0.3) 5px
-            );
+            bottom: -8px;
+            left: -4px;
+            right: -4px;
+            height: 8px;
+            background-color: #8B7355;
+            border: 1px solid #333;
+            border-top: none;
+            transition: all 0.3s;
+        }
+
+        /* Horizontal net orientation */
+        .equipment-net.horizontal {
+            width: 80px;
+            height: 10px;
+        }
+
+        .equipment-net.horizontal::before {
+            bottom: auto;
+            left: -8px;
+            right: auto;
+            top: -4px;
+            width: 8px;
+            height: calc(100% + 8px);
+            border: 1px solid #333;
+            border-right: none;
         }
 
         .draggable-item {
@@ -1051,11 +1066,9 @@
 
         /* Net visual representation */
         .equipment-net {
-            width: 60px;
-            height: 40px;
-            background: linear-gradient(90deg, transparent 48%, #333 48%, #333 52%, transparent 52%), 
-                        linear-gradient(0deg, transparent 48%, #333 48%, #333 52%, transparent 52%);
-            background-size: 8px 8px;
+            width: 10px;
+            height: 60px;
+            background: #f5f5f5;
             border: 2px solid #333;
             position: relative;
         }
@@ -1064,10 +1077,12 @@
             content: '';
             position: absolute;
             bottom: -8px;
-            left: -2px;
-            right: -2px;
+            left: -4px;
+            right: -4px;
             height: 8px;
-            background-color: #654321;
+            background-color: #8B7355;
+            border: 1px solid #333;
+            border-top: none;
         }
 
         /* Marker visual representation */
@@ -2231,11 +2246,10 @@
         }
         
         .layout-preview-element.net {
-            background: #6b7280;
-            border: 1px solid #4b5563;
-            width: 8px;
-            height: 4px;
-            border-radius: 2px;
+            background: #f5f5f5;
+            border: 1px solid #333;
+            width: 3px;
+            height: 12px;
         }
         
         .layout-preview-element.racket {

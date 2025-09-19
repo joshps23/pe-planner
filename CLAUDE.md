@@ -88,6 +88,8 @@ PE Activity Consultant is a full-featured lesson planning tool designed specific
 - **Phase-specific**: Annotations and paths can be tied to specific lesson phases
 
 ### 👥 Advanced Selection Tools
+
+**Desktop Features**:
 - **Group Selection**: Select multiple elements with lasso tool
 - **Multi-select**: Ctrl/Cmd+click for individual selection
 - **Group Operations**: Move grouped elements together
@@ -96,6 +98,13 @@ PE Activity Consultant is a full-featured lesson planning tool designed specific
   - Ctrl/Cmd+Shift+G: Ungroup
   - Delete: Remove selected
   - Escape: Clear selection
+
+**Mobile Features**:
+- **Selection Mode**: Tap FAB menu → Selection Mode to enter
+- **Tap Selection**: Tap elements to select/deselect them
+- **Mobile Toolbar**: Shows selection count and group/ungroup/clear buttons
+- **Visual Feedback**: Golden borders, pulse animations, haptic feedback
+- **Smart Exit**: Auto-exits selection mode after grouping
 
 ### 📑 Layer Management
 - **Z-index Control**: Right-click context menu for layer ordering
@@ -243,6 +252,18 @@ netlify dev
 - **Fallback Defaults**: Generates elements if AI fails
 
 ## Recent Updates & Fixes
+
+### 2025-09-19 Mobile Group Selection & Fixes
+- **Mobile Selection Mode**: Added tap-to-select interface for grouping elements on mobile
+  - Selection mode button in FAB menu
+  - Tap elements to select/deselect
+  - Mobile selection toolbar with group/ungroup/clear actions
+  - Visual feedback with animations and haptic response
+  - Auto-exit after grouping
+- **Touch Event Fix**: Fixed touchend event handling for proper mobile group dragging
+- **Group Persistence**: Groups now save and load correctly in lesson plans
+- **Mobile UI Cleanup**: Desktop group tools panel hidden on mobile devices
+- **Sync Fix**: Mobile selections properly sync with main selection system
 
 ### 2025-09-15 UI/UX Improvements
 - **Floating Analyze Button**: Added accessible FAB for desktop users at bottom-right of court
