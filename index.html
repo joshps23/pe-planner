@@ -49,6 +49,9 @@
     <!-- Mobile Quick Actions FAB -->
     <div class="mobile-quick-actions">
         <div class="mobile-fab-menu" id="mobileFabMenu">
+            <button class="mobile-fab-option" onclick="toggleMobileSelectionMode()" title="Selection mode" id="mobileSelectBtn">
+                <span>🔲</span>
+            </button>
             <button class="mobile-fab-option" onclick="addAnnotation()" title="Add note">
                 <span>📝</span>
             </button>
@@ -59,9 +62,28 @@
                 <span>🗑️</span>
             </button>
         </div>
-        <button class="mobile-fab" onclick="toggleFabMenu()">
+        <button class="mobile-fab" onclick="toggleFabMenu()" id="mobileFabBtn">
             <span id="fabIcon">+</span>
         </button>
+    </div>
+
+    <!-- Mobile Selection Toolbar -->
+    <div class="mobile-selection-toolbar" id="mobileSelectionToolbar" style="display: none;">
+        <div class="mobile-selection-info">
+            <span id="mobileSelectionCount">0 selected</span>
+        </div>
+        <div class="mobile-selection-actions">
+            <button class="mobile-selection-btn" onclick="mobileGroupSelected()" id="mobileGroupBtn">
+                <span>🔗</span> Group
+            </button>
+            <button class="mobile-selection-btn" onclick="mobileUngroupSelected()" id="mobileUngroupBtn">
+                <span>🔓</span> Ungroup
+            </button>
+            <button class="mobile-selection-btn clear" onclick="mobileClearSelection()">
+                <span>❌</span> Clear
+            </button>
+        </div>
+        <button class="mobile-selection-done" onclick="exitMobileSelectionMode()">Done</button>
     </div>
 
     <div class="container">
@@ -241,7 +263,7 @@
                     </div>
                 </div>
                 
-                <div class="control-section">
+                <div class="control-section" id="desktopGroupTools">
                     <div class="control-header" onclick="toggleSection(this)">
                         <h3><span>👥</span> Group Tools</h3>
                     </div>

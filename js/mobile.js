@@ -364,3 +364,251 @@ function enhanceMobileDragDrop() {
 
 // Call this when new elements are added to the court
 window.enhanceMobileDragDrop = enhanceMobileDragDrop;
+
+// Mobile Selection Mode
+let isMobileSelectionMode = false;
+let mobileSelectedElements = new Set();
+
+function toggleMobileSelectionMode() {
+    isMobileSelectionMode = !isMobileSelectionMode;
+    const court = document.getElementById('court');
+    const toolbar = document.getElementById('mobileSelectionToolbar');
+    const quickActions = document.querySelector('.mobile-quick-actions');
+    const fabMenu = document.getElementById('mobileFabMenu');
+
+    if (isMobileSelectionMode) {
+        // Enter selection mode
+        court.classList.add('mobile-selection-mode-active');
+        quickActions.classList.add('mobile-selection-mode-active');
+        toolbar.style.display = 'block';
+
+        // Close FAB menu
+        fabMenu.classList.remove('active');
+        document.getElementById('fabIcon').textContent = '✓';
+
+        // Add tap handlers to all elements
+        enableMobileTapSelection();
+
+        // Disable drag temporarily
+        disableMobileDrag();
+
+        // Show instructions
+        showMobileToast('Tap elements to select them');
+    } else {
+        // Exit selection mode
+        exitMobileSelectionMode();
+    }
+}
+
+function exitMobileSelectionMode() {
+    isMobileSelectionMode = false;
+    const court = document.getElementById('court');
+    const toolbar = document.getElementById('mobileSelectionToolbar');
+    const quickActions = document.querySelector('.mobile-quick-actions');
+
+    court.classList.remove('mobile-selection-mode-active');
+    quickActions.classList.remove('mobile-selection-mode-active');
+    toolbar.style.display = 'none';
+    document.getElementById('fabIcon').textContent = '+';
+
+    // Clear selection
+    mobileClearSelection();
+
+    // Remove tap handlers
+    disableMobileTapSelection();
+
+    // Re-enable drag
+    enableMobileDrag();
+}
+
+function enableMobileTapSelection() {
+    const court = document.getElementById('court');
+    court.querySelectorAll('.draggable-item, .annotation').forEach(element => {
+        element.addEventListener('touchstart', handleMobileTapSelect, { passive: false });
+    });
+}
+
+function disableMobileTapSelection() {
+    const court = document.getElementById('court');
+    court.querySelectorAll('.draggable-item, .annotation').forEach(element => {
+        element.removeEventListener('touchstart', handleMobileTapSelect);
+    });
+}
+
+function handleMobileTapSelect(e) {
+    if (!isMobileSelectionMode) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const element = e.currentTarget;
+
+    // Add visual feedback
+    element.classList.add('touch-selecting');
+    setTimeout(() => element.classList.remove('touch-selecting'), 300);
+
+    // Toggle selection
+    if (element.classList.contains('selected')) {
+        element.classList.remove('selected');
+        mobileSelectedElements.delete(element.id);
+    } else {
+        element.classList.add('selected');
+        mobileSelectedElements.add(element.id);
+    }
+
+    // Haptic feedback if available
+    if (navigator.vibrate) {
+        navigator.vibrate(10);
+    }
+
+    updateMobileSelectionInfo();
+}
+
+function updateMobileSelectionInfo() {
+    const count = mobileSelectedElements.size;
+    const countDisplay = document.getElementById('mobileSelectionCount');
+    const groupBtn = document.getElementById('mobileGroupBtn');
+    const ungroupBtn = document.getElementById('mobileUngroupBtn');
+
+    countDisplay.textContent = count === 0 ? 'No elements selected' :
+                               count === 1 ? '1 element selected' :
+                               `${count} elements selected`;
+
+    // Enable/disable buttons based on selection
+    if (count >= 2) {
+        groupBtn.disabled = false;
+    } else {
+        groupBtn.disabled = true;
+    }
+
+    // Check if selected elements are grouped
+    const hasGrouped = Array.from(mobileSelectedElements).some(id => {
+        const element = document.getElementById(id);
+        return element && element.dataset.groupId;
+    });
+
+    ungroupBtn.disabled = !hasGrouped;
+}
+
+function mobileGroupSelected() {
+    if (mobileSelectedElements.size < 2) return;
+
+    // Use the existing grouping logic from main.js
+    if (window.groupSelected && window.selectedElements) {
+        // Clear the existing selection first
+        if (window.clearSelection) {
+            window.clearSelection();
+        }
+
+        // Add mobile selected elements to the main selection
+        mobileSelectedElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.classList.add('selected');
+                window.selectedElements.add(id);
+            }
+        });
+
+        // Now call groupSelected which will use the updated selection
+        window.groupSelected();
+
+        // Update visual state
+        updateMobileSelectionInfo();
+
+        // Show feedback
+        showMobileToast(`Grouped ${mobileSelectedElements.size} elements`);
+
+        // Exit selection mode after grouping
+        setTimeout(() => exitMobileSelectionMode(), 500);
+    }
+}
+
+function mobileUngroupSelected() {
+    if (window.ungroupSelected && window.selectedElements) {
+        // Clear and copy mobile selection to main selection
+        window.selectedElements.clear();
+        mobileSelectedElements.forEach(id => {
+            window.selectedElements.add(id);
+        });
+        window.ungroupSelected();
+
+        // Update visual state
+        updateMobileSelectionInfo();
+
+        // Show feedback
+        showMobileToast('Elements ungrouped');
+    }
+}
+
+function mobileClearSelection() {
+    mobileSelectedElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.classList.remove('selected');
+        }
+    });
+    mobileSelectedElements.clear();
+    updateMobileSelectionInfo();
+}
+
+function disableMobileDrag() {
+    const court = document.getElementById('court');
+    court.querySelectorAll('.draggable-item, .annotation').forEach(element => {
+        element.dataset.originalDraggable = element.draggable || 'true';
+        element.draggable = false;
+        // Store original touch handlers
+        element.dataset.dragDisabled = 'true';
+    });
+}
+
+function enableMobileDrag() {
+    const court = document.getElementById('court');
+    court.querySelectorAll('.draggable-item, .annotation').forEach(element => {
+        element.draggable = element.dataset.originalDraggable === 'true';
+        delete element.dataset.dragDisabled;
+    });
+}
+
+function showMobileToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'mobile-toast';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        z-index: 9999;
+        animation: fadeInOut 2s ease;
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 2000);
+}
+
+// Add CSS for toast animation
+const toastStyle = document.createElement('style');
+toastStyle.textContent = `
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    }
+`;
+document.head.appendChild(toastStyle);
+
+// Export functions for use in HTML
+window.toggleMobileSelectionMode = toggleMobileSelectionMode;
+window.exitMobileSelectionMode = exitMobileSelectionMode;
+window.mobileGroupSelected = mobileGroupSelected;
+window.mobileUngroupSelected = mobileUngroupSelected;
+window.mobileClearSelection = mobileClearSelection;

@@ -2473,6 +2473,137 @@
             color: white;
         }
 
+        /* Mobile Selection Toolbar */
+        .mobile-selection-toolbar {
+            display: none;
+            position: fixed;
+            bottom: 70px; /* Above bottom nav */
+            left: 10px;
+            right: 10px;
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .mobile-selection-info {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .mobile-selection-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: space-around;
+            margin-bottom: 10px;
+        }
+
+        .mobile-selection-btn {
+            flex: 1;
+            padding: 10px 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-selection-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mobile-selection-btn.clear {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .mobile-selection-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .mobile-selection-done {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-selection-done:active {
+            transform: scale(0.98);
+        }
+
+        /* Mobile Selection Mode Indicator */
+        .mobile-selection-mode-active {
+            background: rgba(102, 126, 234, 0.1) !important;
+        }
+
+        .mobile-selection-mode-active .mobile-fab {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .mobile-selection-mode-active #mobileSelectBtn {
+            background: rgba(102, 126, 234, 0.2);
+            border: 2px solid #667eea;
+        }
+
+        /* Touch selection feedback */
+        .touch-selecting {
+            animation: selectPulse 0.3s ease;
+        }
+
+        @keyframes selectPulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
         /* AI Analyze FAB for Desktop */
         .ai-analyze-fab {
             display: none; /* Hidden by default, shown on desktop only */
@@ -2526,6 +2657,11 @@
         }
 
         @media screen and (max-width: 768px) {
+            /* Hide desktop group tools panel on mobile */
+            #desktopGroupTools {
+                display: none !important;
+            }
+
             /* Show mobile navigation elements */
             .mobile-menu-toggle {
                 display: block;

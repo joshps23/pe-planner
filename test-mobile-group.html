@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Group Drag Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        .test-info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-steps {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-steps h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .test-steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .test-steps li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .launch-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        .launch-btn:hover {
+            transform: scale(1.05);
+        }
+        .tip {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin-top: 15px;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h1>🔧 Mobile Group Drag Test</h1>
+        <p><strong>Issue:</strong> Grouped elements were not dragging together on mobile devices.</p>
+        <p><strong>Fix Applied:</strong> Updated <code>getMousePosition()</code> function to properly handle <code>touchend</code> events using <code>changedTouches</code>.</p>
+    </div>
+
+    <div class="test-steps">
+        <h3>📱 Test Instructions (Mobile Device)</h3>
+        <ol>
+            <li>Open the PE Activity Consultant app on your mobile device</li>
+            <li>Add multiple elements to the court (e.g., 2-3 cones and 2 players)</li>
+            <li>Select multiple elements using the lasso tool or multi-select</li>
+            <li>Press the "Group" button (Ctrl+G) to group them</li>
+            <li>Try dragging one of the grouped elements</li>
+            <li><strong>Expected Result:</strong> All grouped elements should move together as a unit</li>
+        </ol>
+
+        <h3>🖥️ Test Instructions (Desktop)</h3>
+        <ol>
+            <li>Open the app on desktop browser</li>
+            <li>Repeat steps 2-5 from mobile test using mouse</li>
+            <li><strong>Expected Result:</strong> Desktop functionality should work exactly as before</li>
+        </ol>
+    </div>
+
+    <div class="test-steps">
+        <h3>✅ What to Check</h3>
+        <ol>
+            <li><strong>Single Element Drag:</strong> Individual elements should still drag normally</li>
+            <li><strong>Group Drag:</strong> All grouped elements move together when dragging any one of them</li>
+            <li><strong>Touch Response:</strong> Dragging should feel smooth and responsive on mobile</li>
+            <li><strong>Long-Press Menu:</strong> Long-pressing should still show context menu without interfering with drag</li>
+            <li><strong>Desktop Unchanged:</strong> Mouse-based dragging should work exactly as before</li>
+        </ol>
+    </div>
+
+    <div>
+        <a href="index.html" class="launch-btn">🚀 Launch PE Activity Consultant</a>
+    </div>
+
+    <div class="tip">
+        <strong>💡 Debug Tip:</strong> Open browser console and type <code>window.debugMode = true</code> to see detailed drag event logging.
+    </div>
+
+    <div class="test-steps">
+        <h3>🔍 Technical Details</h3>
+        <p><strong>Problem:</strong> The <code>getMousePosition()</code> function was trying to access <code>e.touches[0]</code> during <code>touchend</code> events, but the touches array is empty at that point.</p>
+        <p><strong>Solution:</strong> Added proper event type detection and use <code>e.changedTouches[0]</code> for <code>touchend</code> events.</p>
+        <p><strong>Code Location:</strong> <code>js/main.js</code> lines 107-139</p>
+    </div>
+
+    <script>
+        // Check if running on mobile
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            document.body.insertAdjacentHTML('afterbegin',
+                '<div class="status success">✓ Mobile device detected - Ready for testing!</div>'
+            );
+        } else {
+            document.body.insertAdjacentHTML('afterbegin',
+                '<div class="status">Desktop browser detected - Test mobile functionality using device emulation (F12 → Toggle device toolbar)</div>'
+            );
+        }
+    </script>
+</body>
+</html>

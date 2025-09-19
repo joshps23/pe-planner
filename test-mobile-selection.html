@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Group Selection Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .steps {
+            counter-reset: step;
+            margin: 15px 0;
+        }
+        .step {
+            counter-increment: step;
+            padding: 12px 0;
+            padding-left: 35px;
+            position: relative;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .step:last-child {
+            border-bottom: none;
+        }
+        .step::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 12px;
+            background: #667eea;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .feature-icon {
+            font-size: 20px;
+            min-width: 30px;
+        }
+        .feature-text {
+            flex: 1;
+        }
+        .highlight {
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .button-demo {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 8px;
+            margin: 5px;
+            font-size: 13px;
+        }
+        .launch-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        .launch-btn:hover {
+            transform: scale(1.02);
+        }
+        .tips {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .tips h3 {
+            margin: 0 0 8px 0;
+            color: #856404;
+            font-size: 14px;
+        }
+        .tips ul {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔲 Mobile Group Selection Test</h1>
+
+        <div class="section">
+            <h2>📱 New Mobile Features Added</h2>
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <div class="feature-text">
+                    <strong>Selection Mode:</strong> Tap-to-select multiple elements on mobile devices
+                </div>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🔗</span>
+                <div class="feature-text">
+                    <strong>Group/Ungroup:</strong> Combine selected elements into groups that move together
+                </div>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">📊</span>
+                <div class="feature-text">
+                    <strong>Selection Toolbar:</strong> Dedicated mobile UI for managing selections
+                </div>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">💫</span>
+                <div class="feature-text">
+                    <strong>Visual Feedback:</strong> Animations and haptic feedback for better UX
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🚀 How to Test</h2>
+            <div class="steps">
+                <div class="step">
+                    Open the PE Activity Consultant on your <span class="highlight">mobile device</span>
+                </div>
+                <div class="step">
+                    Add multiple elements to the court (cones, players, etc.)
+                </div>
+                <div class="step">
+                    Tap the <span class="highlight">FAB button (+)</span> to open the action menu
+                </div>
+                <div class="step">
+                    Tap the <span class="highlight">🔲 Selection Mode</span> button
+                </div>
+                <div class="step">
+                    <strong>Tap elements</strong> to select them (they'll get a golden border)
+                </div>
+                <div class="step">
+                    When 2+ elements are selected, tap <span class="button-demo">🔗 Group</span>
+                </div>
+                <div class="step">
+                    Tap <span class="button-demo">Done</span> to exit selection mode
+                </div>
+                <div class="step">
+                    Try dragging a grouped element - all grouped elements move together!
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Selection Mode Interface</h2>
+            <p>When in selection mode, you'll see:</p>
+            <ul>
+                <li><strong>FAB changes:</strong> Button shows ✓ and pulses</li>
+                <li><strong>Selection count:</strong> "3 elements selected"</li>
+                <li><strong>Group button:</strong> Enabled when 2+ elements selected</li>
+                <li><strong>Ungroup button:</strong> Enabled when grouped elements selected</li>
+                <li><strong>Clear button:</strong> Deselects all elements</li>
+                <li><strong>Done button:</strong> Exits selection mode</li>
+            </ul>
+        </div>
+
+        <div class="tips">
+            <h3>💡 Tips & Notes</h3>
+            <ul>
+                <li>Dragging is disabled during selection mode to avoid conflicts</li>
+                <li>Groups are preserved when saving and loading plans</li>
+                <li>Tap an already selected element to deselect it</li>
+                <li>Selection mode automatically exits after grouping</li>
+                <li>Works on all touch devices (phones & tablets)</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>✨ What's Fixed</h2>
+            <ul>
+                <li>✅ Mobile group dragging now works correctly</li>
+                <li>✅ Groups persist when saving/loading plans</li>
+                <li>✅ Mobile users can now create and manage groups</li>
+                <li>✅ Touch events properly handled for all interactions</li>
+            </ul>
+        </div>
+
+        <a href="index.html" class="launch-btn">Launch PE Activity Consultant</a>
+
+        <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
+            Test on mobile device for best experience
+        </div>
+    </div>
+
+    <script>
+        // Check if on mobile
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (!isMobile) {
+            const notice = document.createElement('div');
+            notice.style.cssText = `
+                background: #d1ecf1;
+                color: #0c5460;
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                text-align: center;
+                font-size: 14px;
+            `;
+            notice.innerHTML = '📱 For best testing experience, please view this on a <strong>mobile device</strong> or use browser developer tools to emulate a mobile device.';
+            document.querySelector('.container').insertBefore(notice, document.querySelector('h1').nextSibling);
+        }
+    </script>
+</body>
+</html>

@@ -1,5 +1,70 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-09-19 - Mobile Group Dragging Fix, Save/Load Groups Fix & Mobile Group Selection Interface
+
+### ✅ Completed Tasks
+
+#### Fixed Mobile Group Dragging Issue
+- **Problem**: Grouped elements were not dragging together on mobile devices
+- **Root Cause**: The `getMousePosition()` function was incorrectly handling touch events
+  - During `touchend` events, `e.touches` array is empty
+  - Code was trying to access `e.touches[0]` which didn't exist on touchend
+- **Solution**:
+  - Updated `getMousePosition()` to properly detect touch event types
+  - Added support for `e.changedTouches` during `touchend` events
+  - Maintained separate logic for touchstart/touchmove (using `e.touches`)
+- **Implementation Details**:
+  - Modified `js/main.js` lines 107-139
+  - Added explicit checks for event types ('touchstart', 'touchmove', 'touchend')
+  - Desktop functionality remains completely unchanged (mouse events unaffected)
+- **Test File Created**: `test-mobile-group.html` for testing the fix
+- **Result**: Grouped elements now drag together properly on mobile devices
+
+#### Fixed Group Information Not Persisting in Saved Plans
+- **Problem**: When loading a saved plan with grouped elements, the groups were not preserved
+- **Root Cause**:
+  - `savePlan()` function didn't save the `groupId` from elements
+  - `loadPlan()` function didn't restore the `groupId` or rebuild the groups Map
+- **Solution**:
+  - Updated `savePlan()` to include `groupId: item.dataset.groupId || null` in saved data
+  - Updated `loadPlan()` to restore `groupId` and add 'grouped' class to elements
+  - Added code to rebuild the global `groups` Map after loading elements
+  - Updated `nextGroupId` counter to avoid conflicts with loaded groups
+- **Implementation Details**:
+  - Modified `savePlan()` at line 612 to save groupId
+  - Modified `loadPlan()` at lines 727-731 to restore groupId
+  - Added group Map rebuilding logic at lines 940-969
+- **Result**: Grouped elements now remain grouped when saving and loading plans
+
+#### Implemented Mobile Group Selection Interface
+- **Problem**: Mobile users had no way to select and group multiple elements
+- **Root Cause**:
+  - No selection mode available on mobile
+  - No multi-select capability on touch devices
+  - Group/ungroup functions not accessible on mobile
+- **Solution Implemented**:
+  - Added "Selection Mode" button to mobile FAB menu
+  - Created mobile selection toolbar with group/ungroup/clear buttons
+  - Implemented tap-to-select functionality in selection mode
+  - Added visual feedback (pulse animations, selection indicators)
+  - Integrated haptic feedback for touch selections
+- **Features Added**:
+  - Toggle selection mode via FAB menu button
+  - Tap elements to select/deselect them
+  - Selection count display
+  - Group button (enabled when 2+ elements selected)
+  - Ungroup button (enabled when grouped elements selected)
+  - Clear selection button
+  - Done button to exit selection mode
+  - Toast notifications for user feedback
+  - Dragging disabled during selection mode to avoid conflicts
+- **Implementation Details**:
+  - Added UI elements in `index.html` (lines 52-87)
+  - Added selection styles in `css/styles.css` (lines 2476-2605)
+  - Implemented selection logic in `js/mobile.js` (lines 368-598)
+  - Modified `js/main.js` to prevent drag during selection mode
+- **Result**: Mobile users can now select multiple elements and group them together
+
 ## Session: 2025-09-17 - UI Fixes, Security Audit & Mobile Improvements
 
 ### ✅ Completed Tasks

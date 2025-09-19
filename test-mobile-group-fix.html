@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Group Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background: #f0f8ff;
+        }
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .status.fixed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.issue {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .code-change {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+        .steps {
+            background: #e8f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .steps ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        .steps li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        .highlight {
+            background: #ffeb3b;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .button-example {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            margin: 0 3px;
+        }
+        .launch-btn {
+            display: block;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .launch-btn:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>🔧 Mobile Group Selection Fix</h1>
+
+        <div class="status fixed">
+            <strong>✅ FIXED:</strong> Mobile grouped elements now drag together properly!
+        </div>
+
+        <h2>🐛 What Was Wrong</h2>
+        <p>When grouping elements on mobile, the elements weren't being properly added to the main selection system. The mobile code was trying to set <code>window.selectedElements</code> but this wasn't actually updating the internal <code>selectedElements</code> variable used by the grouping system.</p>
+
+        <h2>🛠️ What Was Fixed</h2>
+        <div class="code-change">
+<strong>main.js:</strong>
++ Exposed selectedElements to window object
+  window.selectedElements = selectedElements;
+
+<strong>mobile.js:</strong>
++ Properly sync mobile selection with main selection
++ Clear existing selection first
++ Add each element individually to selectedElements
++ Then call groupSelected() with the correct data
+        </div>
+
+        <h2>📱 Test Instructions</h2>
+        <div class="steps">
+            <ol>
+                <li>Open the app on a <span class="highlight">mobile device</span></li>
+                <li>Add 2 or more elements to the court</li>
+                <li>Tap the <span class="button-example">+</span> FAB button</li>
+                <li>Select <span class="button-example">🔲</span> Selection Mode</li>
+                <li>Tap 2+ elements to select them</li>
+                <li>Tap <span class="button-example">🔗 Group</span> button</li>
+                <li>Exit selection mode (Done button)</li>
+                <li><strong>Test:</strong> Drag one grouped element - ALL grouped elements should move together!</li>
+            </ol>
+        </div>
+
+        <h2>✨ What Should Happen</h2>
+        <ul>
+            <li>✅ Selected elements get grouped with the same groupId</li>
+            <li>✅ Grouped elements show visual indicator (grouped class)</li>
+            <li>✅ Dragging any grouped element moves all elements in the group</li>
+            <li>✅ Groups persist when saving and loading plans</li>
+        </ul>
+
+        <h2>🔍 Technical Details</h2>
+        <p>The fix ensures that:</p>
+        <ul>
+            <li>The <code>selectedElements</code> Set is properly exposed from main.js</li>
+            <li>Mobile selection syncs correctly with the main selection system</li>
+            <li>The <code>groupSelected()</code> function receives the correct element IDs</li>
+            <li>Group IDs are properly assigned to all selected elements</li>
+        </ul>
+
+        <a href="index.html" class="launch-btn">🚀 Test the Fix</a>
+
+        <div style="text-align: center; color: #666; font-size: 12px; margin-top: 20px;">
+            Best tested on actual mobile device or Chrome DevTools mobile emulation
+        </div>
+    </div>
+
+    <script>
+        // Check if on mobile
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            document.body.insertAdjacentHTML('afterbegin',
+                '<div style="background: #28a745; color: white; padding: 10px; text-align: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">📱 Mobile device detected - Ready for testing!</div>'
+            );
+            document.body.style.paddingTop = '50px';
+        }
+    </script>
+</body>
+</html>

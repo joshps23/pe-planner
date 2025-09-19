@@ -106,21 +106,35 @@ function addDebugVisualization(court) {
 // Helper function to get mouse position relative to court
 function getMousePosition(e, court) {
     const courtRect = court.getBoundingClientRect();
-    
+
     let clientX, clientY;
-    if (e.type === 'mousemove' || e.type === 'mousedown') {
+
+    // Check if it's a touch event
+    if (e.type === 'touchstart' || e.type === 'touchmove' || e.type === 'touchend') {
+        // For touchend events, touches array is empty, use changedTouches
+        if (e.type === 'touchend' && e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else if (e.touches && e.touches.length > 0) {
+            // For touchstart and touchmove, use touches array
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            // Fallback to changedTouches if touches is empty
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        }
+    } else {
+        // Mouse events
         clientX = e.clientX;
         clientY = e.clientY;
-    } else {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
     }
-    
+
     // Get position relative to court container
     // No coordinate transformation needed - court stays in natural orientation
     let x = clientX - courtRect.left;
     let y = clientY - courtRect.top;
-    
+
     return { x, y };
 }
 
@@ -270,9 +284,19 @@ function startDrag(e) {
         return;
     }
 
+    // Don't start drag if mobile selection mode is active
+    if (window.isMobileSelectionMode) {
+        return;
+    }
+
     e.preventDefault();
     // Find the draggable element (could be the target itself or a parent)
     const element = e.target.closest('.draggable-item, .annotation') || e.target;
+
+    // Don't start drag if element has drag disabled (for mobile selection mode)
+    if (element.dataset.dragDisabled === 'true') {
+        return;
+    }
     
     // Handle selection mode
     if (isGroupMode) {
@@ -594,7 +618,8 @@ function savePlan() {
             left: item.style.left,
             top: item.style.top,
             phase: item.dataset.phase || 'warmup',
-            text: item.querySelector('div') ? item.querySelector('div').textContent : ''
+            text: item.querySelector('div') ? item.querySelector('div').textContent : '',
+            groupId: item.dataset.groupId || null  // Save group information
         });
     });
 
@@ -708,6 +733,12 @@ function loadPlan() {
         item.className = itemData.className;
         item.id = itemData.id;
         item.dataset.phase = itemData.phase || 'warmup';
+
+        // Restore group information if it exists
+        if (itemData.groupId) {
+            item.dataset.groupId = itemData.groupId;
+            item.classList.add('grouped');
+        }
 
         let x, y;
 
@@ -915,6 +946,37 @@ function loadPlan() {
 
     // Initialize z-indexes for loaded elements
     initializeZIndexes();
+
+    // Rebuild groups Map from loaded elements
+    groups.clear(); // Clear existing groups
+    const loadedGroups = new Map(); // Temporary map to collect groups
+    let maxGroupId = 0;
+
+    // Scan all elements for group IDs
+    court.querySelectorAll('[data-group-id]').forEach(element => {
+        const groupId = element.dataset.groupId;
+        if (groupId) {
+            // Extract the numeric part of the groupId (e.g., "group-1" -> 1)
+            const groupNum = parseInt(groupId.replace('group-', ''));
+            if (!isNaN(groupNum) && groupNum > maxGroupId) {
+                maxGroupId = groupNum;
+            }
+
+            // Add element to its group
+            if (!loadedGroups.has(groupId)) {
+                loadedGroups.set(groupId, new Set());
+            }
+            loadedGroups.get(groupId).add(element.id);
+        }
+    });
+
+    // Copy loaded groups to the global groups Map
+    loadedGroups.forEach((elementIds, groupId) => {
+        groups.set(groupId, elementIds);
+    });
+
+    // Update nextGroupId to avoid conflicts with loaded groups
+    nextGroupId = maxGroupId + 1;
 
     // Revalidate all positions after loading
     setTimeout(() => {
@@ -2959,6 +3021,7 @@ window.startTour = startTour;
 window.toggleGroupMode = toggleGroupMode;
 window.groupSelected = groupSelected;
 window.ungroupSelected = ungroupSelected;
+window.selectedElements = selectedElements;
 window.clearSelection = clearSelection;
 window.bringToFront = bringToFront;
 window.sendToBack = sendToBack;
