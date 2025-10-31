@@ -1617,9 +1617,18 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
+            font-size: 50px;
             animation: pulse 1.5s ease-in-out infinite;
+            /* Perfect emoji centering */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            width: 60px;
+            height: 60px;
+            margin-left: -30px;  /* Manual centering: -50% of width */
+            margin-top: -30px;   /* Manual centering: -50% of height */
+            text-align: center;
         }
 
         @keyframes spin {
@@ -1628,8 +1637,8 @@
         }
 
         @keyframes pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.1); }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
         .loading-title {
