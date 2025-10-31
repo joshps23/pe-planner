@@ -1,5 +1,263 @@
 # PE Activity Consultant - Development Todo List
 
+## Session: 2025-10-31 (Part 2) - Loading Screen Brain Centering Fix
+
+### ✅ Completed Tasks
+
+#### Fixed Brain Emoji Centering in Loading Modal
+- **Problem**: Brain emoji (🧠) was offset to the right and down from the center of the spinning circle in the loading modal
+- **Root Cause Analysis**:
+  1. **Transform Conflict**: The pulse animation was using `transform: translate(-50%, -50%) scale()` which completely overwrote the base CSS centering transform
+  2. **Emoji Rendering Offset**: Browser emoji rendering has inherent baseline and padding offsets
+  3. **Insufficient Container Size**: 48px container wasn't providing enough room for flexbox to properly center the emoji
+
+- **Solution Implemented** (`css/styles.css` lines 1616-1642):
+  - **Switched from transform-based to margin-based centering**:
+    - Removed `transform: translate(-50%, -50%)` from `.loading-brain`
+    - Added `margin-left: -30px` and `margin-top: -30px` for manual centering
+  - **Simplified pulse animation**:
+    - Changed from `transform: translate(-50%, -50%) scale(1)` to just `transform: scale(1)`
+    - Animation now only handles scaling, not positioning
+  - **Increased container size**:
+    - Changed from `width: 48px; height: 48px` to `width: 60px; height: 60px`
+    - Increased font-size from 48px to 50px
+  - **Enhanced flexbox centering**:
+    - Added `display: flex`, `align-items: center`, `justify-content: center`
+    - Added `line-height: 1` and `text-align: center`
+
+- **Technical Explanation**:
+  - Margin-based centering is not affected by CSS animations (unlike transform)
+  - Container positioned at `top: 50%; left: 50%`
+  - Offset by exactly -50% of container dimensions using margins
+  - Flexbox handles emoji baseline quirks internally
+  - Scale animation operates independently of positioning
+
+- **Result**: Brain emoji now perfectly centered in spinning circle, pulse animation works smoothly without position drift
+
+- **Files Modified**:
+  - `css/styles.css`: Updated `.loading-brain` styles and `@keyframes pulse`
+
+- **Commit**: `0f5e05b` - "Fix brain emoji centering in loading modal"
+
+---
+
+## Session: 2025-10-31 (Part 1) - AI Theme Variation & Non-Linear Pedagogy Enhancement
+
+### ✅ Completed Tasks
+
+#### ITERATION 5: Replaced Fantasy Power-Ups with Dynamic Difficulty Scaling
+- **Problem**: AI was generating unrealistic "power-ups" like "Invisibility Cloak", "Dragon's Roar", "Freeze Defenders" that don't work in real PE settings
+- **User Insight**: "Winners should face increased difficulty, not get easier advantages" - proper pedagogy for differentiation
+- **Solution**: Replaced power-up system with dynamic difficulty scaling
+
+**Changes Made:**
+
+1. **Removed Fantasy Elements** (lines 481-549):
+   - ❌ Eliminated: "Power-ups", "Invisibility Shield", "Freeze Ray", "Dragon's Roar"
+   - ❌ Removed: Video game terminology and magical effects
+   - ❌ Deleted: Advantage systems that make winners stronger
+
+2. **Added Dynamic Difficulty Scaling** (lines 495-549):
+   **Core Principle:** Success = Increased Challenge (NOT advantages)
+
+   **5 Scaling Mechanisms:**
+   - **Constraint Progression**: Winners use non-dominant hand, eyes closed, weaker techniques
+   - **Distance/Space Scaling**: Winning team gets smaller zones, further distances
+   - **Time Pressure**: Leaders get less time (10 sec instead of 20 sec)
+   - **Defender Advantage**: Winners face closer/more defenders
+   - **Supportive Handicaps**: Struggling students get helpful constraints (defenders start further, more time, easier positions)
+
+3. **Implementation Examples:**
+   - ✅ "Leading by 5+ points? Now use non-dominant hand only"
+   - ✅ "Behind by 10? Defenders start 3 meters further from you"
+   - ✅ "Won 3 rounds? Must complete 5 passes before scoring (instead of 3)"
+   - ✅ "Winning team? Your scoring zones shrink to half size"
+
+4. **Updated JSON Requirements** (lines 564-565):
+   - Instructions must include dynamic difficulty scaling rules
+   - Rules must have 2-3 difficulty adjustments based on performance
+   - Explicit ban on fantasy power-ups
+
+5. **Clear Examples** (lines 574-580):
+   - GOOD: Realistic constraints with performance-based adjustments
+   - BAD: Fantasy power-ups and unrealistic effects
+
+**Pedagogical Benefits:**
+- Prevents "snowball effect" where strong students dominate
+- Keeps high performers challenged and engaged
+- Supports struggling students without making it obvious
+- Maintains balanced, competitive gameplay for all skill levels
+- All mechanisms are physically implementable by teachers
+- Clear, observable, and enforceable rules
+
+**Files Modified:**
+- `supabase/functions/analyze-layout/index.ts`: Complete power-up system replacement
+
+#### ITERATION 4: Added Age Group Selector for Age-Appropriate Activities
+- **Feature**: Added student age group selector to generate age-appropriate activities with suitable complexity, themes, and language
+- **Implementation**:
+  1. **UI Component** (`index.html` lines 224-234):
+     - Added dropdown selector with 6 age groups:
+       * Early Childhood (4-6 years)
+       * Lower Primary (7-9 years)
+       * Upper Primary (10-12 years) - default
+       * Lower Secondary (13-15 years)
+       * Upper Secondary (16-18 years)
+       * Adult (18+ years)
+     - Positioned below skill level selector in Activity Details section
+
+  2. **Frontend Data Flow** (`js/api.js`):
+     - Line 111: Added `studentAgeGroup` to activityDetails object
+     - Line 288: Included age group in layout description sent to backend
+     - Default value: 'upper-primary'
+
+  3. **Backend Processing** (`supabase/functions/analyze-layout/index.ts`):
+     - Line 371: Extract age group from layout data
+     - Line 394: Parse age group from input string
+     - Lines 414-422: Age-appropriate design guidelines for AI:
+       * Early Childhood: Simple rules, short attention spans, focus on FUN
+       * Lower Primary: Clear rules, visual cues, simple teamwork, safety emphasis
+       * Upper Primary: Complex strategies, competitive elements, skill refinement
+       * Lower Secondary: Advanced tactics, leadership roles, performance goals
+       * Upper Secondary: Sport-specific skills, fitness focus, complex scenarios
+       * Adult: Fitness/wellness focus, social interaction, injury prevention
+     - Line 422: AI instructed to tailor complexity, language, themes to age group
+
+- **Expected Results**:
+  - Activities for 4-6 year-olds: Simple, fun-focused, lots of encouragement
+  - Activities for 7-9 year-olds: Clear instructions, visual markers, basic teamwork
+  - Activities for 10-12 year-olds: Strategy elements, competition, peer interaction
+  - Activities for 13-15 year-olds: Complex tactics, leadership, self-directed
+  - Activities for 16-18 year-olds: Advanced skills, fitness, competitive drive
+  - Activities for adults: Wellness-focused, social, adaptable difficulty
+
+- **Files Modified**:
+  - `index.html`: Added age group selector UI
+  - `js/api.js`: Capture and pass age group data
+  - `supabase/functions/analyze-layout/index.ts`: Process and use age group in AI prompt
+
+#### ITERATION 3: Fixed Missing Cones Bug
+- **Problem**: AI generated instructions mentioning cones (e.g., "corner cones", "center cones") but didn't include cone objects in the elements array, resulting in empty courts with text referring to non-existent equipment
+- **Root Cause**:
+  - When original layout had 0 cones, `equipmentCount.cones = 0`
+  - AI followed "EXACTLY 0 cones" requirement literally
+  - Fallback validation didn't trigger because `0 < 0 = false`
+  - Result: Instructions mentioned zones marked by cones that didn't exist
+- **Solution**: Implemented two-layer fix:
+
+  **Layer 1: Smarter Prompt (lines 528-537, 553-565)**
+  - AI must COUNT cone references in its own instructions
+  - "corner cones" (4) + "center cones" (2) = minimum 6 cones required
+  - Better to include MORE cones than mentioned than fewer
+  - Original equipment count is informational, not restrictive for cones
+
+  **Layer 2: Intelligent Fallback Validation (lines 641-685)**
+  - Detects cone keywords in instructions: "cone", "cones", "corner", "gate", "zone", "boundary", "marker"
+  - If instructions mention cones but elements array has 0 cones → triggers auto-generation
+  - Smart estimation:
+    * "corner" mentioned → minimum 4 cones
+    * "center" mentioned → minimum 6 cones
+    * "gate/gates" mentioned → 2 cones per gate (parses numbers from text)
+    * Default for zone-based games → 6 cones
+  - Logs warnings and auto-adds missing cones with grid positioning
+
+- **Result**: Layouts will now always have cones if instructions reference them, even if original layout had 0 cones
+- **Files Modified**: `supabase/functions/analyze-layout/index.ts`
+
+#### ITERATION 2: Strengthened NLP Constraint Implementation
+- **Problem**: Initial NLP integration was too abstract - AI generated ideas but didn't explicitly implement constraint variations
+- **Solution**: Added concrete examples, explicit requirements, and verification checklist
+- **Changes Made**:
+  1. **Concrete NLP Examples with Checkboxes** (lines 428-465):
+     - Each principle now has specific examples of what to say vs. what NOT to say
+     - TASK: "Near cones = 3pts, far = 5pts, center = 10pts" vs. generic "score points"
+     - ENVIRONMENTAL: "Easy path: wide gates on left. Hard path: narrow gates on right" vs. "use the space"
+     - INDIVIDUAL: "Bronze/Silver/Gold challenge - YOU CHOOSE!" vs. "students participate"
+     - DISCOVERY: "Find 3 ways to score" vs. "dribble in zig-zag"
+     - REPRESENTATIVE: "Pass (safe) or shoot (risky)?" vs. "practice passing"
+
+  2. **NLP Compliance Checklist** (lines 460-465):
+     - □ At least 3 different point values for zones/actions
+     - □ At least 2 distance options (near/far or easy/hard)
+     - □ Student choice between 2+ difficulty levels
+     - □ At least 1 discovery prompt ("Find 3 ways to...")
+     - □ Real game pressure (time limits, defenders, spatial constraints)
+
+  3. **Explicit JSON Format Requirements** (lines 506-507):
+     - Instructions MUST state: (1) Multiple scoring zones, (2) Distance options, (3) Discovery prompts, (4) Time/spatial constraints
+     - Rules MUST include: (a) 3 scoring variations, (b) Student choice options, (c) Dynamic rule changes, (d) Power-up activation
+
+  4. **Good vs. Bad Examples** (lines 516-520):
+     - GOOD: "Near gates = 3pts, far = 5pts, center = 10pts. YOU CHOOSE! Find 3 routes! 30 sec before defenders move!"
+     - BAD: "Dribble through cones in order. Practice your technique."
+
+  5. **Verification Protocol** (lines 536-541):
+     - AI must verify each layout before submission:
+       - 3+ scoring variations clearly stated?
+       - Student choice available?
+       - Discovery/exploration prompt?
+       - Constraints with specific examples?
+     - If ANY answer is NO → revise layout
+
+- **Expected Results**:
+  - Every activity will have explicit point variations (3pts/5pts/10pts)
+  - Students will see clear choices (Bronze/Silver/Gold or Path A/B)
+  - Activities will ask discovery questions ("Can you find...")
+  - Constraints will be specific and actionable
+  - No more generic "practice the skill" instructions
+
+#### ITERATION 1: Enhanced AI Analysis with Dynamic Themes and NLP Principles
+- **Problem**: AI was generating repetitive themes (always "Lava maze, Treasure hunt, Battle arena") regardless of lesson context
+- **Solution**: Implemented dynamic theme generation with Non-Linear Pedagogy integration
+- **Changes Made**:
+  1. **Theme Randomization System** (`supabase/functions/analyze-layout/index.ts` lines 412-423):
+     - Added THEME REQUIREMENTS section to prompt
+     - Requires UNIQUE theme for each of 3 layouts
+     - Provides 6 theme categories with examples:
+       * Sports & Competition (Championship Finals, Olympic Trials)
+       * Adventures & Exploration (Jungle Expedition, Arctic Exploration)
+       * Missions & Challenges (Rescue Mission, Spy Training)
+       * Fantasy & Imagination (Dragon Trainers, Wizard Academy)
+       * Survival & Strategy (Zombie Survival, Island Survivor)
+       * Cultural & Global (Around the World, Cultural Festival)
+     - Themes must relate to lesson objective
+     - Explicit instruction to avoid similar themes
+
+  2. **Non-Linear Pedagogy (NLP) Integration** (lines 425-456):
+     - Added MANDATORY NLP principles to every activity
+     - **Task Constraints**: Vary scoring zones, object properties, rules, success pathways
+     - **Environmental Constraints**: Vary distances, zone sizes, obstacles, asymmetric layouts
+     - **Individual Constraints**: Easier/harder pathways, student choice, skill progression, role differentiation
+     - **Discovery Through Play**: Problem-solving focus, decision-making, strategy discovery
+     - **Representative Learning**: Real game scenarios, authentic constraints, embedded skills
+
+  3. **Updated Critical Requirements** (lines 507-513):
+     - Layout 1: Wide spread + exploration-focused theme
+     - Layout 2: Compact central + competition-focused theme
+     - Layout 3: Progressive/linear + challenge-focused theme
+     - Each layout must demonstrate NLP principles
+
+  4. **Increased AI Creativity** (lines 551-557):
+     - Temperature: 0.3 → 0.7 (more creative variety)
+     - topK: 10 → 40 (broader token selection)
+     - topP: 0.8 → 0.9 (more diverse sampling)
+
+  5. **Enhanced Gamification** (lines 458-463):
+     - Added multi-level scoring zones
+     - Added achievement unlocks
+     - Emphasized student choice and exploration
+
+- **Expected Results**:
+  - Each analysis will generate 3 completely different themes
+  - Themes will be contextually relevant to lesson objectives
+  - Activities will incorporate constraints-led approach
+  - More creative and varied game designs
+  - Better pedagogical alignment with modern PE teaching methods
+
+- **Files Modified**:
+  - `supabase/functions/analyze-layout/index.ts`: Complete prompt redesign
+  - `server.js`: Changed default port from 3000 to 8080
+
 ## Session: 2025-09-19 - Grid Locking with Alignment Guides
 
 ### ✅ Completed Tasks
